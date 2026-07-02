@@ -1,6 +1,6 @@
 ---
 name: adapter-lib
-description: Use when implementing, extending, reviewing, or fixing a shared Spring Boot adapter library JAR that wraps a third-party REST/HTTP API behind reactive client ports, Spring Boot auto-configuration, configuration properties, DTOs, token handling, common-lib WebClient transport, and Maven build validation. Triggers include adapter-lib, shared adapter library, NI adapter, T24 adapter, client port, AutoConfiguration.imports, HeaderObject, RequestContext, token retry, or downstream API wrapper.
+description: Use when implementing, extending, reviewing, or fixing a shared Spring Boot adapter library JAR that wraps a third-party REST/HTTP API behind reactive client ports, Spring Boot auto-configuration, configuration properties, DTOs, token handling, and common-lib WebClient transport. Triggers include adapter-lib, shared adapter library, client port, AutoConfiguration.imports, HeaderObject, RequestContext, token retry, or downstream API wrapper.
 ---
 
 # Adapter Library
@@ -100,7 +100,3 @@ Common propagated headers include `traceparent`, `Source-App-Code`, `Source-App-
 - Use `@JsonProperty` when wire names differ from Java names.
 - Add `jakarta.validation` annotations for required fields.
 - Mask sensitive fields from logs and `toString`.
-
-## Build
-
-Run `mvn -q compile` after implementation and repeat until clean. Use `maven-quality` for test, coverage, CI, or Sonar work.

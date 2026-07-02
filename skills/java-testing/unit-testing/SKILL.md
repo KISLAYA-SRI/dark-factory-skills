@@ -1,11 +1,11 @@
 ---
 name: unit-testing
-description: Use when generating or updating focused Java unit tests for newly changed business behavior in Java 25 Spring Boot domain services or adapter libraries. Triggers include unit test generation, test handoff, JUnit 5, Mockito, StepVerifier, controller tests, service tests, adapter client tests, targeted mvn -Dtest runs, or coverage for changed code.
+description: Use when generating or updating focused Java unit tests for newly changed business behavior in a Spring Boot backend API microservices or adapter libraries. Triggers include unit test generation, JUnit 5, Mockito, StepVerifier, controller tests, service tests, adapter client tests, or coverage-focused test design for changed code.
 ---
 
 # Unit Testing
 
-Generate focused Java tests for newly changed behavior only. Use the repository and code-generation handoff already present in context; do not broaden scope into unrelated production code.
+Generate focused Java tests for newly changed behavior only. Use the repository and code-generation handoff already present in context; do not broaden scope into unrelated production code. Test execution and stabilization belong to `test-project`.
 
 ## Expected Test Structure
 
@@ -98,22 +98,6 @@ Client implementation tests should cover:
 
 Service/helper tests should cover token caching, mapping, context propagation, and helper logic only when those production classes changed.
 
-## Targeted Runs
+## After Creation
 
-Run each created or modified test class exactly once:
-
-```bash
-mvn -q -Dtest=<ClassName> test
-```
-
-Do not run the full suite. Do not repeatedly rewrite or rerun failing tests. If a targeted run fails, record the concise compiler/test failure for the Test Stabilizer Agent and stop after all created/modified classes have had their single targeted run.
-
-## Output
-
-Report:
-
-- Created/modified test classes.
-- Targeted commands run.
-- Pass/fail status for each command.
-- Concise compiler/test failures for handoff.
-- Coverage summary for changed business logic when available from the targeted run or obvious from tested paths.
+Use `test-project` to run or stabilize the created/modified tests. Keep any implementation handoff in `code-output-handoff` when that file is required by the workflow.

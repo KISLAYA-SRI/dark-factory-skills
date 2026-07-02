@@ -1,15 +1,15 @@
 ---
-name: domain-service
-description: Use when implementing, extending, reviewing, or fixing a Java 25 Spring Boot domain microservice/API that exposes REST endpoints, controllers, service interfaces, ServiceImpl orchestration, adapter-lib/shared-lib client consumption, DTO mapping, validation, OpenAPI annotations, global exception handling, security headers, and Maven build validation. Triggers include domain service, microservice endpoint, controller-service-serviceimpl, customer accounts style service, downstream adapter client reuse, or ss_code_gen.md for domain code.
+name: backend-api-microservice
+description: Use when implementing, extending, reviewing, or fixing Spring Boot backend API microservice that exposes REST endpoints, controllers, service interfaces, ServiceImpl orchestration, adapter-lib/shared-lib client consumption, DTO mapping, validation, OpenAPI annotations, global exception handling, and security headers. Triggers include backend API, Java microservice, Spring Boot endpoint, controller-service-serviceimpl, customer accounts style service, or downstream adapter client reuse.
 ---
 
-# Domain Service
+# Backend API Microservice
 
-Build domain services as REST APIs that orchestrate business behavior and consume adapter/shared libraries for downstream systems. The JIRA and OpenAPI/spec context should already be present in the task context; use that provided context for endpoint contracts, headers, schemas, error matrix, and acceptance criteria.
+Build backend API microservices as REST services that orchestrate business behavior and consume adapter/shared libraries for downstream systems. The JIRA and OpenAPI/spec context should already be present in the task context; use that provided context for endpoint contracts, headers, schemas, error matrix, and acceptance criteria.
 
 ## Expected Repository Shape
 
-Treat the repo as a Maven Java 25 Spring Boot service unless `pom.xml` says otherwise.
+Treat the repo as a Maven Java 25 Spring Boot service
 
 ```text
 pom.xml
@@ -37,7 +37,7 @@ src/test/resources/
   feature/
 ```
 
-The sample domain service uses Spring Boot 4.x, Java 25, validation, security, actuator, springdoc, Resilience4j, adapter-library dependencies, JUnit 5, reactor-test, Karate, JaCoCo, Surefire, Failsafe, and Sonar Maven plugin.
+The sample backend API uses Spring Boot 4.x, Java 25, validation, security, actuator, springdoc, Resilience4j, adapter-library dependencies, JUnit 5, reactor-test, Karate, JaCoCo, Surefire, Failsafe, and Sonar Maven plugin.
 
 ## Layering Rules
 
@@ -83,16 +83,3 @@ Controller -> Service interface -> ServiceImpl -> adapter/shared-lib client
 ## Headers
 
 Common required headers in the sample include `Content-Type`, `Accept`, `correlationId`, `senderId`, `transactionDateTime`, `timeZoneOffset`, `timeZone`, `X-Channel`, `X-Source-System`, and `Authorization`. Use the exact provided contract for the current endpoint and existing local utilities.
-
-## Build And Handoff
-
-Run `mvn -q compile` after implementation and repeat until clean. Create or replace `ss_code_gen.md` in the workspace root, outside the Java repo, with:
-
-```text
-## Functionality Implemented
-## Files Changed
-## Key Technical Notes
-## Build Result
-```
-
-Keep the handoff factual and concise. Use `unit-testing` for test generation and `maven-quality` for coverage, CI, or Sonar work.
