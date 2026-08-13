@@ -1,0 +1,68 @@
+[
+  {
+    "id": "RULE-003",
+    "rule_filename": "domain-02-normalize-api-errors-to-ui-safe-error-models.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The component displays raw stack traces from a failed fetch. What should I change and how should I verify it?",
+    "expected_behavior": "The API wrapper maps problem details/status codes into safe user and developer messages. ## Applies To Modes - debug_fix ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change - review_judge",
+    "negative_behavior": "The component displays raw stack traces from a failed fetch.",
+    "tags": [
+      "error-handling"
+    ]
+  },
+  {
+    "id": "RULE-004",
+    "rule_filename": "domain-03-keep-secrets-server-side-in-bff-and-server-actio.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The browser fetch client includes a private backend API key. What should I change and how should I verify it?",
+    "expected_behavior": "A server route reads the secret and returns only safe data to the client. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The browser fetch client includes a private backend API key.",
+    "tags": [
+      "secrets",
+      "bff"
+    ]
+  },
+  {
+    "id": "RULE-005",
+    "rule_filename": "domain-04-keep-mocks-in-sync-with-contracts.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The test mock returns fields not in the schema and hides a runtime bug. What should I change and how should I verify it?",
+    "expected_behavior": "The mock uses generated types and is updated with schema changes. ## Applies To Modes - delta_change - debug_fix - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change",
+    "negative_behavior": "The test mock returns fields not in the schema and hides a runtime bug.",
+    "tags": [
+      "msw",
+      "mocks"
+    ]
+  },
+  {
+    "id": "RULE-006",
+    "rule_filename": "domain-05-retry-only-safe-or-explicitly-idempotent-request.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The client retries POST payment creation after timeout with no idempotency key. What should I change and how should I verify it?",
+    "expected_behavior": "The client retries GETs and idempotent writes with idempotency key and bounded backoff. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The client retries POST payment creation after timeout with no idempotency key.",
+    "tags": [
+      "retry",
+      "idempotency"
+    ]
+  },
+  {
+    "id": "RULE-007",
+    "rule_filename": "tool-call-discipline.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent guesses response fields and creates a client that does not match OpenAPI. What should I change and how should I verify it?",
+    "expected_behavior": "The agent uses generated OpenAPI types or flags missing contract details before implementation. ## Applies To Modes - brownfield_change - review_judge ## Does Not Apply To Modes - greenfield_build - delta_change - debug_fix",
+    "negative_behavior": "The agent guesses response fields and creates a client that does not match OpenAPI.",
+    "tags": [
+      "contract",
+      "api"
+    ]
+  },
+  {
+    "id": "RULE-008",
+    "rule_filename": "trigger-scope.md",
+    "prompt": "Can you review this Terraform change for our S3 bucket and make sure object upload validation is correct? I am not asking about this skill domain.",
+    "expected_behavior": "User asks to integrate REST/GraphQL APIs, generate frontend types from contracts, build API clients, add BFF/API routes, retries, pagination, realtime streams, or frontend API error handling. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "User asks for an unrelated backend deployment review. The agent applies this skill because it sees a generic word like validation.",
+    "tags": [
+      "activation",
+      "scope",
+      "general"
+    ]
+  }
+]

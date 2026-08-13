@@ -1,0 +1,26 @@
+{
+  "name": "frontend-delivery-observability-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through React/Next.js frontend delivery and operations including CI/CD, preview deployments, Vercel/AWS/container deployments, Docker standalone output, feature flags, release/versioning, Sentry/Datadog, RUM, analytics, logging, tracing, and incident runbooks.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "Analytics",
+    "CI CD",
+    "Deployment",
+    "Feature Flags",
+    "Monitoring"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

@@ -1,0 +1,69 @@
+[
+  {
+    "id": "RULE-003",
+    "rule_filename": "domain-02-provide-route-level-loading-error-and-empty-stat.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The page awaits data and crashes to a generic runtime error on failure. What should I change and how should I verify it?",
+    "expected_behavior": "The route has loading.tsx, error boundary, not-found handling, and empty state copy. ## Applies To Modes - debug_fix ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change - review_judge",
+    "negative_behavior": "The page awaits data and crashes to a generic runtime error on failure.",
+    "tags": [
+      "loading",
+      "error",
+      "empty"
+    ]
+  },
+  {
+    "id": "RULE-004",
+    "rule_filename": "domain-03-avoid-hydration-mismatches-from-non-deterministi.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The server renders Date.now and the client re-renders a different value. What should I change and how should I verify it?",
+    "expected_behavior": "The agent moves non-deterministic values to effects or stable server-provided props. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The server renders Date.now and the client re-renders a different value.",
+    "tags": [
+      "hydration"
+    ]
+  },
+  {
+    "id": "RULE-005",
+    "rule_filename": "domain-04-align-metadata-with-dynamic-route-content.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: A product detail page has static metadata copied across all products. What should I change and how should I verify it?",
+    "expected_behavior": "The route validates params and generates title, description, canonical, and not-found behavior. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "A product detail page has static metadata copied across all products.",
+    "tags": [
+      "metadata",
+      "seo"
+    ]
+  },
+  {
+    "id": "RULE-006",
+    "rule_filename": "domain-05-keep-server-client-boundaries-explicit.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: A client component imports a server-only API client and reads process.env.SECRET. What should I change and how should I verify it?",
+    "expected_behavior": "The server component fetches secure data and passes safe props to a small client component. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "A client component imports a server-only API client and reads process.env.SECRET.",
+    "tags": [
+      "server-component",
+      "client-component"
+    ]
+  },
+  {
+    "id": "RULE-007",
+    "rule_filename": "tool-call-discipline.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent makes a personalized account route static because it improves speed. What should I change and how should I verify it?",
+    "expected_behavior": "The agent uses dynamic/server rendering for personalized data and static/ISR for safe public content. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The agent makes a personalized account route static because it improves speed.",
+    "tags": [
+      "nextjs",
+      "rendering"
+    ]
+  },
+  {
+    "id": "RULE-008",
+    "rule_filename": "trigger-scope.md",
+    "prompt": "Can you review this Terraform change for our S3 bucket and make sure object upload validation is correct? I am not asking about this skill domain.",
+    "expected_behavior": "User asks to create or refactor Next.js App Router routes, layouts, loading/error UI, dynamic routes, metadata, SEO, server actions, or rendering strategy. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "User asks for an unrelated backend deployment review. The agent applies this skill because it sees a generic word like validation.",
+    "tags": [
+      "activation",
+      "scope",
+      "general"
+    ]
+  }
+]

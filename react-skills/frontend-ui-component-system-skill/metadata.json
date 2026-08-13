@@ -1,0 +1,27 @@
+{
+  "name": "frontend-ui-component-system-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through React UI/component architecture including reusable component boundaries, design systems, tokens, styling strategy, headless accessible primitives, responsive layouts, Storybook documentation, and motion.",
+  "rule_count": 10,
+  "sections": [
+    "Accessibility",
+    "Activation and Scope",
+    "Component Boundaries",
+    "Design System",
+    "Failure States",
+    "Motion",
+    "Storybook"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "interface_version": "1.0.0",
+  "contract_type": "recipe_step_skill",
+  "runtime_role": "bounded_skill_step",
+  "skill_id": "frontend-api-integration-skill",
+  "skill_name": "frontend-api-integration-skill",
+  "domain": "general",
+  "domain_type": "technical",
+  "ownership_boundary": {
+    "skill_owns": [
+      "bounded technology or process action",
+      "local execution guidance",
+      "local preflight validation",
+      "local references and helper scripts",
+      "explicit assumptions and escalation signals"
+    ],
+    "recipe_owns": [
+      "business outcome",
+      "step ordering",
+      "context pack selection",
+      "control pack selection",
+      "human approval gates",
+      "cross-skill evidence aggregation"
+    ],
+    "external_systems_own": [
+      "context pack lifecycle",
+      "control pack lifecycle",
+      "recipe registry",
+      "policy registry",
+      "audit and evidence store"
+    ]
+  },
+  "trigger_context": "User asks to integrate REST/GraphQL APIs, generate frontend types from contracts, build API clients, add BFF/API routes, retries, pagination, realtime streams, or frontend API error handling.",
+  "workflow_step_count": 3,
+  "workflow_step_titles": [
+    "Locate contract and client boundary",
+    "Implement typed integration",
+    "Verify API behavior"
+  ],
+  "required_inputs": {
+    "recipe_step_id": "Provided by the recipe orchestrator when invoked as part of a recipe.",
+    "problem_statement": "Create frontend-api-integration-skill for REST API integration GraphQL OpenAPI typegen BFF WebSocket SSE typed client frontend React Next.js",
+    "systems_involved": [
+      "rest",
+      "graphql",
+      "openapi",
+      "typegen",
+      "typed client",
+      "api client",
+      "bff",
+      "websocket",
+      "sse",
+      "retry"
+    ],
+    "success_definition": "Agents follow Frontend API Integration Skill with concrete React/Next.js examples, evidence checks, and no invented conventions."
+  },
+  "optional_recipe_inputs": {
+    "context_pack_refs": "External context pack identifiers or file/service references supplied by the recipe.",
+    "control_pack_refs": "External control pack identifiers or file/service references supplied by the recipe.",
+    "adapter_ref": "Project or platform adapter reference supplied by the recipe when technology conventions are external.",
+    "evidence_correlation_id": "Correlation id used by an external evidence/audit service."
+  },
+  "external_context_packs": {
+    "mode": "accepted_from_recipe",
+    "skill_forge_builds": false,
+    "expected_fields": [
+      "id",
+      "version",
+      "domain",
+      "retrieval_ref",
+      "summary",
+      "source"
+    ],
+    "use": "Use supplied context packs for domain vocabulary, examples, business rules, and field semantics."
+  },
+  "external_control_packs": {
+    "mode": "accepted_from_recipe",
+    "skill_forge_builds": false,
+    "expected_fields": [
+      "id",
+      "version",
+      "risk_tier",
+      "mandatory_checks",
+      "evidence_requirements",
+      "escalation_policy"
+    ],
+    "use": "Use supplied control packs for mandatory validation, policy checks, human gates, and evidence requirements."
+  },
+  "control_tags": [
+    "domain:general",
+    "type:technical",
+    "compliance:Use supplied controls only",
+    "compliance:Do not invent organization conventions",
+    "compliance:Maintain accessibility and security boundaries when applicable",
+    "constraint:rest",
+    "constraint:graphql",
+    "constraint:openapi",
+    "constraint:typegen",
+    "constraint:typed client",
+    "constraint:api client",
+    "constraint:bff",
+    "constraint:websocket"
+  ],
+  "subskill_dependencies": [],
+  "evidence_hooks": [
+    {
+      "name": "preflight_validation",
+      "type": "script",
+      "path": "scripts/validate.py"
+    },
+    {
+      "name": "decision_trace",
+      "type": "reference",
+      "path": "references/tools.md",
+      "condition": "Use for policy/evidence/audit-sensitive paths."
+    }
+  ],
+  "escalation_hooks": [
+    "API keys and privileged tokens must stay in server-only route handlers/server actions, not browser bundles.",
+    "Frontend clients should map transport, validation, auth, conflict, and server errors into typed UI-safe errors.",
+    "Retries must be limited to safe reads or writes with explicit idempotency semantics.",
+    "MSW and test fixtures must follow current contract/generated types."
+  ],
+  "output_contract": {
+    "skill_md": "Generated instructions must remain under 500 lines.",
+    "references": "Explicit load conditions required for each reference.",
+    "scripts": "Preflight and integration adapters should be deterministic."
+  }
+}

@@ -1,0 +1,521 @@
+{
+  "manifest_version": "1.0.0",
+  "skill_id": "frontend-forms-validation-skill",
+  "skill_name": "frontend-forms-validation-skill",
+  "description": "Guides agents through React form engineering including React Hook Form, controlled/uncontrolled fields, schema validation with Zod/Yup, field arrays, multi-step wizards, persistence, submit states, accessibility, and API error mapping.",
+  "domain": "general",
+  "domain_type": "technical",
+  "domain_pack": "general",
+  "domain_agnostic": false,
+  "technology_profile_id": "frontend-forms-validation",
+  "activation_scope": [
+    "Building, reviewing, or refactoring React forms, field components, validation schemas, multi-step wizards, submit flows, or form/API error handling."
+  ],
+  "non_activation_scope": [
+    "React Native or mobile-specific code; use the React Native mobile skill instead.",
+    "Backend-only API implementation where no frontend code, contract consumption, or UI behavior is changed.",
+    "Enterprise business rules not supplied by requirements, repository docs, context packs, control packs, design artifacts, or tests."
+  ],
+  "context_budget": {
+    "max_rules_initial": 4,
+    "load_references_conditionally": true,
+    "full_pack_review_only_on_request": true,
+    "prefer_rule_index_before_agents_md": true,
+    "max_reference_files_initial": 2
+  },
+  "mode_selection": {
+    "default_mode": "delta_change",
+    "prefer_lowest_cost_valid_mode": true,
+    "do_not_use_greenfield_for_change_or_debug": true,
+    "mode_order": [
+      "debug_fix",
+      "delta_change",
+      "brownfield_change",
+      "review_judge",
+      "greenfield_build"
+    ],
+    "modes": [
+      {
+        "id": "greenfield_build",
+        "label": "Greenfield Build",
+        "use_when": "Creating a new service, new API journey, major feature, eventing/messaging capability, or full implementation from a requirement, template, or reference implementation.",
+        "max_rules_initial": 8,
+        "load_strategy": "full_design_then_targeted_implementation",
+        "required_inputs": [
+          "business requirement",
+          "target stack",
+          "service or feature boundary"
+        ],
+        "workflow": [
+          "Confirm the service or feature boundary, target stack, template/reference source, and acceptance criteria before implementation.",
+          "Load architecture, contract, model, persistence, security, testing, and readiness rules only when those boundaries are in scope.",
+          "Use broader validation only after the first implementation pass is complete."
+        ],
+        "full_mode_triggers": [
+          "New service creation",
+          "New API journey or major feature",
+          "Database schema or migration change",
+          "Authentication or authorization change",
+          "Cross-cutting error-handling change",
+          "Large refactor across multiple packages",
+          "New eventing or messaging capability",
+          "Build failures caused by deeper architectural issues",
+          "User explicitly requests full generation or full review"
+        ],
+        "initial_rule_tags": [
+          "template",
+          "contract",
+          "model",
+          "security",
+          "persistence",
+          "testing"
+        ],
+        "escalate_when": [
+          "A narrow change reveals missing architecture, contract, security, or persistence decisions."
+        ],
+        "output_format": [
+          "Implementation summary by layer",
+          "Files created or changed",
+          "Verification performed",
+          "Residual risks and follow-up work"
+        ]
+      },
+      {
+        "id": "delta_change",
+        "label": "Delta Mode",
+        "use_when": "Existing codebase incremental changes: small refactors, bug fixes, DTO changes, controller signature changes, validation tweaks, test fixes, or single-endpoint updates.",
+        "max_rules_initial": 2,
+        "load_strategy": "exact_change_impacted_artifacts_only",
+        "required_inputs": [
+          "exact change requested",
+          "target file, endpoint, test, DTO, controller, or suspected component when available"
+        ],
+        "workflow": [
+          "Identify the exact change requested and classify whether it is incremental or full mode.",
+          "Identify only impacted files, packages, APIs, tests, and configuration.",
+          "Inspect the minimum files required to implement or validate the change.",
+          "Reuse existing project patterns instead of regenerating broad structures.",
+          "Preserve the existing API wire contract unless the request explicitly requires a contract change.",
+          "Avoid reprocessing unrelated persistence, security, OpenAPI, tests, or build configuration unless directly impacted.",
+          "Avoid invoking unrelated skills and avoid rewriting code not required for the change."
+        ],
+        "initial_rule_tags": [
+          "delta",
+          "impacted-files",
+          "compatibility",
+          "validation",
+          "tests"
+        ],
+        "escalate_when": [
+          "The change affects multiple layers.",
+          "The change introduces new APIs.",
+          "The change modifies persistence, migrations, authentication, authorization, cross-cutting errors, eventing, or messaging.",
+          "Targeted build/test failures cannot be resolved locally.",
+          "The user explicitly requests full generation or full review."
+        ],
+        "output_format": [
+          "Change type",
+          "Impacted files",
+          "Actions performed",
+          "Skipped areas with reason",
+          "Verification performed",
+          "Residual risks, if any"
+        ]
+      },
+      {
+        "id": "brownfield_change",
+        "label": "Brownfield Full Change",
+        "use_when": "Existing codebase changes that are broader than delta mode, such as multi-layer feature changes, major enhancements, or coordinated refactors.",
+        "max_rules_initial": 3,
+        "load_strategy": "impacted_layers_then_targeted_rules",
+        "required_inputs": [
+          "target files or feature area",
+          "expected behavior",
+          "existing behavior"
+        ],
+        "workflow": [
+          "First determine whether the request can remain in delta mode; do not use this mode for small local changes.",
+          "Inspect existing files, tests, contracts, and project conventions for only the impacted layers.",
+          "Load only rules matching touched files, changed API boundaries, changed data models, or changed controls.",
+          "Do not redesign unrelated endpoints, persistence, security, deployment, or package structure without evidence of impact."
+        ],
+        "initial_rule_tags": [
+          "compatibility",
+          "contract",
+          "validation",
+          "tests"
+        ],
+        "escalate_when": [
+          "The change crosses API, auth, persistence, operational, or compatibility boundaries."
+        ],
+        "output_format": [
+          "Change type",
+          "Impacted layers and files",
+          "Actions performed",
+          "Verification performed",
+          "Skipped areas with reason",
+          "Residual risks"
+        ]
+      },
+      {
+        "id": "debug_fix",
+        "label": "Debug Investigation And Fix",
+        "use_when": "Defect, incident, production issue, startup failure, runtime exception, incorrect business behavior, integration failure, build failure, or test failure.",
+        "max_rules_initial": 2,
+        "load_strategy": "symptom_logs_tests_first_then_targeted_rules",
+        "required_inputs": [
+          "error, failing test, logs, or observed defect",
+          "suspected area or command"
+        ],
+        "issue_classifications": [
+          "Startup Failure",
+          "Runtime Exception",
+          "Functional Defect",
+          "Integration Failure",
+          "Persistence Failure",
+          "Security Failure",
+          "Build Failure",
+          "Test Failure"
+        ],
+        "workflow": [
+          "Start from the symptom, not the architecture.",
+          "Classify the issue type.",
+          "Identify the smallest set of files, components, services, configurations, or tests related to the symptom.",
+          "Collect evidence from stack traces, logs, failing tests, impacted API, and impacted service.",
+          "Inspect only impacted artifacts; do not review unrelated controllers, services, entities, repositories, APIs, security rules, migrations, or configuration.",
+          "Propose likely root causes, implement the minimal fix only if required, and run targeted verification.",
+          "Run broader verification only if targeted verification fails."
+        ],
+        "initial_rule_tags": [
+          "testing",
+          "error-handling",
+          "validation",
+          "security",
+          "persistence"
+        ],
+        "escalate_when": [
+          "Evidence proves the failure crosses components or cannot be fixed locally."
+        ],
+        "output_format": [
+          "Issue classification",
+          "Suspected root cause",
+          "Files inspected",
+          "Fix applied",
+          "Verification performed",
+          "Residual risk"
+        ]
+      },
+      {
+        "id": "review_judge",
+        "label": "Review/Judge",
+        "use_when": "Reviewing generated or modified code against acceptance criteria, tests, controls, and readiness evidence.",
+        "max_rules_initial": 4,
+        "load_strategy": "acceptance_criteria_and_diff_first",
+        "required_inputs": [
+          "acceptance criteria",
+          "diff or generated code",
+          "available validation evidence"
+        ],
+        "workflow": [
+          "Review acceptance criteria, changed files, and validation evidence before loading implementation-only rules.",
+          "Load judge, build, security, contract, persistence, and observability rules only for changed or claimed boundaries.",
+          "Return findings with evidence, missing checks, unsupported assumptions, hallucinated artifacts, and residual risks."
+        ],
+        "initial_rule_tags": [
+          "testing",
+          "security",
+          "contract",
+          "observability",
+          "readiness"
+        ],
+        "escalate_when": [
+          "A ready/production claim lacks build, test, security, contract, persistence, or operational evidence."
+        ]
+      }
+    ]
+  },
+  "rule_index": [
+    {
+      "rule_id": "trigger-scope",
+      "file": "rules/trigger-scope.md",
+      "title": "Activate Only On The Declared Operational Trigger",
+      "section": "Activation and Scope",
+      "tags": [
+        "activation",
+        "scope",
+        "general"
+      ],
+      "load_when": [
+        "The user intent matches the generated skill description.",
+        "At least one declared system, role, process stage, or domain keyword is present."
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "delta_change",
+        "review_judge"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "brownfield_change",
+        "debug_fix"
+      ],
+      "evidence_validation": [
+        "Record the matched trigger phrase or recipe step id.",
+        "If the match is weak, return an elicitation question instead of executing."
+      ],
+      "references": [
+        "SKILL.md",
+        "references/recipe-interface.json"
+      ],
+      "cost_hint": "load_only_when_matched",
+      "risk": "medium"
+    },
+    {
+      "rule_id": "domain-02-use-react-hook-form-register-or-controller-appro",
+      "file": "rules/domain-02-use-react-hook-form-register-or-controller-appro.md",
+      "title": "Use React Hook Form Register Or Controller Appropriately",
+      "section": "Form State",
+      "tags": [
+        "react-hook-form"
+      ],
+      "load_when": [
+        "Building React Hook Form forms"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "brownfield_change",
+        "debug_fix"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "delta_change",
+        "review_judge"
+      ],
+      "evidence_validation": [
+        "Field control pattern fits component type.",
+        "If the form is complex, inputs are wired through the approved form library (`register`, `Controller`, or equivalent) and the library rule `trigger-scope.md` is satisfied."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md",
+        "rules/trigger-scope.md"
+      ],
+      "cost_hint": "load_when_matched",
+      "risk": "high"
+    },
+    {
+      "rule_id": "domain-03-map-backend-validation-errors-to-field-and-form",
+      "file": "rules/domain-03-map-backend-validation-errors-to-field-and-form-.md",
+      "title": "Map Backend Validation Errors To Field And Form Errors",
+      "section": "API Errors",
+      "tags": [
+        "backend-errors"
+      ],
+      "load_when": [
+        "Submitting forms to APIs"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "debug_fix"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "delta_change",
+        "brownfield_change",
+        "review_judge"
+      ],
+      "evidence_validation": [
+        "Error model mapped.",
+        "User can correct failures."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_when_matched",
+      "risk": "high"
+    },
+    {
+      "rule_id": "domain-04-persist-wizard-state-safely-and-intentionally",
+      "file": "rules/domain-04-persist-wizard-state-safely-and-intentionally.md",
+      "title": "Persist Wizard State Safely And Intentionally",
+      "section": "Wizard",
+      "tags": [
+        "wizard",
+        "persistence"
+      ],
+      "load_when": [
+        "Building multi-step forms"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "debug_fix"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "delta_change",
+        "brownfield_change",
+        "review_judge"
+      ],
+      "evidence_validation": [
+        "Persistence scope and sensitivity assessed."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_when_matched",
+      "risk": "high"
+    },
+    {
+      "rule_id": "domain-05-handle-submit-pending-disabled-and-double-submit",
+      "file": "rules/domain-05-handle-submit-pending-disabled-and-double-submit.md",
+      "title": "Handle Submit Pending Disabled And Double Submit",
+      "section": "Submit Flow",
+      "tags": [
+        "submit",
+        "pending"
+      ],
+      "load_when": [
+        "Adding submit behavior"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "delta_change",
+        "review_judge"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "brownfield_change",
+        "debug_fix"
+      ],
+      "evidence_validation": [
+        "Pending state present.",
+        "Duplicate submit protected."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_when_matched",
+      "risk": "high"
+    },
+    {
+      "rule_id": "tool-call-discipline",
+      "file": "rules/tool-call-discipline.md",
+      "title": "Base Form Fields On Contract And User Editable Data Only",
+      "section": "Validation",
+      "tags": [
+        "form",
+        "contract"
+      ],
+      "load_when": [
+        "Creating request forms"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "debug_fix",
+        "review_judge"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "delta_change",
+        "brownfield_change"
+      ],
+      "evidence_validation": [
+        "Server-controlled fields excluded.",
+        "Request schema matches contract."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_only_when_matched",
+      "risk": "medium"
+    }
+  ],
+  "reference_index": [
+    {
+      "file": "references/recipe-interface.json",
+      "load_when": "A recipe orchestrator needs machine-readable skill invocation fields."
+    },
+    {
+      "file": "references/recipe-usage.md",
+      "load_when": "The skill is invoked as a recipe step with external context or control packs."
+    },
+    {
+      "file": "references/tools.md",
+      "load_when": "Read references/tools.md before changing commands, dependencies, config, routing, generated clients, form libraries, or build setup."
+    },
+    {
+      "file": "references/compliance.md",
+      "load_when": "Read references/compliance.md before approving accessibility, privacy, security, environment, API-contract, or enterprise conventions."
+    },
+    {
+      "file": "references/edge-cases.md",
+      "load_when": "Read references/edge-cases.md when repo conventions, runtime boundaries, hydration behavior, cache behavior, or validation semantics are uncertain."
+    }
+  ],
+  "template_sources": [],
+  "companion_skills": [
+    {
+      "skill_id": "frontend-api-integration-skill",
+      "required_when": "Form submit calls APIs, maps backend validation errors, uses generated request types, or depends on idempotency."
+    },
+    {
+      "skill_id": "frontend-ui-component-system-skill",
+      "required_when": "Form work changes shared field components, accessibility, design-system inputs, or visual states."
+    },
+    {
+      "skill_id": "frontend-state-management-skill",
+      "required_when": "Form state is persisted, shared across steps, encoded in URL, or coordinated with server cache."
+    }
+  ],
+  "stop_conditions": [
+    "Field semantics, submit contract, validation source, accessibility requirements, or backend error shape is missing.",
+    "The agent would need to invent request fields, validation constraints, or workflow steps without requirements or contract evidence.",
+    "The request is outside activation_scope or matches non_activation_scope.",
+    "Required context pack, control pack, API contract, repository files, or validation commands are missing.",
+    "Business rules, auth policy, or regulated-data handling are unclear and cannot be verified from supplied sources.",
+    "The agent would need to invent APIs, files, schemas, tools, or enterprise policy to proceed.",
+    "Failure mode requires escalation: Use register for native/uncontrolled inputs and Controller for controlled third-party components.",
+    "Failure mode requires escalation: Backend validation and conflict errors should become clear field-level or form-level feedback.",
+    "Failure mode requires escalation: Forms should prevent duplicate submits and expose pending, success, and retry states.",
+    "Failure mode requires escalation: Multi-step wizard state persistence must be explicit, restorable, and safe for sensitive fields."
+  ],
+  "evidence_contract": {
+    "required_summary_fields": [
+      "assumptions",
+      "files_inspected",
+      "rules_loaded",
+      "references_loaded",
+      "commands_run",
+      "checks_skipped",
+      "residual_risks"
+    ],
+    "claim_policy": "Do not claim implementation, validation, API behavior, control compliance, or test success without file, diff, tool, test, or explicit human-approved assumption evidence."
+  }
+}

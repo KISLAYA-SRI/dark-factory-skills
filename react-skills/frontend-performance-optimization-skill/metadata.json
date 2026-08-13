@@ -1,0 +1,26 @@
+{
+  "name": "frontend-performance-optimization-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through React/Next.js frontend performance optimization including Core Web Vitals, rendering strategy, bundle analysis, code splitting, image/font optimization, caching/revalidation, performance budgets, and virtualization for large data UIs.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "Assets",
+    "Bundles",
+    "Caching",
+    "Measurement",
+    "Virtualization"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

@@ -1,0 +1,69 @@
+[
+  {
+    "id": "RULE-003",
+    "rule_filename": "domain-02-keep-deployment-secrets-environment-scoped.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent commits production API tokens into .env.production. What should I change and how should I verify it?",
+    "expected_behavior": "The agent references secret names in deployment config and documents required environment-scoped variables. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The agent commits production API tokens into .env.production.",
+    "tags": [
+      "secrets",
+      "environment"
+    ]
+  },
+  {
+    "id": "RULE-004",
+    "rule_filename": "domain-03-upload-source-maps-safely.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent enables browser-accessible production source maps to debug errors. What should I change and how should I verify it?",
+    "expected_behavior": "The build uploads hidden source maps to Sentry/Datadog and prevents public source map serving. ## Applies To Modes - debug_fix ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change - review_judge",
+    "negative_behavior": "The agent enables browser-accessible production source maps to debug errors.",
+    "tags": [
+      "source-maps",
+      "sentry"
+    ]
+  },
+  {
+    "id": "RULE-005",
+    "rule_filename": "domain-04-feature-flags-need-defaults-rollback-and-cleanup.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent wraps checkout in a flag but leaves default behavior undefined and no cleanup plan. What should I change and how should I verify it?",
+    "expected_behavior": "The flag has a safe default, rollout targeting, metrics, rollback path, and removal ticket/owner. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The agent wraps checkout in a flag but leaves default behavior undefined and no cleanup plan.",
+    "tags": [
+      "feature-flags",
+      "rollback"
+    ]
+  },
+  {
+    "id": "RULE-006",
+    "rule_filename": "domain-05-instrument-analytics-with-consent-and-stable-eve.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent sends raw email and account id to analytics before consent. What should I change and how should I verify it?",
+    "expected_behavior": "The agent emits consent-gated events with stable names and non-sensitive properties. ## Applies To Modes - review_judge ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change - debug_fix",
+    "negative_behavior": "The agent sends raw email and account id to analytics before consent.",
+    "tags": [
+      "analytics",
+      "privacy"
+    ]
+  },
+  {
+    "id": "RULE-007",
+    "rule_filename": "tool-call-discipline.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent updates a Vercel config and says it is production-ready without running build or checking CI. What should I change and how should I verify it?",
+    "expected_behavior": "The agent runs local build/tests, lists CI deployment gates, and reports merge_candidate_pending_ci until CI/deployment evidence exists. ## Applies To Modes - debug_fix - review_judge ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change",
+    "negative_behavior": "The agent updates a Vercel config and says it is production-ready without running build or checking CI.",
+    "tags": [
+      "readiness",
+      "ci-cd"
+    ]
+  },
+  {
+    "id": "RULE-008",
+    "rule_filename": "trigger-scope.md",
+    "prompt": "Can you review this Terraform change for our S3 bucket and make sure object upload validation is correct? I am not asking about this skill domain.",
+    "expected_behavior": "User asks to add frontend CI/CD, preview deploys, Docker/container deployment, Vercel/AWS deployment, feature flags, release/versioning, observability, RUM, analytics, logging/tracing, or incident runbooks. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "User asks for an unrelated backend deployment review. The agent applies this skill because it sees a generic word like validation.",
+    "tags": [
+      "activation",
+      "scope",
+      "general"
+    ]
+  }
+]

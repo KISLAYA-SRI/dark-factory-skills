@@ -1,0 +1,26 @@
+{
+  "name": "frontend-state-management-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through React state architecture including local/client state, Zustand/Redux Toolkit/Jotai, React Context, server-state caching with TanStack Query/SWR, URL state, selectors, persistence, optimistic updates, and invalidation.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "Client State",
+    "Optimistic Updates",
+    "Server State",
+    "State Ownership",
+    "URL State"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

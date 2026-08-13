@@ -1,0 +1,25 @@
+{
+  "name": "nextjs-app-router-rendering-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through Next.js App Router architecture including layouts, route groups, loading/error boundaries, server/client component boundaries, metadata, dynamic routes, SEO, caching, streaming, and rendering mode choices.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "Hydration",
+    "Layouts",
+    "Rendering",
+    "SEO"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

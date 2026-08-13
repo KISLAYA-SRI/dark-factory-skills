@@ -1,0 +1,70 @@
+[
+  {
+    "id": "RULE-003",
+    "rule_filename": "domain-02-use-least-privilege-csp-sources.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent sets script-src * unsafe-inline to make a widget work. What should I change and how should I verify it?",
+    "expected_behavior": "The agent identifies required widget domains, uses nonces/hashes where available, and documents any unavoidable exception. ## Applies To Modes - review_judge ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change - debug_fix",
+    "negative_behavior": "The agent sets script-src * unsafe-inline to make a widget work.",
+    "tags": [
+      "csp",
+      "headers"
+    ]
+  },
+  {
+    "id": "RULE-004",
+    "rule_filename": "domain-03-sanitize-or-avoid-untrusted-html-rendering.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The app renders CMS HTML through dangerouslySetInnerHTML without sanitization. What should I change and how should I verify it?",
+    "expected_behavior": "The app sanitizes CMS HTML with an approved policy or renders structured content instead. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The app renders CMS HTML through dangerouslySetInnerHTML without sanitization.",
+    "tags": [
+      "xss",
+      "sanitization"
+    ]
+  },
+  {
+    "id": "RULE-005",
+    "rule_filename": "domain-04-gate-analytics-and-cookies-by-consent-requiremen.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The app loads analytics and session replay before cookie consent is captured. What should I change and how should I verify it?",
+    "expected_behavior": "The app delays optional trackers until consent and records consent state according to policy. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The app loads analytics and session replay before cookie consent is captured.",
+    "tags": [
+      "privacy",
+      "consent"
+    ]
+  },
+  {
+    "id": "RULE-006",
+    "rule_filename": "domain-05-treat-dependency-and-secret-scan-findings-as-rel.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent upgrades dependencies and claims secure without checking audit/SCA or secrets scan. What should I change and how should I verify it?",
+    "expected_behavior": "The agent runs configured audit/SCA/secrets checks or reports unavailable CI gates as pending. ## Applies To Modes - review_judge ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change - debug_fix",
+    "negative_behavior": "The agent upgrades dependencies and claims secure without checking audit/SCA or secrets scan.",
+    "tags": [
+      "sca",
+      "secrets",
+      "dependency"
+    ]
+  },
+  {
+    "id": "RULE-007",
+    "rule_filename": "tool-call-discipline.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent adds NEXT_PUBLIC_BACKEND_ADMIN_TOKEN so the browser can call an admin API directly. What should I change and how should I verify it?",
+    "expected_behavior": "The server route reads the admin token server-side and the browser receives only safe response data. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The agent adds NEXT_PUBLIC_BACKEND_ADMIN_TOKEN so the browser can call an admin API directly.",
+    "tags": [
+      "secrets",
+      "next-public"
+    ]
+  },
+  {
+    "id": "RULE-008",
+    "rule_filename": "trigger-scope.md",
+    "prompt": "Can you review this Terraform change for our S3 bucket and make sure object upload validation is correct? I am not asking about this skill domain.",
+    "expected_behavior": "User asks to harden frontend security, add CSP/XSS/CSRF controls, secure headers, sanitize HTML, protect secrets, audit dependencies, add cookie consent, or implement frontend privacy/GDPR behavior. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "User asks for an unrelated backend deployment review. The agent applies this skill because it sees a generic word like validation.",
+    "tags": [
+      "activation",
+      "scope",
+      "general"
+    ]
+  }
+]

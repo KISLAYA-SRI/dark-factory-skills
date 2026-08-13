@@ -1,0 +1,25 @@
+{
+  "name": "frontend-api-integration-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through frontend API integration including typed REST clients, GraphQL clients/codegen, OpenAPI type generation, BFF/API route layers, retries, pagination, error normalization, realtime WebSocket/SSE streams, and contract alignment.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "BFF",
+    "Contract Alignment",
+    "Errors",
+    "Retries"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

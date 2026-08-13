@@ -1,0 +1,69 @@
+[
+  {
+    "id": "RULE-003",
+    "rule_filename": "domain-02-avoid-brittle-visual-and-snapshot-tests.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent snapshots an animated page with live timestamps and random data. What should I change and how should I verify it?",
+    "expected_behavior": "The agent freezes data/time, captures stable component states, and documents acceptable diffs. ## Applies To Modes - debug_fix ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change - review_judge",
+    "negative_behavior": "The agent snapshots an animated page with live timestamps and random data.",
+    "tags": [
+      "visual",
+      "snapshot"
+    ]
+  },
+  {
+    "id": "RULE-004",
+    "rule_filename": "domain-03-use-msw-or-existing-network-mock-strategy-for-ap.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The component test mocks internal fetch hooks and misses request/response behavior. What should I change and how should I verify it?",
+    "expected_behavior": "The test uses MSW handlers matching the API contract and verifies loading, success, and error UI. ## Applies To Modes - brownfield_change - debug_fix ## Does Not Apply To Modes - greenfield_build - delta_change - review_judge",
+    "negative_behavior": "The component test mocks internal fetch hooks and misses request/response behavior.",
+    "tags": [
+      "msw",
+      "api"
+    ]
+  },
+  {
+    "id": "RULE-005",
+    "rule_filename": "domain-04-await-async-ui-with-user-visible-conditions.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The test clicks submit and immediately asserts that a mock function was called. What should I change and how should I verify it?",
+    "expected_behavior": "The test awaits the success message or validation error that a user sees. ## Applies To Modes - debug_fix ## Does Not Apply To Modes - greenfield_build - delta_change - brownfield_change - review_judge",
+    "negative_behavior": "The test clicks submit and immediately asserts that a mock function was called.",
+    "tags": [
+      "async",
+      "testing-library"
+    ]
+  },
+  {
+    "id": "RULE-006",
+    "rule_filename": "domain-05-cover-critical-journeys-with-e2e-tests.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: A login-protected checkout flow has only isolated button unit tests. What should I change and how should I verify it?",
+    "expected_behavior": "A Playwright/Cypress test covers login/guard, form completion, API mock, confirmation, and failure path. ## Applies To Modes - brownfield_change - debug_fix ## Does Not Apply To Modes - greenfield_build - delta_change - review_judge",
+    "negative_behavior": "A login-protected checkout flow has only isolated button unit tests.",
+    "tags": [
+      "playwright",
+      "cypress"
+    ]
+  },
+  {
+    "id": "RULE-007",
+    "rule_filename": "tool-call-discipline.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent changes checkout validation and only updates a shallow snapshot. What should I change and how should I verify it?",
+    "expected_behavior": "The agent tests the validation message, disabled submit state, API error handling, and successful submit outcome. ## Applies To Modes - brownfield_change - debug_fix - review_judge ## Does Not Apply To Modes - greenfield_build - delta_change",
+    "negative_behavior": "The agent changes checkout validation and only updates a shallow snapshot.",
+    "tags": [
+      "tests",
+      "evidence"
+    ]
+  },
+  {
+    "id": "RULE-008",
+    "rule_filename": "trigger-scope.md",
+    "prompt": "Can you review this Terraform change for our S3 bucket and make sure object upload validation is correct? I am not asking about this skill domain.",
+    "expected_behavior": "User asks to add or improve React/Next.js tests, Vitest/Jest, React Testing Library, MSW, Playwright/Cypress, visual regression, Storybook tests, coverage, or frontend quality gates. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "User asks for an unrelated backend deployment review. The agent applies this skill because it sees a generic word like validation.",
+    "tags": [
+      "activation",
+      "scope",
+      "general"
+    ]
+  }
+]

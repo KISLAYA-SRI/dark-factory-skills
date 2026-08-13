@@ -1,0 +1,70 @@
+[
+  {
+    "id": "RULE-003",
+    "rule_filename": "domain-02-do-not-publicly-cache-personalized-data.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent marks an account dashboard as force-static and caches user balances publicly. What should I change and how should I verify it?",
+    "expected_behavior": "The route uses dynamic/server rendering or private cache controls for personalized data and static/ISR only for safe public content. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The agent marks an account dashboard as force-static and caches user balances publicly.",
+    "tags": [
+      "cache",
+      "privacy"
+    ]
+  },
+  {
+    "id": "RULE-004",
+    "rule_filename": "domain-03-optimize-lcp-assets-without-breaking-priority-co.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent lazy-loads the hero image and adds multiple blocking web fonts. What should I change and how should I verify it?",
+    "expected_behavior": "The hero image uses proper sizing/priority and fonts are subset/preloaded or swapped according to project policy. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The agent lazy-loads the hero image and adds multiple blocking web fonts.",
+    "tags": [
+      "lcp",
+      "image",
+      "font"
+    ]
+  },
+  {
+    "id": "RULE-005",
+    "rule_filename": "domain-04-reduce-client-javascript-before-adding-more-memo.md",
+    "prompt": "I'm preparing an implementation change for review and want to fix a concrete issue before opening the PR. Current approach: The agent wraps everything in memo/useMemo but leaves a heavy chart library in the initial route bundle. What should I change and how should I verify it?",
+    "expected_behavior": "The agent moves static work server-side, dynamically imports the chart, and keeps memoization targeted. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The agent wraps everything in memo/useMemo but leaves a heavy chart library in the initial route bundle.",
+    "tags": [
+      "bundle",
+      "client-components"
+    ]
+  },
+  {
+    "id": "RULE-006",
+    "rule_filename": "domain-05-virtualize-large-lists-without-breaking-accessib.md",
+    "prompt": "I added an icon-only action and need it to work for keyboard and screen-reader users. Current implementation: The agent virtualizes a table but removes table semantics and keyboard access. What should I change?",
+    "expected_behavior": "The virtualized grid preserves roles/labels/focus and documents accessibility tradeoffs. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "The agent virtualizes a table but removes table semantics and keyboard access.",
+    "tags": [
+      "virtualization",
+      "accessibility"
+    ]
+  },
+  {
+    "id": "RULE-007",
+    "rule_filename": "tool-call-discipline.md",
+    "prompt": "I'm building a login form and the submit button should stay disabled until both fields are valid. Current approach: The agent removes a dependency and says performance improved without measuring bundle size, Web Vitals, or route timing. How should I structure the form state?",
+    "expected_behavior": "The agent records baseline bundle/Lighthouse/Web Vitals evidence, applies a scoped change, and reports after-change evidence or a blocker. ## Applies To Modes - brownfield_change - review_judge ## Does Not Apply To Modes - greenfield_build - delta_change - debug_fix",
+    "negative_behavior": "The agent removes a dependency and says performance improved without measuring bundle size, Web Vitals, or route timing.",
+    "tags": [
+      "performance",
+      "evidence"
+    ]
+  },
+  {
+    "id": "RULE-008",
+    "rule_filename": "trigger-scope.md",
+    "prompt": "Can you review this Terraform change for our S3 bucket and make sure object upload validation is correct? I am not asking about this skill domain.",
+    "expected_behavior": "User asks to improve Core Web Vitals, LCP/CLS/INP, route speed, bundle size, rendering strategy, caching, image/font assets, virtualization, or frontend performance budgets. ## Applies To Modes - delta_change - review_judge ## Does Not Apply To Modes - greenfield_build - brownfield_change - debug_fix",
+    "negative_behavior": "User asks for an unrelated backend deployment review. The agent applies this skill because it sees a generic word like validation.",
+    "tags": [
+      "activation",
+      "scope",
+      "general"
+    ]
+  }
+]

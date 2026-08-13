@@ -1,0 +1,26 @@
+{
+  "name": "frontend-project-foundation-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through enterprise React/Next.js project foundation work including Next.js scaffolding, monorepo setup, strict TypeScript, ESLint/Prettier conventions, path aliases, environment config, and baseline validation.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "Brownfield Safety",
+    "Environment",
+    "Monorepo",
+    "TypeScript",
+    "Validation"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

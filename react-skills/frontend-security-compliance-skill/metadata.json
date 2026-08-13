@@ -1,0 +1,26 @@
+{
+  "name": "frontend-security-compliance-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through browser/frontend security and compliance including CSP, XSS/CSRF controls, secure headers, sanitization, secrets boundaries, dependency/SCA/SBOM checks, cookie consent, privacy/GDPR controls, and safe audit logging.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "CSP",
+    "Privacy",
+    "Secrets",
+    "Supply Chain",
+    "XSS"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

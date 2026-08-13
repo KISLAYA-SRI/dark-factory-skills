@@ -1,0 +1,26 @@
+{
+  "name": "frontend-accessibility-i18n-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through accessible and internationalized React/Next.js UI including WCAG semantics, ARIA, keyboard navigation, focus management, automated a11y audits, locale routing, translations, formatting, pluralization, and RTL support.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "Formatting",
+    "Keyboard",
+    "RTL",
+    "Semantics",
+    "Translations"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

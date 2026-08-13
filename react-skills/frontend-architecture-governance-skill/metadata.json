@@ -1,0 +1,26 @@
+{
+  "name": "frontend-architecture-governance-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through large-scale React/Next.js frontend architecture and governance including feature-sliced/layered architecture, module boundaries, domain modeling, micro-frontends/module federation, scalability patterns, ADRs, CODEOWNERS, review standards, documentation, and migration/refactoring plans.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "Architecture",
+    "Domain Modeling",
+    "Micro Frontends",
+    "Migration",
+    "Module Boundaries"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

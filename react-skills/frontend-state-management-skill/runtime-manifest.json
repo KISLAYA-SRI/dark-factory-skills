@@ -1,0 +1,516 @@
+{
+  "manifest_version": "1.0.0",
+  "skill_id": "frontend-state-management-skill",
+  "skill_name": "frontend-state-management-skill",
+  "description": "Guides agents through React state architecture including local/client state, Zustand/Redux Toolkit/Jotai, React Context, server-state caching with TanStack Query/SWR, URL state, selectors, persistence, optimistic updates, and invalidation.",
+  "domain": "general",
+  "domain_type": "technical",
+  "domain_pack": "general",
+  "domain_agnostic": false,
+  "technology_profile_id": "frontend-state-management",
+  "activation_scope": [
+    "Designing or changing React state ownership, global UI state, server cache, URL/search-param state, optimistic updates, invalidation, or context providers."
+  ],
+  "non_activation_scope": [
+    "React Native or mobile-specific code; use the React Native mobile skill instead.",
+    "Backend-only API implementation where no frontend code, contract consumption, or UI behavior is changed.",
+    "Enterprise business rules not supplied by requirements, repository docs, context packs, control packs, design artifacts, or tests."
+  ],
+  "context_budget": {
+    "max_rules_initial": 4,
+    "load_references_conditionally": true,
+    "full_pack_review_only_on_request": true,
+    "prefer_rule_index_before_agents_md": true,
+    "max_reference_files_initial": 2
+  },
+  "mode_selection": {
+    "default_mode": "delta_change",
+    "prefer_lowest_cost_valid_mode": true,
+    "do_not_use_greenfield_for_change_or_debug": true,
+    "mode_order": [
+      "debug_fix",
+      "delta_change",
+      "brownfield_change",
+      "review_judge",
+      "greenfield_build"
+    ],
+    "modes": [
+      {
+        "id": "greenfield_build",
+        "label": "Greenfield Build",
+        "use_when": "Creating a new service, new API journey, major feature, eventing/messaging capability, or full implementation from a requirement, template, or reference implementation.",
+        "max_rules_initial": 8,
+        "load_strategy": "full_design_then_targeted_implementation",
+        "required_inputs": [
+          "business requirement",
+          "target stack",
+          "service or feature boundary"
+        ],
+        "workflow": [
+          "Confirm the service or feature boundary, target stack, template/reference source, and acceptance criteria before implementation.",
+          "Load architecture, contract, model, persistence, security, testing, and readiness rules only when those boundaries are in scope.",
+          "Use broader validation only after the first implementation pass is complete."
+        ],
+        "full_mode_triggers": [
+          "New service creation",
+          "New API journey or major feature",
+          "Database schema or migration change",
+          "Authentication or authorization change",
+          "Cross-cutting error-handling change",
+          "Large refactor across multiple packages",
+          "New eventing or messaging capability",
+          "Build failures caused by deeper architectural issues",
+          "User explicitly requests full generation or full review"
+        ],
+        "initial_rule_tags": [
+          "template",
+          "contract",
+          "model",
+          "security",
+          "persistence",
+          "testing"
+        ],
+        "escalate_when": [
+          "A narrow change reveals missing architecture, contract, security, or persistence decisions."
+        ],
+        "output_format": [
+          "Implementation summary by layer",
+          "Files created or changed",
+          "Verification performed",
+          "Residual risks and follow-up work"
+        ]
+      },
+      {
+        "id": "delta_change",
+        "label": "Delta Mode",
+        "use_when": "Existing codebase incremental changes: small refactors, bug fixes, DTO changes, controller signature changes, validation tweaks, test fixes, or single-endpoint updates.",
+        "max_rules_initial": 2,
+        "load_strategy": "exact_change_impacted_artifacts_only",
+        "required_inputs": [
+          "exact change requested",
+          "target file, endpoint, test, DTO, controller, or suspected component when available"
+        ],
+        "workflow": [
+          "Identify the exact change requested and classify whether it is incremental or full mode.",
+          "Identify only impacted files, packages, APIs, tests, and configuration.",
+          "Inspect the minimum files required to implement or validate the change.",
+          "Reuse existing project patterns instead of regenerating broad structures.",
+          "Preserve the existing API wire contract unless the request explicitly requires a contract change.",
+          "Avoid reprocessing unrelated persistence, security, OpenAPI, tests, or build configuration unless directly impacted.",
+          "Avoid invoking unrelated skills and avoid rewriting code not required for the change."
+        ],
+        "initial_rule_tags": [
+          "delta",
+          "impacted-files",
+          "compatibility",
+          "validation",
+          "tests"
+        ],
+        "escalate_when": [
+          "The change affects multiple layers.",
+          "The change introduces new APIs.",
+          "The change modifies persistence, migrations, authentication, authorization, cross-cutting errors, eventing, or messaging.",
+          "Targeted build/test failures cannot be resolved locally.",
+          "The user explicitly requests full generation or full review."
+        ],
+        "output_format": [
+          "Change type",
+          "Impacted files",
+          "Actions performed",
+          "Skipped areas with reason",
+          "Verification performed",
+          "Residual risks, if any"
+        ]
+      },
+      {
+        "id": "brownfield_change",
+        "label": "Brownfield Full Change",
+        "use_when": "Existing codebase changes that are broader than delta mode, such as multi-layer feature changes, major enhancements, or coordinated refactors.",
+        "max_rules_initial": 3,
+        "load_strategy": "impacted_layers_then_targeted_rules",
+        "required_inputs": [
+          "target files or feature area",
+          "expected behavior",
+          "existing behavior"
+        ],
+        "workflow": [
+          "First determine whether the request can remain in delta mode; do not use this mode for small local changes.",
+          "Inspect existing files, tests, contracts, and project conventions for only the impacted layers.",
+          "Load only rules matching touched files, changed API boundaries, changed data models, or changed controls.",
+          "Do not redesign unrelated endpoints, persistence, security, deployment, or package structure without evidence of impact."
+        ],
+        "initial_rule_tags": [
+          "compatibility",
+          "contract",
+          "validation",
+          "tests"
+        ],
+        "escalate_when": [
+          "The change crosses API, auth, persistence, operational, or compatibility boundaries."
+        ],
+        "output_format": [
+          "Change type",
+          "Impacted layers and files",
+          "Actions performed",
+          "Verification performed",
+          "Skipped areas with reason",
+          "Residual risks"
+        ]
+      },
+      {
+        "id": "debug_fix",
+        "label": "Debug Investigation And Fix",
+        "use_when": "Defect, incident, production issue, startup failure, runtime exception, incorrect business behavior, integration failure, build failure, or test failure.",
+        "max_rules_initial": 2,
+        "load_strategy": "symptom_logs_tests_first_then_targeted_rules",
+        "required_inputs": [
+          "error, failing test, logs, or observed defect",
+          "suspected area or command"
+        ],
+        "issue_classifications": [
+          "Startup Failure",
+          "Runtime Exception",
+          "Functional Defect",
+          "Integration Failure",
+          "Persistence Failure",
+          "Security Failure",
+          "Build Failure",
+          "Test Failure"
+        ],
+        "workflow": [
+          "Start from the symptom, not the architecture.",
+          "Classify the issue type.",
+          "Identify the smallest set of files, components, services, configurations, or tests related to the symptom.",
+          "Collect evidence from stack traces, logs, failing tests, impacted API, and impacted service.",
+          "Inspect only impacted artifacts; do not review unrelated controllers, services, entities, repositories, APIs, security rules, migrations, or configuration.",
+          "Propose likely root causes, implement the minimal fix only if required, and run targeted verification.",
+          "Run broader verification only if targeted verification fails."
+        ],
+        "initial_rule_tags": [
+          "testing",
+          "error-handling",
+          "validation",
+          "security",
+          "persistence"
+        ],
+        "escalate_when": [
+          "Evidence proves the failure crosses components or cannot be fixed locally."
+        ],
+        "output_format": [
+          "Issue classification",
+          "Suspected root cause",
+          "Files inspected",
+          "Fix applied",
+          "Verification performed",
+          "Residual risk"
+        ]
+      },
+      {
+        "id": "review_judge",
+        "label": "Review/Judge",
+        "use_when": "Reviewing generated or modified code against acceptance criteria, tests, controls, and readiness evidence.",
+        "max_rules_initial": 4,
+        "load_strategy": "acceptance_criteria_and_diff_first",
+        "required_inputs": [
+          "acceptance criteria",
+          "diff or generated code",
+          "available validation evidence"
+        ],
+        "workflow": [
+          "Review acceptance criteria, changed files, and validation evidence before loading implementation-only rules.",
+          "Load judge, build, security, contract, persistence, and observability rules only for changed or claimed boundaries.",
+          "Return findings with evidence, missing checks, unsupported assumptions, hallucinated artifacts, and residual risks."
+        ],
+        "initial_rule_tags": [
+          "testing",
+          "security",
+          "contract",
+          "observability",
+          "readiness"
+        ],
+        "escalate_when": [
+          "A ready/production claim lacks build, test, security, contract, persistence, or operational evidence."
+        ]
+      }
+    ]
+  },
+  "rule_index": [
+    {
+      "rule_id": "trigger-scope",
+      "file": "rules/trigger-scope.md",
+      "title": "Activate Only On The Declared Operational Trigger",
+      "section": "Activation and Scope",
+      "tags": [
+        "activation",
+        "scope",
+        "general"
+      ],
+      "load_when": [
+        "The user intent matches the generated skill description.",
+        "At least one declared system, role, process stage, or domain keyword is present."
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "delta_change",
+        "review_judge"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "brownfield_change",
+        "debug_fix"
+      ],
+      "evidence_validation": [
+        "Record the matched trigger phrase or recipe step id.",
+        "If the match is weak, return an elicitation question instead of executing."
+      ],
+      "references": [
+        "SKILL.md",
+        "references/recipe-interface.json"
+      ],
+      "cost_hint": "load_only_when_matched",
+      "risk": "medium"
+    },
+    {
+      "rule_id": "domain-02-prefer-local-state-before-global-stores",
+      "file": "rules/domain-02-prefer-local-state-before-global-stores.md",
+      "title": "Prefer Local State Before Global Stores",
+      "section": "Client State",
+      "tags": [
+        "local-state",
+        "global-store"
+      ],
+      "load_when": [
+        "Adding UI state"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "delta_change",
+        "review_judge"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "brownfield_change",
+        "debug_fix"
+      ],
+      "evidence_validation": [
+        "State consumer scope is identified."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_when_matched",
+      "risk": "high"
+    },
+    {
+      "rule_id": "domain-03-use-stable-query-keys-and-explicit-invalidation",
+      "file": "rules/domain-03-use-stable-query-keys-and-explicit-invalidation.md",
+      "title": "Use Stable Query Keys And Explicit Invalidation",
+      "section": "Server State",
+      "tags": [
+        "query-key",
+        "invalidation"
+      ],
+      "load_when": [
+        "Adding query/cache logic"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "debug_fix"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "delta_change",
+        "brownfield_change",
+        "review_judge"
+      ],
+      "evidence_validation": [
+        "Query keys include parameters.",
+        "Invalidation/update behavior is explicit."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_when_matched",
+      "risk": "high"
+    },
+    {
+      "rule_id": "domain-04-treat-url-state-as-public-shareable-state",
+      "file": "rules/domain-04-treat-url-state-as-public-shareable-state.md",
+      "title": "Treat URL State As Public Shareable State",
+      "section": "URL State",
+      "tags": [
+        "search-params"
+      ],
+      "load_when": [
+        "Syncing state to URL"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "delta_change",
+        "review_judge"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "brownfield_change",
+        "debug_fix"
+      ],
+      "evidence_validation": [
+        "URL state excludes secrets/PII.",
+        "Back/forward behavior works."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_when_matched",
+      "risk": "high"
+    },
+    {
+      "rule_id": "domain-05-implement-optimistic-update-rollback",
+      "file": "rules/domain-05-implement-optimistic-update-rollback.md",
+      "title": "Implement Optimistic Update Rollback",
+      "section": "Optimistic Updates",
+      "tags": [
+        "optimistic"
+      ],
+      "load_when": [
+        "Adding optimistic mutations"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "debug_fix"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "delta_change",
+        "brownfield_change",
+        "review_judge"
+      ],
+      "evidence_validation": [
+        "Rollback path exists.",
+        "Conflict/error states are handled."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_when_matched",
+      "risk": "high"
+    },
+    {
+      "rule_id": "tool-call-discipline",
+      "file": "rules/tool-call-discipline.md",
+      "title": "Separate Client State From Server State",
+      "section": "State Ownership",
+      "tags": [
+        "state",
+        "server-state"
+      ],
+      "load_when": [
+        "Adding state around async data"
+      ],
+      "does_not_apply_to": [
+        "The task does not touch this rule's tags, trigger conditions, or affected implementation boundary.",
+        "The request is a full-skill or cross-rule review where AGENTS.md is intentionally loaded instead."
+      ],
+      "applies_to_modes": [
+        "delta_change",
+        "review_judge"
+      ],
+      "does_not_apply_to_modes": [
+        "greenfield_build",
+        "brownfield_change",
+        "debug_fix"
+      ],
+      "evidence_validation": [
+        "Server cache ownership is clear.",
+        "Client store has no duplicated server source of truth."
+      ],
+      "references": [
+        "references/tools.md",
+        "references/compliance.md",
+        "references/edge-cases.md"
+      ],
+      "cost_hint": "load_only_when_matched",
+      "risk": "medium"
+    }
+  ],
+  "reference_index": [
+    {
+      "file": "references/recipe-interface.json",
+      "load_when": "A recipe orchestrator needs machine-readable skill invocation fields."
+    },
+    {
+      "file": "references/recipe-usage.md",
+      "load_when": "The skill is invoked as a recipe step with external context or control packs."
+    },
+    {
+      "file": "references/tools.md",
+      "load_when": "Read references/tools.md before changing commands, dependencies, config, routing, generated clients, form libraries, or build setup."
+    },
+    {
+      "file": "references/compliance.md",
+      "load_when": "Read references/compliance.md before approving accessibility, privacy, security, environment, API-contract, or enterprise conventions."
+    },
+    {
+      "file": "references/edge-cases.md",
+      "load_when": "Read references/edge-cases.md when repo conventions, runtime boundaries, hydration behavior, cache behavior, or validation semantics are uncertain."
+    }
+  ],
+  "template_sources": [],
+  "companion_skills": [
+    {
+      "skill_id": "frontend-api-integration-skill",
+      "required_when": "State depends on backend fetches, mutations, retries, pagination, generated clients, or realtime updates."
+    },
+    {
+      "skill_id": "frontend-ui-component-system-skill",
+      "required_when": "State ownership affects reusable components or screen composition."
+    }
+  ],
+  "stop_conditions": [
+    "The source of truth for state, cache lifetime, persistence requirement, or URL shareability is unknown.",
+    "The agent would need to invent server cache keys, invalidation rules, or persistence behavior without evidence.",
+    "The request is outside activation_scope or matches non_activation_scope.",
+    "Required context pack, control pack, API contract, repository files, or validation commands are missing.",
+    "Business rules, auth policy, or regulated-data handling are unclear and cannot be verified from supplied sources.",
+    "The agent would need to invent APIs, files, schemas, tools, or enterprise policy to proceed.",
+    "Failure mode requires escalation: Use local or lifted state unless multiple distant consumers require a shared store.",
+    "Failure mode requires escalation: Server-state cache keys must include all meaningful parameters and mutations must invalidate or update affected queries.",
+    "Failure mode requires escalation: URL/search params should store safe shareable filters and pagination, not secrets or volatile UI internals.",
+    "Failure mode requires escalation: Optimistic UI must define rollback, conflict, and error behavior."
+  ],
+  "evidence_contract": {
+    "required_summary_fields": [
+      "assumptions",
+      "files_inspected",
+      "rules_loaded",
+      "references_loaded",
+      "commands_run",
+      "checks_skipped",
+      "residual_risks"
+    ],
+    "claim_policy": "Do not claim implementation, validation, API behavior, control compliance, or test success without file, diff, tool, test, or explicit human-approved assumption evidence."
+  }
+}

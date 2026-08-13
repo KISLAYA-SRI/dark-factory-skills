@@ -1,0 +1,26 @@
+{
+  "name": "frontend-testing-quality-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through React/Next.js testing and quality strategy including Vitest/Jest, React Testing Library, MSW integration tests, Playwright/Cypress E2E, Storybook interaction tests, visual regression, coverage, and quality gates.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "E2E",
+    "Integration",
+    "Mocks",
+    "Quality Gates",
+    "Visual Regression"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

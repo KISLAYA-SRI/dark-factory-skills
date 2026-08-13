@@ -1,0 +1,26 @@
+{
+  "name": "frontend-forms-validation-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through React form engineering including React Hook Form, controlled/uncontrolled fields, schema validation with Zod/Yup, field arrays, multi-step wizards, persistence, submit states, accessibility, and API error mapping.",
+  "rule_count": 6,
+  "sections": [
+    "API Errors",
+    "Activation and Scope",
+    "Form State",
+    "Submit Flow",
+    "Validation",
+    "Wizard"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "frontend-auth-authorization-skill",
+  "version": "1.0.0",
+  "organization": "skill-forge",
+  "domain": "general",
+  "domain_type": "technical",
+  "abstract": "Guides agents through React/Next.js frontend authentication and authorization including Auth.js/NextAuth, Clerk, Auth0, enterprise SSO, secure sessions, JWT/cookie handling, protected routes, RBAC/ABAC UI gating, and denied-path tests.",
+  "rule_count": 6,
+  "sections": [
+    "Activation and Scope",
+    "RBAC ABAC",
+    "Route Guards",
+    "Session Security",
+    "Testing"
+  ],
+  "generated_artifacts": [
+    "SKILL.md",
+    "AGENTS.md",
+    "rules/",
+    "references/",
+    "scripts/",
+    "test-cases.json",
+    "runtime-manifest.json"
+  ]
+}

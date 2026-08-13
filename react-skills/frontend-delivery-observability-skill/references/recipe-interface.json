@@ -1,0 +1,122 @@
+{
+  "interface_version": "1.0.0",
+  "contract_type": "recipe_step_skill",
+  "runtime_role": "bounded_skill_step",
+  "skill_id": "frontend-delivery-observability-skill",
+  "skill_name": "frontend-delivery-observability-skill",
+  "domain": "general",
+  "domain_type": "technical",
+  "ownership_boundary": {
+    "skill_owns": [
+      "bounded technology or process action",
+      "local execution guidance",
+      "local preflight validation",
+      "local references and helper scripts",
+      "explicit assumptions and escalation signals"
+    ],
+    "recipe_owns": [
+      "business outcome",
+      "step ordering",
+      "context pack selection",
+      "control pack selection",
+      "human approval gates",
+      "cross-skill evidence aggregation"
+    ],
+    "external_systems_own": [
+      "context pack lifecycle",
+      "control pack lifecycle",
+      "recipe registry",
+      "policy registry",
+      "audit and evidence store"
+    ]
+  },
+  "trigger_context": "Agents working on Frontend Delivery Observability Skill in React and Next.js frontends.",
+  "workflow_step_count": 3,
+  "workflow_step_titles": [
+    "Map delivery and operations scope",
+    "Implement delivery or observability change",
+    "Verify readiness evidence"
+  ],
+  "required_inputs": {
+    "recipe_step_id": "Provided by the recipe orchestrator when invoked as part of a recipe.",
+    "problem_statement": "Create frontend-delivery-observability-skill for React Next.js frontend CI/CD Vercel deployment Sentry frontend RUM monitoring feature flags",
+    "systems_involved": [
+      "React",
+      "Next.js",
+      "GitHub Actions",
+      "Vercel",
+      "Docker",
+      "Sentry",
+      "RUM",
+      "feature flags"
+    ],
+    "success_definition": "Agents follow Frontend Delivery Observability Skill with concrete React and Next.js examples, evidence checks, and no invented controls."
+  },
+  "optional_recipe_inputs": {
+    "context_pack_refs": "External context pack identifiers or file/service references supplied by the recipe.",
+    "control_pack_refs": "External control pack identifiers or file/service references supplied by the recipe.",
+    "adapter_ref": "Project or platform adapter reference supplied by the recipe when technology conventions are external.",
+    "evidence_correlation_id": "Correlation id used by an external evidence/audit service."
+  },
+  "external_context_packs": {
+    "mode": "accepted_from_recipe",
+    "skill_forge_builds": false,
+    "expected_fields": [
+      "id",
+      "version",
+      "domain",
+      "retrieval_ref",
+      "summary",
+      "source"
+    ],
+    "use": "Use supplied context packs for domain vocabulary, examples, business rules, and field semantics."
+  },
+  "external_control_packs": {
+    "mode": "accepted_from_recipe",
+    "skill_forge_builds": false,
+    "expected_fields": [
+      "id",
+      "version",
+      "risk_tier",
+      "mandatory_checks",
+      "evidence_requirements",
+      "escalation_policy"
+    ],
+    "use": "Use supplied control packs for mandatory validation, policy checks, human gates, and evidence requirements."
+  },
+  "control_tags": [
+    "domain:general",
+    "type:technical",
+    "compliance:Use supplied controls only",
+    "compliance:Do not invent organization conventions",
+    "constraint:delivery evidence",
+    "constraint:environment-scoped secrets",
+    "constraint:safe source maps",
+    "constraint:privacy-safe analytics"
+  ],
+  "subskill_dependencies": [],
+  "evidence_hooks": [
+    {
+      "name": "preflight_validation",
+      "type": "script",
+      "path": "scripts/validate.py"
+    },
+    {
+      "name": "decision_trace",
+      "type": "reference",
+      "path": "references/tools.md",
+      "condition": "Use for policy/evidence/audit-sensitive paths."
+    }
+  ],
+  "escalation_hooks": [
+    "Production-ready claim without CI evidence",
+    "Committed deployment secret",
+    "Public source maps",
+    "Analytics before consent"
+  ],
+  "output_contract": {
+    "skill_md": "Generated instructions must remain under 500 lines.",
+    "references": "Explicit load conditions required for each reference.",
+    "scripts": "Preflight and integration adapters should be deterministic."
+  }
+}
