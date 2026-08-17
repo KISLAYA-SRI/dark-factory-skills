@@ -19,7 +19,6 @@ Add only if missing:
 <dependency>
     <groupId>com.bankfab.ksa.middleware</groupId>
     <artifactId>platform-exception</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
 </dependency>
 ```
 

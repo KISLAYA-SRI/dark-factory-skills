@@ -19,7 +19,6 @@ For Maven projects, add the dependency only if it is missing:
 <dependency>
     <groupId>com.bankfab.ksa.middleware</groupId>
     <artifactId>platform-rest-client</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
 </dependency>
 ```
 
