@@ -1,29 +1,32 @@
 # Generate API Code
 
-Small Codex skill for generating or extending Spring Boot backend API microservices.
+`generate-api-code` is an agent skill for creating or extending Java Spring Boot backend API microservices. It guides the agent to implement REST endpoints using the repository's existing controller, service, `ServiceImpl`, DTO, mapper, validation, OpenAPI, exception, and downstream adapter patterns.
 
-## Use This For
+Use this skill when the task includes a backend API requirement, JIRA story, OpenAPI contract, endpoint change, or acceptance criteria for a Spring Boot microservice. The skill expects the agent to inspect the local project first and treat the provided contract, headers, request and response schemas, error matrix, and existing code conventions as the source of truth.
 
-- Adding REST endpoints to Java Spring Boot services.
-- Wiring controller, service interface, and `ServiceImpl` layers.
-- Reusing adapter-lib or shared-lib clients for downstream calls.
-- Adding DTO validation, OpenAPI annotations, and error handling in the project's existing style.
+## Applies To
 
-## Expected Flow
+- Adding new REST endpoints to an existing Java microservice.
+- Extending an existing controller and service flow for a new operation.
+- Wiring `Controller -> Service interface -> ServiceImpl -> adapter/shared-lib client`.
+- Reusing adapter-library or shared-library clients from the current `pom.xml`.
+- Adding request/response DTOs, validation annotations, OpenAPI annotations, and canonical error handling.
+- Preserving reactive `Mono`/`Flux` flows without blocking calls.
 
-```text
-Controller -> Service interface -> ServiceImpl -> adapter/shared-lib client
-```
+## Output Expectations
 
-Controllers validate requests and delegate. `ServiceImpl` owns orchestration, mapping, downstream calls, and reactive behavior when present.
+The agent should produce code that fits the current repository structure instead of introducing a new architecture. Typical output includes controller methods, service interface methods, `ServiceImpl` orchestration, DTOs, mapper updates, validation rules, exception handling, and configuration changes only when the endpoint actually requires them.
 
-## Key Rules
+Generated code should:
 
-- Follow nearby controller, service, mapper, and exception patterns.
-- Reuse existing response envelopes and public error structures.
-- Keep downstream client calls out of controllers.
-- Use existing adapter/shared-library dependencies before adding local downstream code.
-- Preserve non-blocking reactive chains; do not call `block()` inside services.
-- Keep headers, validation rules, and OpenAPI annotations aligned with the provided contract.
+- Keep controllers focused on request binding, validation, and delegation.
+- Keep downstream calls inside `ServiceImpl` or existing adapter/shared clients.
+- Reuse existing response envelopes and public error response formats.
+- Use exact header names, path variables, query parameters, and schemas from the supplied contract.
+- Follow nearby logging, mapping, validation, and test conventions.
 
-See [SKILL.md](./SKILL.md) for the full instructions.
+## When Not To Use
+
+Do not use this skill for asynchronous Kafka or event-handler services, shared adapter library implementation, unit-test-only generation, generic Java refactoring, or frontend API integration. Use the corresponding async, adapter-lib, unit-testing, or frontend skills for those cases.
+
+See [SKILL.md](./SKILL.md) for the full execution rules.
