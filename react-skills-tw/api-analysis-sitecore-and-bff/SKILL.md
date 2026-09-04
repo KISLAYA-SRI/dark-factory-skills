@@ -86,7 +86,9 @@ Once the exact endpoint YAML/JSON file is located, you MUST read and analyse the
 - **Conditional / branching logic**: Any conditional fields, nullable fields, or fields that appear only in certain scenarios.
 - **Request/Response examples**: Any example payloads provided — use these to validate understanding of the contract.
 
-> ⚠️ **YAML/SPEC READING RULE — MANDATORY**: You MUST NOT summarise or skip any scenario. Every request scenario and every response scenario MUST be individually analysed and included in the BFF API Analysis section. Ignoring or omitting any scenario is a critical failure.
+> **YAML/SPEC READING RULE — MANDATORY**: You MUST NOT summarise or skip any scenario. Every request scenario and every response scenario MUST be individually analysed and included in the BFF API Analysis section. Ignoring or omitting any scenario is a critical failure.
+>
+> **SCOPE FILTER — MANDATORY**: Only analyse the endpoints that are **directly referenced in the JIRA story**. If the YAML file contains multiple endpoints (e.g., 11 endpoints), extract and document ONLY the endpoints the story requires (e.g., `/auth/otp/send`, `/auth/otp/verify`, `/auth/user/details`). Do NOT replicate or document the full YAML for endpoints not relevant to this story. Mark all other endpoints as: `Not in scope for this story.`
 
 ### BFF Analysis Areas
 

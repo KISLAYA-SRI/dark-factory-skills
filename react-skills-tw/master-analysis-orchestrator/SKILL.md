@@ -396,11 +396,13 @@ If ANY of these are found → remove them and replace with a definitive decision
 
 **Step 8C — Output Production (Three Documents)**
 
-Using the mandatory templates from `analysis-output-contract` Part C, produce all three documents with FULL detail:
+Using the mandatory templates from `analysis-output-contract` Part C, produce all three documents with FULL detail using the **Chunked Write Protocol** defined in `analysis-output-contract`:
 
-1. **ANALYSIS_PLAN.md** — All 20 sections populated, Code Generation Plan with ordered steps, files, state handling, visibility rules, prop wiring, things NOT to implement.
-2. **DEV_REVIEW.md** — All 3 sections populated (write "None" if no items).
-3. **CODING_AGENT_CHECKLIST.md** — All prefix categories populated with story-specific items derived from the analysis.
+> ⚠️ **MANDATORY**: Do NOT write any document in a single write_file call. Follow the Chunked Write Protocol — write 2–3 sections per call, use append mode after the first chunk, and apply a maximum 2-retry guard per chunk. If a chunk fails twice, write a condensed version and continue. Never restart the analysis.
+
+1. **ANALYSIS_PLAN.md** — All 20 sections populated across 7 sequential write_file chunks. Code Generation Plan with ordered steps, files, state handling, visibility rules, prop wiring, things NOT to implement.
+2. **DEV_REVIEW.md** — All 3 sections populated in 1 write_file call (write "None" if no items).
+3. **CODING_AGENT_CHECKLIST.md** — All prefix categories populated with story-specific items across 2 sequential write_file chunks.
 
 ### Gate: Phase 8 Complete When
 
