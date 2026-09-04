@@ -11,10 +11,10 @@ SonarQube measures **line coverage** and **branch coverage**. The quality gate t
 1. In SonarQube UI → Project → **Coverage** tab.
 2. Click on a file to see line-by-line coverage (green = covered, red = uncovered).
 3. Branch coverage shows uncovered `if/else`, `switch`, ternary branches.
-4. Use the SonarQube API to fetch uncovered lines programmatically:
-   ```
-   GET /api/measures/component?component={projectKey}&metricKeys=uncovered_lines,uncovered_conditions
-   ```
+4. Use the Sonar MCP tools to retrieve uncovered lines programmatically:
+   - Call `get_component_measures` with `metricKeys=coverage,uncovered_lines,uncovered_conditions` to get overall coverage metrics for the project.
+   - Call `search_files_by_coverage` to find files with the lowest coverage.
+   - Call `get_file_coverage_details` with the specific file component key to see line-by-line and branch coverage details.
 
 ---
 
