@@ -1,6 +1,6 @@
 ---
 name: fix-sonar-issues
-description: Use when fetching, triaging, fixing, or summarizing SonarQube quality gate issues for a Java Maven backend microservice or adapter library. Triggers include SonarQube, Sonar quality gate, projectKey, current analysis issues, blocker/critical/major/minor issues, code smell, vulnerability, security hotspot, unit test coverage, code duplication, or any of the 6 SonarQube quality dimensions i.e.Reliability, Security, Maintainability, Coverage, Duplications, Security Hotspots.
+description: Use when fetching, triaging, fixing, or summarizing SonarQube quality gate issues for a Java Maven backend microservice or adapter library. Triggers include SonarQube, Sonar quality gate, projectKey, current analysis issues, blocker/critical/major/minor issues, code smell, vulnerability, security hotspot, unit test coverage, code duplication, or any of the 6 SonarQube quality dimensions i.e. Reliability, Security, Maintainability, Coverage, Duplications, Security Hotspots.
 ---
 
 # SonarQube Issue Remediation Skill
