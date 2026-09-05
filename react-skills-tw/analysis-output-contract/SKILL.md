@@ -9,16 +9,29 @@ description: Use when performing final self-validation and producing all three o
 
 This skill is the **final phase** of the FE Story Analysis Agent workflow. It has two mandatory responsibilities:
 
-1. **Self-Validation** Run the complete 13-section checklist to verify all analysis areas are complete and correct before any document is produced.
-2. **Output Production** Generate all three output documents using the mandatory templates defined in this skill, with full detail populated from the analysis completed in Phases 17.
+1. **Self-Validation** — Run the complete 13-section checklist to verify all analysis areas are complete and correct before any document is produced.
+2. **Output Production** — Generate all three output documents using the mandatory templates defined in this skill, with full detail populated from the analysis completed in Phases 1–7.
 
 > **CRITICAL**: No output document may be produced until ALL self-validation checks are completed. If any check fails, the agent must complete the missing analysis before proceeding to output production.
 
 ---
 
-## PART A Self-Validation Checklist
+## ⚠️ PHASE 8 CONTEXT RULE — READ FIRST
 
-Before producing any output document, the Analysis Agent MUST validate whether all required analysis areas have been completed. This checklist is a mandatory quality gate not optional.
+**All analysis is already complete before Phase 8 begins.** The large raw source artifacts loaded in earlier phases — the full API spec file, the full component catalogue JSON, and the raw Figma design trees — are **no longer needed** and must NOT be re-opened or re-read during Phase 8.
+
+- Do **NOT** re-read the raw API spec file.
+- Do **NOT** re-read the full component catalogue.
+- Do **NOT** re-read the raw Figma JSON trees.
+- If any detail appears to be missing, pull it from the **already-distilled Phase 1–7 outputs** in the current session context — never from re-reading original large files.
+
+Re-reading these large artifacts during Phase 8 multiplies cost on every tool call. Everything needed to write the three documents is already in the analysis results.
+
+---
+
+## PART A — Self-Validation Checklist
+
+Before producing any output document, the Analysis Agent MUST validate whether all required analysis areas have been completed. This checklist is a mandatory quality gate — not optional.
 
 **Rules:**
 
@@ -106,7 +119,7 @@ Before producing any output document, the Analysis Agent MUST validate whether a
 | Missing API data captured                         | Any UI field not supported by API response flagged           |        |       |
 | Error/loading/empty requirements identified       | UI states needed from API behaviour derived                  |        |       |
 | Raw API response not passed to display components | Mapper/view model boundary defined                           |        |       |
-| Strict endpoint lookup rule followed              | Only exact endpoint looked up no folder browsing             |        |       |
+| Strict endpoint lookup rule followed              | Only exact endpoint looked up — no folder browsing           |        |       |
 | Data fetching pattern produced per endpoint       | Hook / Service / Query Key / Endpoint Constant / State rules |        |       |
 
 ---
@@ -258,102 +271,152 @@ Mark each analysis area with one of:
 
 ---
 
-## PART B ANALYSIS_PLAN.md Content Prohibition (Mandatory Self-Check)
+## PART B — ANALYSIS_PLAN.md Content Prohibition (Mandatory Pre-Generation Rule)
 
-Before producing ANALYSIS_PLAN.md, search the entire analysis output for:
+> **This check runs BEFORE generating each chunk — not as a post-write cleanup step.**
+> Applying this rule before writing eliminates the need for any `sed`/`grep` repair pass.
+
+Before generating content for ANY chunk of ANALYSIS_PLAN.md, confirm that the content you are about to write does NOT contain any of the following:
 
 - `"DEV REVIEW"`, `"DEV_REVIEW"`, `"dev review"`
-- `"Check if supported in DEV REVIEW"`, `"Confirm in DEV REVIEW"`, `"See DEV REVIEW"`
+- `"see DEV REVIEW"`, `"confirm in DEV REVIEW"`, `"Check if supported in DEV REVIEW"`
 - `"needs developer approval"`, `"to be confirmed"`, `"pending review"`, `"check with developer"`
-- Any open question, option to choose from, or deferred decision
+- `"option A or B"`, any open question, or any deferred decision
 
-If ANY of these are found **remove them** and replace with a definitive decision based on the priority order:
+**Every decision written into ANALYSIS_PLAN.md must be final and definitive.** Any uncertainty belongs in DEV_REVIEW.md only.
+
+If you find yourself about to write any of the above phrases into ANALYSIS_PLAN.md, stop — make a definitive decision using the priority order below, write that decision into ANALYSIS_PLAN.md, and record the uncertainty in DEV_REVIEW.md instead:
 
 ```
-Dev Notes  Project Guidelines  Figma  React/Frontend Best Practices
+Dev Notes → Project Guidelines → Figma → React/Frontend Best Practices
 ```
 
 ---
 
-## PART C Output Document Production
+## PART C — Output Document Production
 
 After all 13 self-validation checks pass, produce all three output documents in this order. Every section of every template MUST be fully populated — no empty sections, no placeholder text left unfilled.
 
-> ⚠️ **WRITE STRATEGY — MANDATORY: Chunk all writes. Never write a document in a single tool call.**
->
-> Large documents MUST be written in sequential, append-mode chunks to prevent tool-call argument truncation. The agent MUST follow the chunked write protocol below for every document.
+---
+
+## ⚠️ MANDATORY WRITE RULES — READ BEFORE WRITING ANY DOCUMENT
+
+These rules are **absolute**. Violating any of them is the primary cause of Phase 8 cost overruns.
+
+### Rule 1 — NEVER write a document in a single `write_file` call
+
+This is an **absolute prohibition**. A single oversized `write_file` call will fail with an invalid input format error, forcing a full regeneration pass. Every document MUST be written in multiple chunks.
+
+### Rule 2 — Write in strict ascending section order (1 → 20)
+
+Maintain an explicit **section cursor** tracking the last section written. Before writing the next chunk, verify:
+
+- Previous chunk's highest section = (next chunk's lowest section − 1)
+- If a gap is detected: re-emit the missing chunk **in order** before proceeding
+- **Never skip ahead to a later section** — write every section in sequence
+
+The document is assembled **exclusively** through sequential `write_file` create/append calls in ascending section order. **Shell-based file reconstruction is prohibited.**
+
+### Rule 3 — Use `create` for chunk 1, `append` for all subsequent chunks
+
+- **First chunk** of each document → `write_file` with `mode: create`
+- **Every later chunk** of the same document → `write_file` with `mode: append`
+
+### Rule 4 — Retry cap: 3 attempts per chunk, then condense and continue
+
+If a `write_file` chunk fails:
+
+1. Retry the **same chunk with identical content** — attempt 2
+2. If it fails again — retry once more — attempt 3
+3. If it fails a third time: write a **condensed version** of that chunk (reduce tables to key rows only) and continue to the next chunk
+4. Log inline: `[WRITE FAILED: Section X — condensed]` in the next successful chunk
+5. **Never regenerate the entire document** on a chunk failure
+6. **Never restart the analysis** or loop back to an earlier phase because of a write failure
+
+### Rule 5 — Confirm each chunk before proceeding
+
+After each `write_file` call, verify the tool returned success before writing the next chunk. If it did not return success, apply Rule 4.
+
+### Rule 6 — No intermediate re-reads between chunks
+
+Do **not** re-read the document between chunk writes. Rely on the section cursor (Rule 2) to track progress — not on reading the file back. This is the single biggest cost multiplier in Phase 8.
+
+### Rule 7 — Shell/CLI file reconstruction is absolutely prohibited
+
+Do **not** use `cat`, `cp`, `sed`, `head`, `tail`, temp-file merges, header-prepend tricks, or any other shell command to assemble, repair, or reorder documents. If a file is discovered to be out of order or incomplete, the only permitted recovery is:
+
+- Overwrite from scratch: `write_file` with `mode: create` for chunk 1
+- Then append chunks 2..N in order
+
+Never patch a file with shell surgery.
+
+### Rule 8 — One consolidated validation pass after ALL documents are written
+
+Perform **at most one** final validation pass after all three documents are fully written. That single pass checks:
+
+- All three files exist
+- ANALYSIS_PLAN.md has all 20 section headers
+- No prohibited phrases are present in ANALYSIS_PLAN.md
+
+Do this in **one combined check** — not a series of separate commands. Remove all intermediate `cat`/`head`/`tail`/`wc`/`grep` inspection steps.
 
 ---
 
-### Chunked Write Protocol (Applies to ALL Three Documents)
+## Chunk Boundaries — Mandatory
 
-**Rule 1 — Write section-by-section, not document-by-document.**
-Each `write_file` call must contain at most **2–3 sections** of content. Never attempt to write an entire document in one call.
+### ANALYSIS_PLAN.md — 7 chunks
 
-**Rule 2 — Use append mode for all chunks after the first.**
+| Chunk | Mode     | Sections                                                                                          |
+| ----- | -------- | ------------------------------------------------------------------------------------------------- |
+| 1     | `create` | Header + Section 1 (Dev Notes Applied) + Section 2 (Story Summary)                                |
+| 2     | `append` | Section 3 (Classification) + Section 4 (Derived Scope) + Section 5 (AC Analysis)                  |
+| 3     | `append` | Section 6 (Agent Decisions) + Section 7 (Component Hierarchy) + Section 8 (Responsibility Matrix) |
+| 4     | `append` | Section 9 (Container/View) + Section 10 (Folder Structure) + Section 11 (Code Generation Plan)    |
+| 5     | `append` | Section 12 (Assumptions) + Section 13 (Interactions) + Section 14 (State/Edge Cases)              |
+| 6     | `append` | Section 15 (Ownership) + Section 16 (Sitecore API Analysis) + Section 17 (BFF API Analysis)       |
+| 7     | `append` | Section 18 (Prop Model) + Section 19 (Reuse Validation) + Section 20 (NFR Analysis)               |
 
-- First chunk for each document: `write_file` with `mode: create` (creates/overwrites the file with the header + first sections).
-- All subsequent chunks for the same document: `write_file` with `mode: append` (appends to the existing file without overwriting).
+**Section cursor after each chunk:**
 
-**Rule 3 — Retry guard: maximum 3 attempts per chunk.**
-If a `write_file` call fails or returns an invalid-input error:
+- After Chunk 1: cursor = 2
+- After Chunk 2: cursor = 5
+- After Chunk 3: cursor = 8
+- After Chunk 4: cursor = 11
+- After Chunk 5: cursor = 14
+- After Chunk 6: cursor = 17
+- After Chunk 7: cursor = 20 ✓ COMPLETE
 
-- Attempt the same chunk two times more with identical content.
-- If it fails a third time: write a shorter version of that chunk (summarise tables to key rows only) and continue.
-- Do NOT regenerate the entire document from scratch.
-- Do NOT loop back to Phase 0 or restart the analysis.
+### DEV_REVIEW.md — 1 chunk
 
-**Rule 4 — Confirm each chunk before proceeding.**
-After each `write_file` call, verify the tool returned success before writing the next chunk. If the tool did not return success, apply Rule 3.
+| Chunk | Mode     | Sections                                                             |
+| ----- | -------- | -------------------------------------------------------------------- |
+| 1     | `create` | Header + Section 1 + Section 2 + Section 3 (entire document — small) |
 
-**Rule 5 — Never block on a single failed write.**
-If a chunk cannot be written after 3 attempts, log `[WRITE FAILED: Section X — skipped after 2 attempts]` inline in the next successful chunk and continue to the next section. Do not halt the entire output phase.
+### CODING_AGENT_CHECKLIST.md — 2 chunks
 
----
-
-### Recommended Chunk Boundaries
-
-**ANALYSIS_PLAN.md** — Write in 7 chunks:
-
-| Chunk | Sections                                                                                                              | Approx. Content |
-| ----- | --------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 1     | Header + Section 1 (Dev Notes Applied) + Section 2 (Story Summary)                                                    | Small           |
-| 2     | Section 3 (Classification) + Section 4 (Derived Scope) + Section 5 (AC Analysis)                                      | Medium          |
-| 3     | Section 6 (Agent Decisions) + Section 7 (Component Hierarchy) + Section 8 (Responsibility Matrix)                     | Medium          |
-| 4     | Section 9 (Container/View) + Section 10 (Folder Structure) + Section 11 (Code Generation Plan)                        | Medium–Large    |
-| 5     | Section 12 (Assumptions) + Section 13 (Interactions) + Section 14 (State/Edge Cases)                                  | Medium          |
-| 6     | Section 15 (Ownership) + Section 16 (Sitecore API Analysis) + Section 17 (BFF API Analysis — relevant endpoints only) | Medium–Large    |
-| 7     | Section 18 (Prop Model) + Section 19 (Reuse Validation) + Section 20 (NFR Analysis)                                   | Medium          |
-
-**DEV_REVIEW.md** — Write in 1 chunk (document is small).
-
-**CODING_AGENT_CHECKLIST.md** — Write in 2 chunks:
-
-| Chunk | Sections                                                      |
-| ----- | ------------------------------------------------------------- |
-| 1     | Header + DN + AC + INT + STATE + SCOPE + PROP                 |
-| 2     | CMS + API + COMP + DS + RESP + A11Y + RTL + NFR + FILE + TEST |
+| Chunk | Mode     | Sections                                                      |
+| ----- | -------- | ------------------------------------------------------------- |
+| 1     | `create` | Header + DN + AC + INT + STATE + SCOPE + PROP                 |
+| 2     | `append` | CMS + API + COMP + DS + RESP + A11Y + RTL + NFR + FILE + TEST |
 
 ---
 
----
+## Document 1: ANALYSIS_PLAN.md
 
-### Document 1: ANALYSIS_PLAN.md
+**File path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_ANALYSIS_PLAN.md`
 
-**File path:** `.SS_WF/Agent/Analysis/{{$var[ticket_id]s}}_ANALYSIS_PLAN.md`
+> **ABSOLUTE PROHIBITION**: This document must NEVER reference DEV_REVIEW.md or contain any deferred decision. Apply the Part B prohibition check BEFORE generating each chunk's content.
 
-> **ABSOLUTE PROHIBITION**: This document must NEVER reference DEV_REVIEW.md or contain any deferred decision. It goes directly to the Code Generation Agent.
-
-**Required Sections (in order ALL must be populated):**
+**Required Sections (in order — ALL must be populated):**
 
 ```markdown
-# ANALYSIS PLAN {{$var[ticket_id]s}}
+# ANALYSIS PLAN {{ticket_id}}
 
 ---
 
 ## 1. Developer Notes Applied
 
-> ALWAYS first even if no Dev Notes found.
+> ALWAYS first — even if no Dev Notes found.
 
 | DN ID  | Dev Note (verbatim) | Applied Where | Impact on Analysis |
 | ------ | ------------------- | ------------- | ------------------ |
@@ -396,8 +459,8 @@ If a chunk cannot be written after 3 attempts, log `[WRITE FAILED: Section X —
 
 **Out of Scope (Derived):**
 
-- [item 1] Reason: [why derived as out of scope]
-- [item 2] Reason: [why derived as out of scope]
+- [item 1] — Reason: [why derived as out of scope]
+- [item 2] — Reason: [why derived as out of scope]
 
 ---
 
@@ -437,16 +500,16 @@ If a chunk cannot be written after 3 attempts, log `[WRITE FAILED: Section X —
 ## 8. Component Responsibility Matrix
 
 | Component | Type | Owns | Logic Allowed | Must NOT Own |
-| --------- | ---- | ---- | ------------- | ------------ |
-|           |      |      |               |              |
+| --- | --- | --- | --- | --- |
+| | | | | |
 
 ---
 
 ## 9. Container / View Decision
 
 | Component | Container? | View? | Reason |
-| --------- | ---------- | ----- | ------ |
-|           |            |       |        |
+| --- | --- | --- | --- |
+| | | | |
 
 ---
 
@@ -482,8 +545,8 @@ index.ts
 ### Files to Create
 
 | # | File Name | Path | Purpose |
-| - | --------- | ---- | ------- |
-| 1 |           |      |         |
+| - | --- | --- | --- |
+| 1 | | | |
 
 ### Ordered Implementation Steps
 
@@ -501,60 +564,60 @@ index.ts
 
 ### State Handling Placement
 
-| State         | Owned By    | Mechanism                    |
-| ------------- | ----------- | ---------------------------- |
-| Loading       | Container   | `isLoading` from useQuery    |
-| Error         | Container   | `isError` from useQuery      |
-| Empty         | Container   | Check `data` length/null     |
+| State | Owned By | Mechanism |
+| --- | --- | --- |
+| Loading | Container | `isLoading` from useQuery |
+| Error | Container | `isError` from useQuery |
+| Empty | Container | Check `data` length/null |
 
 ### Visibility Rule Placement
 
 | Visibility Rule | Condition | Placed In | Passed As Prop? |
-| --------------- | --------- | --------- | --------------- |
-|                 |           |           |                 |
+| --- | --- | --- | --- |
+| | | | |
 
 ### Prop-Driven Wiring
 
 | Prop Flow Step | From | To | Prop Name | Transformation |
-| -------------- | ---- | -- | --------- | -------------- |
-|                |      |    |           |                |
+| --- | --- | --- | --- | --- |
+| | | | | |
 
 ### Things NOT to Implement
 
-- [item 1  with reason]
-- [item 2  with reason]
+- [item 1 — with reason]
+- [item 2 — with reason]
 
 ---
 
 ## 12. Assumptions and Decisions Made
 
 | Area | Assumption / Decision | Basis | Confidence |
-| ---- | --------------------- | ----- | ---------- |
-|      |                       |       |            |
+| --- | --- | --- | --- |
+| | | | |
 
 ---
 
 ## 13. Interaction Analysis
 
-| Interaction ID | Interaction Description | Trigger | Owner Component | State Impact | Confirmed In            | Notes |
-| -------------- | ----------------------- | ------- | --------------- | ------------ | ----------------------- | ----- |
-| INT-001        |                         |         |                 |              | Story / Figma / Derived |       |
+| Interaction ID | Interaction Description | Trigger | Owner Component | State Impact | Confirmed In | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| INT-001 | | | | | Story / Figma / Derived | |
 
 ---
 
 ## 14. State, Error and Edge Case Analysis
 
-| State / Edge Case | Applicable Component | Trigger / Condition  | Expected FE Behaviour | Source |
-| ----------------- | -------------------- | -------------------- | --------------------- | ------ |
-| Loading           |                      | API call in progress | Show skeleton         | Derived |
+| State / Edge Case | Applicable Component | Trigger / Condition | Expected FE Behaviour | Source |
+| --- | --- | --- | --- | --- |
+| Loading | | API call in progress | Show skeleton | Derived |
 
 ---
 
 ## 15. Sitecore / Backend / Frontend Ownership
 
-| Area              | Expected Source                  | Owner            | Notes |
-| ----------------- | -------------------------------- | ---------------- | ----- |
-|                   |                                  |                  |       |
+| Area | Expected Source | Owner | Notes |
+| --- | --- | --- | --- |
+| | | | |
 
 ---
 
@@ -578,41 +641,43 @@ index.ts
 Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 
 | Prop Name | Type | Source | Source Detail (field/endpoint) | Required? | Notes |
-| --------- | ---- | ------ | ------------------------------ | --------- | ----- |
-|           |      |        |                                |           |       |
+| --- | --- | --- | --- | --- | --- |
+| | | | | | |
 
 ---
 
 ## 19. Component Inventory & Reuse Validation
 
 | Component | Atomic Level | Reuse Decision | Existing Component | Gap / Enhancement | New Component Name | Catalogue Update? |
-| --------- | ------------ | -------------- | ------------------ | ----------------- | ------------------ | ----------------- |
-|           |              |                |                    |                   |                    |                   |
+| --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | |
 
 ---
 
 ## 20. Responsive / Accessibility / RTL / NFR Analysis
 
-| NFR Category      | Applies? | Agent Decision / Recommendation | Source                  |
-| ----------------- | -------- | ------------------------------- | ----------------------- |
-| RTL               | Yes/No   |                                 | Story / Figma / Derived |
-| Accessibility     | Yes/No   |                                 | Story / Figma / Derived |
-| Responsive        | Yes/No   |                                 | Story / Figma / Derived |
-| Overflow & Scroll | Yes/No   |                                 | Story / Figma / Derived |
+| NFR Category | Applies? | Agent Decision / Recommendation | Source |
+| --- | --- | --- | --- |
+| RTL | Yes/No | | Story / Figma / Derived |
+| Accessibility | Yes/No | | Story / Figma / Derived |
+| Responsive | Yes/No | | Story / Figma / Derived |
+| Overflow & Scroll | Yes/No | | Story / Figma / Derived |
 ```
 
 ---
 
-### Document 2: DEV_REVIEW.md
+## Document 2: DEV_REVIEW.md
 
-**File path:** `.SS_WF/Agent/Analysis/{{$var[ticket_id]s}}_DEV_REVIEW.md`
+**File path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_DEV_REVIEW.md`
 
 > This document is for the developer to review **after** development is complete. It contains ONLY decisions made under uncertainty, assumptions due to missing information, and conflicts resolved.
 
-**Required Sections (ALL must be populated write "None" if no items):**
+**Write in 1 chunk (entire document is small — fits in a single `create` call).**
+
+**Required Sections (ALL must be populated — write "None" if no items):**
 
 ```markdown
-# DEV REVIEW {{$var[ticket_id]s}}
+# DEV REVIEW {{ticket_id}}
 
 ---
 
@@ -641,41 +706,46 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 
 ---
 
-### Document 3: CODING_AGENT_CHECKLIST.md
+## Document 3: CODING_AGENT_CHECKLIST.md
 
-**File path:** `.SS_WF/Agent/Analysis/{{$var[ticket_id]s}}_CODING_AGENT_CHECKLIST.md`
+**File path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_CODING_AGENT_CHECKLIST.md`
 
 > A validation checklist the Code Generation Agent MUST complete before marking implementation done. Every item is derived from the analysis in ANALYSIS_PLAN.md.
+
+**Write in 2 chunks:**
+
+- **Chunk 1 (`create`):** Header + DN + AC + INT + STATE + SCOPE + PROP
+- **Chunk 2 (`append`):** CMS + API + COMP + DS + RESP + A11Y + RTL + NFR + FILE + TEST
 
 **Required Sections (ALL must be populated with story-specific items):**
 
 ```markdown
-# CODING AGENT CHECKLIST {{$var[ticket_id]s}}
+# CODING AGENT CHECKLIST {{ticket_id}}
 
 > This checklist must be completed before marking implementation done.
 > Every item is derived from the analysis in ANALYSIS_PLAN.md.
 
 ---
 
-## DN Developer Notes Compliance (ALWAYS first)
+## DN — Developer Notes Compliance (ALWAYS first)
 
-- [ ] DN-001: [verbatim dev note confirm implemented as specified]
-
----
-
-## AC Acceptance Criteria
-
-- [ ] AC-001: [AC statement] [what FE must do to satisfy it]
+- [ ] DN-001: [verbatim dev note — confirm implemented as specified]
 
 ---
 
-## INT Interaction Behaviour
+## AC — Acceptance Criteria
 
-- [ ] INT-001: [interaction] [expected FE behaviour]
+- [ ] AC-001: [AC statement] — [what FE must do to satisfy it]
 
 ---
 
-## STATE State / Error / Empty Behaviour
+## INT — Interaction Behaviour
+
+- [ ] INT-001: [interaction] — [expected FE behaviour]
+
+---
+
+## STATE — State / Error / Empty Behaviour
 
 - [ ] STATE-001: Loading state renders [skeleton/spinner] in [component]
 - [ ] STATE-002: Error state renders [error message/boundary] in [component]
@@ -683,32 +753,32 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 
 ---
 
-## SCOPE Out-of-Scope Protection
+## SCOPE — Out-of-Scope Protection
 
 - [ ] SCOPE-001: [out-of-scope item] NOT implemented in this story
 
 ---
 
-## PROP Prop-Driven Implementation
+## PROP — Prop-Driven Implementation
 
 - [ ] PROP-001: No hardcoded labels, values, copy, or colours in any feature component
 
 ---
 
-## CMS Sitecore / Content Ownership
+## CMS — Sitecore / Content Ownership
 
 - [ ] CMS-001: [Sitecore field] mapped via [extractCTA/extractLink/extractFormField]
 
 ---
 
-## API Backend / API Ownership
+## API — Backend / API Ownership
 
-- [ ] API-001: [endpoint] consumed via [HookName] [ServiceName]
+- [ ] API-001: [endpoint] consumed via [HookName] + [ServiceName]
 - [ ] API-002: Raw API response transformed by [MapperName] before reaching display components
 
 ---
 
-## COMP Component Responsibility
+## COMP — Component Responsibility
 
 - [ ] COMP-001: [ComponentName] does NOT contain API calls
 - [ ] COMP-002: [ComponentName] does NOT contain business logic
@@ -716,39 +786,39 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 
 ---
 
-## DS Design System Reuse
+## DS — Design System Reuse
 
 - [ ] DS-001: [ComponentName] reuses [DesignSystemComponent] with variant [variant]
 
 ---
 
-## RESP Responsive Behaviour
+## RESP — Responsive Behaviour
 
-- [ ] RESP-001: Mobile-first implementation base classes for mobile, `lg:` for desktop
+- [ ] RESP-001: Mobile-first implementation — base classes for mobile, `lg:` for desktop
 
 ---
 
-## A11Y Accessibility
+## A11Y — Accessibility
 
 - [ ] A11Y-001: [interactive element] has aria-label or visible label
 - [ ] A11Y-002: All interactive elements are keyboard-navigable
 
 ---
 
-## RTL RTL / Localisation
+## RTL — RTL / Localisation
 
-- [ ] RTL-001: No `ml-`, `mr-`, `pl-`, `pr-` in layout-critical styles logical properties used
-- [ ] RTL-002: No `text-left` / `text-right` `text-start` / `text-end` used
+- [ ] RTL-001: No `ml-`, `mr-`, `pl-`, `pr-` in layout-critical styles — logical properties used
+- [ ] RTL-002: No `text-left` / `text-right` — `text-start` / `text-end` used
 
 ---
 
-## NFR Non-Functional Requirements
+## NFR — Non-Functional Requirements
 
 - [ ] NFR-001: [specific NFR requirement from analysis]
 
 ---
 
-## FILE Folder / File Structure
+## FILE — Folder / File Structure
 
 - [ ] FILE-001: All files created in correct folders per Folder Structure Proposal
 - [ ] FILE-002: Naming conventions followed (PascalCase components, camelCase hooks, etc.)
@@ -756,9 +826,9 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 
 ---
 
-## TEST Testability / Validation
+## TEST — Testability / Validation
 
-- [ ] TEST-001: All props are testable via prop injection no hardcoded values
+- [ ] TEST-001: All props are testable via prop injection — no hardcoded values
 - [ ] TEST-002: All states (loading, error, empty, success) are testable via prop/mock
 ```
 
@@ -769,27 +839,38 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 ### Always Do
 
 - Complete ALL 13 self-validation checks before producing any document.
-- If any check fails complete the missing analysis first, then re-run the check.
+- If any check fails — complete the missing analysis first, then re-run the check.
 - Populate EVERY section of EVERY template — no empty sections, no placeholder text left unfilled.
 - Produce all three documents in order: ANALYSIS_PLAN.md → DEV_REVIEW.md → CODING_AGENT_CHECKLIST.md.
 - Save all three files to `.SS_WF/Agent/Analysis/` with the correct ticket ID prefix.
 - Populate the Code Generation Plan (Section 11) with story-specific files, order, state handling, visibility rules, prop wiring, and things NOT to implement.
 - Derive CODING_AGENT_CHECKLIST.md items from the actual analysis — not generic boilerplate.
-- **Write every document using the Chunked Write Protocol** — section-by-section, append mode after the first chunk, maximum 2 retry attempts per chunk.
-- **Confirm each write_file call succeeded** before writing the next chunk.
-- **If a chunk fails twice**, write a condensed version of that chunk and continue — never restart the analysis from scratch.
+- **Apply the Part B prohibition check BEFORE generating each chunk's content** — not after writing.
+- **Write ANALYSIS_PLAN.md in exactly 7 chunks** using the mandatory chunk boundaries above.
+- **Write DEV_REVIEW.md in 1 chunk** (entire document — small).
+- **Write CODING_AGENT_CHECKLIST.md in 2 chunks** using the mandatory chunk boundaries above.
+- **Use `mode: create` for chunk 1 of each document; `mode: append` for all subsequent chunks.**
+- **Maintain the section cursor** — write sections in strict ascending order (1 → 20), no exceptions.
+- **Confirm each `write_file` call succeeded** before writing the next chunk.
+- **If a chunk fails, retry the same chunk up to 2 more times (3 total)** before condensing.
+- **After all three documents are written, run exactly one consolidated validation pass.**
 
 ### Never Do
 
 - Never produce any document before completing all 13 self-validation checks.
 - Never leave a template section empty or with placeholder text.
 - Never reference DEV_REVIEW.md inside ANALYSIS_PLAN.md.
-- Never write "needs developer approval", "to be confirmed", "option A or B" in ANALYSIS_PLAN.md.
-- Never write "Check if supported in DEV REVIEW" or any equivalent phrase.
+- Never write "DEV REVIEW", "DEV_REVIEW", "dev review", "see DEV REVIEW", "confirm in DEV REVIEW", "needs developer approval", "to be confirmed", "pending review", "option A or B", or any open question / deferred decision in ANALYSIS_PLAN.md.
 - Never produce a Code Generation Plan that is generic — it must be specific to this story.
 - Never omit the "Things NOT to Implement" section from the Code Generation Plan.
 - Never omit the Data Fetching Pattern from the BFF API Analysis section.
 - Never omit the Prop-Driven Component Model — every component must have its prop table.
-- **Never write an entire document in a single write_file call** — always chunk using the Chunked Write Protocol.
-- **Never retry a failed write more than 2 times** — condense and continue instead of looping.
-- **Never regenerate the full analysis output after a write failure** — reuse already-computed content from the current session.
+- **Never write an entire document in a single `write_file` call** — always use the mandatory chunk boundaries.
+- **Never write chunks out of order** — sections must be written in strict ascending order.
+- **Never re-read the document between chunk writes** — use the section cursor, not file reads.
+- **Never use shell commands (`cat`, `cp`, `sed`, `head`, `tail`, temp-file merges) to assemble or repair documents.**
+- **Never retry a failed chunk more than 2 additional times** — condense and continue instead of looping.
+- **Never regenerate the full analysis output after a write failure** — reuse already-computed content.
+- **Never restart the analysis or loop back to an earlier phase** because of a write failure.
+- **Never run more than one validation pass** — one combined check after all three documents are written.
+- **Never re-open the raw API spec, full component catalogue, or raw Figma JSON trees during Phase 8.**
