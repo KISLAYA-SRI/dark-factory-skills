@@ -23,26 +23,22 @@ Before starting, confirm what inputs are available:
 
 ### Step 1 — Identify Sitecore Endpoints
 
-From the JIRA Story data, identify all Sitecore endpoints mentioned for integration with the frontend.
+The Sitecore API JSON is already extracted under `{{$var[BITBUCKET_SC_CLONE_DIR]s}}`.
 
-### Step 2 — If NO Sitecore API Details Are Found
+### Step 2 — If NO Sitecore API Details Are Found Under this folder
 
 Do not invent API fields or endpoints. Mark the Sitecore API section as:
 
 > `SITECORE API NOT FOUND / NOT REQUIRED`
 
-### Step 3 — If Sitecore API Details ARE Found
-
-The Sitecore API Spec repository is cloned under `{{$var[BITBUCKET_SC_CLONE_DIR]s}}`.
-
 > ⚠️ **STRICT ENDPOINT LOOKUP RULE — MANDATORY:**
 >
-> - You MUST look up **only** the exact endpoint(s) identified from the JIRA story.
-> - Do NOT browse the folder, list directory contents, or scan other JSON files.
+> - You MUST look up **only** the exact endpoint(s) inside `{{$var[BITBUCKET_SC_CLONE_DIR]s}}`..
+> - Do NOT browse other folder, list directory contents, or scan other JSON files.
 > - If the exact endpoint file is not immediately found, do **NOT** fall back to nearby, similarly-named, or related JSON files.
 > - If the exact endpoint cannot be located, mark as: `SITECORE API CONTRACT NOT FOUND — endpoint [name] could not be located. Developer must provide the correct file path or confirm the endpoint.`
 
-### Step 4 — Analyse
+### Step 3 — Analyse
 
 - Which CMS rendering maps to which FE component
 - Which props are CMS-authored
@@ -56,11 +52,12 @@ The Sitecore API Spec repository is cloned under `{{$var[BITBUCKET_SC_CLONE_DIR]
 
 ### Step 1 — Identify BFF/Backend Endpoints
 
-From the JIRA Story data, identify all backend/BFF endpoints mentioned for integration.
+From the JIRA Story data, identify all backend/BFF endpoints/OperationId mentioned for integration. The BFF API JSON specs are all extracted under `{{$var[BITBUCKET_CLONE_DIR]s}}`.
 
 ### Step 2 — If NO BFF API Details Are Found
 
-If it is only a presentational component or no BFF API details are found, do not invent API fields. Define the expected frontend prop model and mark backend mapping as pending. Mark as:
+If it is only a presentational component or no BFF API details are found, do not invent API fields.
+Mark it as:
 
 > `BFF API NOT FOUND / NOT REQUIRED`
 
@@ -70,12 +67,12 @@ The BFF API Spec repository is cloned under `{{$var[BITBUCKET_CLONE_DIR]s}}`.
 
 > ⚠️ **STRICT ENDPOINT LOOKUP RULE — MANDATORY:**
 >
-> - You MUST look up **only** the exact endpoint(s) identified from the JIRA story.
-> - Do NOT browse the folder, list directory contents, or scan other JSON files.
+> - You MUST look up **only** the exact endpoint(s) inside `{{$var[BITBUCKET_CLONE_DIR]s}}`.
+> - Do NOT browse other folder, list directory contents, or scan other JSON files.
 > - If the exact endpoint file is not immediately found, do **NOT** fall back to nearby, similarly-named, or related JSON files.
 > - If the exact endpoint cannot be located, mark as: `BFF API CONTRACT NOT FOUND — endpoint [name] could not be located. Developer must provide the correct file path or confirm the endpoint.`
 
-### Step 4 — Deep YAML / Spec Analysis (MANDATORY When Endpoint File Is Found)
+### Step 4 — Deep YAML / Spec Analysis (MANDATORY When Endpoint/OperationId File Is Found)
 
 Once the exact endpoint YAML/JSON file is located, you MUST read and analyse the **complete** file content — do NOT skim or partially read it. Extract and analyse:
 
@@ -280,8 +277,8 @@ Endpoint: [HTTP Method] [endpoint path]
 Consuming Component: [ComponentName]
 Hook: use[FeatureName]Data (Hooks/use[FeatureName]Data.ts)
 Service: [FeatureName]Service (Services/[FeatureName]Service.ts)
-Query Key Factory: [FEATURE_NAME]_QUERY_KEYS.[keyName]([params])
-Endpoint Constant: [FEATURE_NAME]_ENDPOINTS.[endpointName]
+Query Key Factory: [FEATURE_NAME]\_QUERY_KEYS.[keyName]([params])
+Endpoint Constant: [FEATURE_NAME]\_ENDPOINTS.[endpointName]
 
 State Rendering Rules:
 isLoading → [skeleton / spinner / placeholder]
