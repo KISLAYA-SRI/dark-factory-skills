@@ -56,10 +56,13 @@ Apply these checks to any class under review:
 - **Method size and depth**: prefer short methods with a single level of abstraction. Extract private helper methods for repeated validation, mapping, or branching logic instead of nesting conditionals.
 - **Function arguments**: prefer 3 or fewer parameters; introduce a request/parameter object when a method needs more.
 - **Avoid duplication (DRY)**: extract shared logic into existing mapper, helper, or utility classes rather than copy-pasting across controllers, listeners, services, or adapters.
-- **Comments**: prefer self-explanatory code. Use comments only for non-obvious business rules, external constraints, or workarounds, not to explain what the code does line by line.
+- **Comments**: prefer self-explanatory code. Use comments only for non-obvious business rules, external constraints, or workarounds, not to explain what the code does line by line. Remove commented-out code, outdated/misleading comments, comments that merely restate the method/variable name, redundant Javadoc that repeats the signature with no added information, and `TODO`/`FIXME` comments with no ticket reference or that are already stale. Keep a `TODO` only when it references a tracked ticket ID.
 - **Error handling**: fail fast with clear exceptions; do not swallow exceptions or return sentinel values (`null`, `-1`, empty string) to signal failure when the codebase uses exceptions elsewhere.
 - **Immutability**: prefer immutable DTOs and `final` fields where the existing code style already supports it; avoid introducing mutable shared state.
-- **Magic values**: replace repeated literals and magic numbers with named constants, enums, or existing constants classes.
+- **Constants over magic values**: replace repeated literals, magic numbers, and inline string/number literals with named `private static final` constants (or enums, or an existing constants class/interface when the project centralizes them). Use `UPPER_SNAKE_CASE` naming, declare constants at the top of the class (or in the existing `constants/` package convention), and never duplicate the same literal value under two different constant names across the codebase. Promote a field to `static final` whenever it holds a fixed, class-level value that does not depend on instance state.
+- **Dead code and unused elements**: remove unused imports, unused private fields/methods/parameters, unreachable code branches, empty `catch`/`if`/`else` blocks, and unused local variables. Do not leave disabled code behind a feature flag/comment when it is no longer reachable.
+- **Redundant constructs**: remove redundant modifiers (e.g., `public` on interface methods, `final` on parameters where the codebase does not use that convention), redundant type parameters/casts, unnecessary object creation (e.g., `new Boolean(...)`, boxing/unboxing in hot paths), and unnecessary `else` after a `return`/`throw`.
+- **Resource and API hygiene**: use try-with-resources for `Closeable`/`AutoCloseable` resources, prefer `Optional` over returning `null` for absent values in new/changed code where the codebase already uses `Optional`, use `equals()`/`Objects.equals()` instead of `==` for object comparison, and avoid `System.out`/`printStackTrace` in favor of the existing logging framework.
 - **Boy Scout Rule**: when touching a file for an unrelated change, leave adjacent code slightly cleaner without expanding the diff into unrelated refactors.
 
 ---
@@ -106,7 +109,7 @@ Do not perform large-scale rewrites in a single pass. Prefer a sequence of small
 |---|---|
 | **Blocker** | Layering/dependency-direction violation, blocking call (`block()`) in reactive code, swallowed exception (empty catch or catch-and-return-null), hardcoded secret/credential/environment URL, public contract breakage. |
 | **Major** | God class (see thresholds below), SRP violation, missing constructor injection for testable collaborators, duplicated logic across 3+ locations, missing/incorrect error propagation for downstream failures. |
-| **Minor** | Method/parameter-count thresholds exceeded (see below), magic values, naming inconsistent with local convention, missing `final`/immutability where locally idiomatic. |
+| **Minor** | Method/parameter-count thresholds exceeded (see below), magic values not promoted to constants, naming inconsistent with local convention, missing `final`/immutability where locally idiomatic, unused imports/fields/private methods, redundant/outdated/commented-out comments, missing try-with-resources for closeable resources. |
 | **Info** | Subjective style preferences not backed by an objective threshold or an existing local convention. |
 
 Use industry-standard static-analysis thresholds as the objective bar (aligned with common Sonar/Checkstyle/PMD defaults) when no stricter local convention exists:
@@ -118,6 +121,8 @@ Use industry-standard static-analysis thresholds as the objective bar (aligned w
 - Nesting depth: flag above 3 levels of nested conditionals/loops.
 - Duplicate code blocks: flag blocks of 6+ duplicated lines appearing in 2+ places.
 - Cognitive complexity: treat any method mixing validation, orchestration, and downstream I/O in one block as Major regardless of line count.
+- Magic values: flag any repeated or non-trivial literal (numeric, string, or duration/threshold) that is not a named constant.
+- Dead/unreachable code: flag unused imports, unused private members, unreachable branches, and empty control-flow blocks as Minor; flag dead code left behind an always-false/always-true condition as Major since it hides intent.
 
 These thresholds are defaults for autonomous triage, not hard rules that override an existing project-specific static-analysis configuration (e.g., `sonar-project.properties`, Checkstyle/PMD rulesets already in the repo). When the repo defines its own thresholds, those take precedence.
 
@@ -152,8 +157,15 @@ When asked to review rather than refactor — or as the standard pass after any 
    - No duplicate blocks of 6+ lines repeated across 2+ locations without extraction to a shared helper/mapper.
 8. **Naming & readability**
    - Names state intent; no ambiguous single-letter or generic (`data`, `helper`, `manager`) names outside established local convention.
-   - Comments explain non-obvious rules only, not restate code.
-9. **Testability**
+   - Comments explain non-obvious rules only, not restate code; no commented-out code, stale comments, or untracked `TODO`/`FIXME` remain.
+9. **Constants & magic values**
+   - Repeated/non-trivial literals are promoted to named `static final` constants, enums, or the existing constants class/package, using `UPPER_SNAKE_CASE` and no duplicate constants for the same value.
+10. **Dead code & redundancy**
+   - No unused imports, unused private fields/methods/parameters, unreachable branches, or empty control-flow blocks.
+   - No redundant modifiers, unnecessary boxing/casts, or unnecessary `else` after `return`/`throw`.
+11. **Resource & API hygiene**
+   - Closeable resources use try-with-resources; object comparison uses `equals()`/`Objects.equals()`, not `==`; logging goes through the existing framework, not `System.out`/`printStackTrace`.
+12. **Testability**
    - Constructor injection used for collaborators; no static/singleton access blocking isolated unit testing.
    - Existing or newly required tests for changed behavior are identified.
 
