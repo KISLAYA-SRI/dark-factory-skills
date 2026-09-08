@@ -9,15 +9,15 @@ Slingshot discovers skills from workspace or user-level skill folders. The inter
 Workspace-level examples:
 
 ```text
-<repo>/.slingshot/skills/generate-api-code/SKILL.md
-<repo>/.agent/skills/generate-api-code/SKILL.md
+<repo>/.slingshot/skills/backend-api-microservice/SKILL.md
+<repo>/.agent/skills/backend-api-microservice/SKILL.md
 ```
 
 User-level examples:
 
 ```text
-~/.slingshot/skills/generate-api-code/SKILL.md
-~/.agent/skills/generate-api-code/SKILL.md
+~/.slingshot/skills/backend-api-microservice/SKILL.md
+~/.agent/skills/backend-api-microservice/SKILL.md
 ```
 
 After adding a user-level skill, refresh and enable agent skills from Slingshot using the refresh control next to the `@` button, or run `Refresh Agent Skills and Local Prompts for Agent Mode` from the VS Code command palette. You can also manage installed skills with `Slingshot: Manage Skills`.
@@ -25,7 +25,7 @@ After adding a user-level skill, refresh and enable agent skills from Slingshot 
 Example prompt:
 
 ```text
-Use the generate-api-code skill in Agent mode to implement this Spring Boot REST API from the JIRA and OpenAPI details.
+Use the backend-api-microservice skill in Agent mode to implement this Spring Boot REST API from the JIRA and OpenAPI details.
 ```
 
 
@@ -50,14 +50,14 @@ Use backend-api-microservice for this Spring Boot endpoint change.
 Install as either a personal or project skill:
 
 ```text
-~/.claude/skills/generate-api-code/SKILL.md
-.claude/skills/generate-api-code/SKILL.md
+~/.claude/skills/backend-api-microservice/SKILL.md
+.claude/skills/backend-api-microservice/SKILL.md
 ```
 
 Claude Code can invoke the skill automatically from its description, or you can call it directly:
 
 ```text
-/generate-api-code implement the customer profile REST endpoint using the provided API contract.
+/backend-api-microservice implement the customer profile REST endpoint using the provided API contract.
 ```
 
 ## GitHub Copilot
@@ -67,22 +67,22 @@ For Copilot agent skills, install the folder in a supported skills directory.
 Project-level examples:
 
 ```text
-.github/skills/generate-api-code/SKILL.md
-.claude/skills/generate-api-code/SKILL.md
-.agents/skills/generate-api-code/SKILL.md
+.github/skills/backend-api-microservice/SKILL.md
+.claude/skills/backend-api-microservice/SKILL.md
+.agents/skills/backend-api-microservice/SKILL.md
 ```
 
 Personal examples:
 
 ```text
-~/.copilot/skills/generate-api-code/SKILL.md
-~/.agents/skills/generate-api-code/SKILL.md
+~/.copilot/skills/backend-api-microservice/SKILL.md
+~/.agents/skills/backend-api-microservice/SKILL.md
 ```
 
 Example prompt:
 
 ```text
-Use the generate-api-code skill to add the order lookup API. Follow the OpenAPI contract, preserve the existing response envelope, and reuse the configured adapter client.
+Use the backend-api-microservice skill to add the order lookup API. Follow the OpenAPI contract, preserve the existing response envelope, and reuse the configured adapter client.
 ```
 
 

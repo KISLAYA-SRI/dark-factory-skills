@@ -1,6 +1,6 @@
 # Generate API Code
 
-`generate-api-code` is an agent skill for creating or extending Java Spring Boot backend API microservices. It guides the agent to implement REST endpoints using the repository's existing controller, service, `ServiceImpl`, DTO, mapper, validation, OpenAPI, exception, and downstream adapter patterns.
+`backend-api-microservice` is an agent skill for creating or extending Java Spring Boot backend API microservices. It guides the agent to implement REST endpoints using the repository's existing controller, service, `ServiceImpl`, DTO, mapper, validation, OpenAPI, exception, and downstream adapter patterns.
 
 Use this skill when the task includes a backend API requirement, JIRA story, OpenAPI contract, endpoint change, or acceptance criteria for a Spring Boot microservice. The skill expects the agent to inspect the local project first and treat the provided contract, headers, request and response schemas, error matrix, and existing code conventions as the source of truth.
 
