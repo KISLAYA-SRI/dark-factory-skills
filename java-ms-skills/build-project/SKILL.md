@@ -5,7 +5,7 @@ description: Use when compiling a Java Maven backend API microservice or adapter
 
 # Build Project
 
-Use this skill for build validation only. Test execution belongs to `test-project`; implementation output belongs to `code-output-handoff`.
+Use this skill for build validation only. Test execution belongs to `execute-unit-tests`; implementation output belongs to `code-output-handoff`.
 
 ## Commands
 

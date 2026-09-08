@@ -1,11 +1,11 @@
 ---
-name: unit-testing
+name: generate-unit-test-code
 description: Use when generating or updating focused Java unit tests for newly changed business behavior in a Spring Boot backend API microservices or adapter libraries. Triggers include unit test generation, JUnit 5, Mockito, StepVerifier, controller tests, service tests, adapter client tests, or coverage-focused test design for changed code.
 ---
 
 # Unit Testing
 
-Generate focused Java tests for newly changed behavior only. Use the repository and code-generation handoff already present in context; do not broaden scope into unrelated production code. Test execution and stabilization belong to `test-project`.
+Generate focused Java tests for newly changed behavior only. Use the repository and code-generation handoff already present in context; do not broaden scope into unrelated production code. Test execution and stabilization belong to `execute-unit-tests`.
 
 ## Expected Test Structure
 
@@ -100,4 +100,4 @@ Service/helper tests should cover token caching, mapping, context propagation, a
 
 ## After Creation
 
-Use `test-project` to run or stabilize the created/modified tests. Keep any implementation handoff in `code-output-handoff` when that file is required by the workflow.
+Use `execute-unit-tests` to run or stabilize the created/modified tests. Keep any implementation handoff in `code-output-handoff` when that file is required by the workflow.

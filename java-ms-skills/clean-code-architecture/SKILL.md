@@ -5,7 +5,7 @@ description: Use when reviewing, refactoring, or designing Java Spring Boot back
 
 # Clean Code and Software Architecture Design
 
-Apply clean-code and software-architecture principles to Java Spring Boot backend API microservices, async microservices, and adapter libraries. Use this skill for design review, refactoring, and architecture guidance across the codebase produced by `backend-api-microservice`, `backend-async-microservice`, and `adapter-lib`. This skill does not change public API contracts, event contracts, or existing layering conventions — it improves the quality of code within those boundaries.
+Apply clean-code and software-architecture principles to Java Spring Boot backend API microservices, async microservices, and adapter libraries. Use this skill for design review, refactoring, and architecture guidance across the codebase produced by `generate-api-code`, `generate-async-code`, and `generate-adapter-lib-code`. This skill does not change public API contracts, event contracts, or existing layering conventions — it improves the quality of code within those boundaries.
 
 > **Important:** This skill does NOT introduce a new architecture, framework, or package layout. It enforces clean structure, naming, and dependency direction within the repository's existing layered shape (`Controller/Listener -> Service interface -> ServiceImpl -> adapter/shared-lib client`).
 
@@ -27,7 +27,7 @@ ELSE:
   → Resolve scope autonomously using this precedence:
     1. Files changed in the current diff/branch/commit (git status/diff).
     2. Files or classes just produced/modified by an upstream skill in this workflow
-       (backend-api-microservice, backend-async-microservice, adapter-lib).
+       (generate-api-code, generate-async-code, generate-adapter-lib-code).
     3. If neither is available, default to the smallest identifiable unit passed in
        the task (named module, package, or file) and proceed with that.
   → If truly no scope signal exists anywhere, skip this skill run and report that no
@@ -40,7 +40,7 @@ Do not run a repository-wide refactor sweep unless explicitly requested. Default
 
 ## Step 1 — Inspect Current Structure
 
-1. Identify the repository shape (`backend-api-microservice`, `backend-async-microservice`, or `adapter-lib`) and confirm the existing layer boundaries.
+1. Identify the repository shape (`generate-api-code`, `generate-async-code`, or `generate-adapter-lib-code`) and confirm the existing layer boundaries.
 2. Read the target class(es) fully before proposing changes.
 3. Identify existing naming, mapping, logging, and exception conventions nearby, and treat them as the baseline style.
 4. Note any test coverage for the target class so behavior-preserving refactors can be verified afterward.
@@ -98,8 +98,8 @@ This skill operates without human-in-the-loop approval. Do not pause to ask whet
    - **Info/style preference with no objective standard backing it** → report only, do not edit.
 4. Preserve public API contracts, event contracts, method signatures used by other classes, and existing package boundaries. Never perform a breaking boundary change autonomously, even if a Blocker finding suggests one — downgrade to a reported finding with a recommended follow-up ticket instead.
 5. Apply the change.
-6. Re-run or point to `test-project` for any existing tests covering the refactored class to confirm behavior is unchanged. Treat a failing post-refactor test run as a signal to revert that specific change, not to proceed regardless.
-7. If no tests exist for the refactored behavior, name `unit-testing` as a follow-up in the Completion Summary rather than silently skipping verification.
+6. Re-run or point to `execute-unit-tests` for any existing tests covering the refactored class to confirm behavior is unchanged. Treat a failing post-refactor test run as a signal to revert that specific change, not to proceed regardless.
+7. If no tests exist for the refactored behavior, name `generate-unit-test-code` as a follow-up in the Completion Summary rather than silently skipping verification.
 
 Do not perform large-scale rewrites in a single pass. Prefer a sequence of small, verifiable refactors over one sweeping change. Cap autonomous refactors per run to keep diffs reviewable in CI (default: no more than 10 classes per invocation unless the task explicitly raises the limit).
 
@@ -181,6 +181,6 @@ Once the Refactor Workflow and Review Checklist have been worked through, emit a
 
 - **Scope**: files/classes touched.
 - **Changes/findings**: one line per item, e.g. `ServiceImpl.java: extracted header-building to HeaderMapper (Major)`. Only note items that were fixed or deliberately left for a follow-up ticket; skip a line-by-line restatement of the checklist.
-- **Follow-up**: name any skill worth queuing next (`test-project`, `unit-testing`) only if a change needs verification; otherwise omit this line.
+- **Follow-up**: name any skill worth queuing next (`execute-unit-tests`, `generate-unit-test-code`) only if a change needs verification; otherwise omit this line.
 
 Keep the summary to a few lines. Any unresolved item (including a deliberately-skipped boundary change) is noted inline as a follow-up, not treated as a blocker — this skill always completes and hands control back to the workflow.

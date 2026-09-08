@@ -1,6 +1,6 @@
 # Generate API Code
 
-`backend-api-microservice` is an agent skill for creating or extending Java Spring Boot backend API microservices. It guides the agent to implement REST endpoints using the repository's existing controller, service, `ServiceImpl`, DTO, mapper, validation, OpenAPI, exception, and downstream adapter patterns.
+`generate-api-code` is an agent skill for creating or extending Java Spring Boot backend API microservices. It guides the agent to implement REST endpoints using the repository's existing controller, service, `ServiceImpl`, DTO, mapper, validation, OpenAPI, exception, and downstream adapter patterns.
 
 Use this skill when the task includes a backend API requirement, JIRA story, OpenAPI contract, endpoint change, or acceptance criteria for a Spring Boot microservice. The skill expects the agent to inspect the local project first and treat the provided contract, headers, request and response schemas, error matrix, and existing code conventions as the source of truth.
 
@@ -27,6 +27,6 @@ Generated code should:
 
 ## When Not To Use
 
-Do not use this skill for asynchronous Kafka or event-handler services, shared adapter library implementation, unit-test-only generation, generic Java refactoring, or frontend API integration. Use the corresponding async, adapter-lib, unit-testing, or frontend skills for those cases.
+Do not use this skill for asynchronous Kafka or event-handler services, shared adapter library implementation, unit-test-only generation, generic Java refactoring, or frontend API integration. Use the corresponding `generate-async-code`, `generate-adapter-lib-code`, `generate-unit-test-code`, or frontend skills for those cases.
 
 See [SKILL.md](./SKILL.md) for the full execution rules.

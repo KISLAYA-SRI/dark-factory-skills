@@ -4,7 +4,7 @@
 
 Use this skill when the task includes a design/architecture review request, a refactor request, a code-smell fix, or general code-quality feedback on Java microservice or adapter-library code. The skill expects the agent to inspect the target code first and treat existing layering, naming, and package conventions as the baseline to improve rather than replace.
 
-**No human-in-the-loop:** this skill is designed to run unattended as a step in an agentic pipeline (for example, immediately after `backend-api-microservice`, `backend-async-microservice`, or `adapter-lib` code generation). It never pauses for approval. Scope resolution and fix-vs-report decisions are driven by a deterministic severity model and a fixed, standard-industry-practice review checklist (aligned with common SonarQube/Checkstyle/PMD and OWASP baseline categories) that the agent works through to completion for the target scope.
+**No human-in-the-loop:** this skill is designed to run unattended as a step in an agentic pipeline (for example, immediately after `generate-api-code`, `generate-async-code`, or `generate-adapter-lib-code` code generation). It never pauses for approval. Scope resolution and fix-vs-report decisions are driven by a deterministic severity model and a fixed, standard-industry-practice review checklist (aligned with common SonarQube/Checkstyle/PMD and OWASP baseline categories) that the agent works through to completion for the target scope.
 
 ## Applies To
 
@@ -31,6 +31,6 @@ Generated output should:
 
 ## When Not To Use
 
-Do not use this skill for implementing new business features (`backend-api-microservice`, `backend-async-microservice`, `adapter-lib`), test generation (`unit-testing`), test execution (`test-project`), build validation (`build-project`), or mock-service configuration (`configure-mock-server`). Use this skill alongside those, typically after implementation or when a design/architecture concern is raised.
+Do not use this skill for implementing new business features (`generate-api-code`, `generate-async-code`, `generate-adapter-lib-code`), test generation (`generate-unit-test-code`), test execution (`execute-unit-tests`), build validation (`build-project`), or mock-service configuration (`configure-mock-server`). Use this skill alongside those, typically after implementation or when a design/architecture concern is raised.
 
 See [SKILL.md](./SKILL.md) for the full execution rules.

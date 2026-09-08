@@ -1,5 +1,5 @@
 ---
-name: adapter-lib
+name: generate-adapter-lib-code
 description: Use when implementing, extending, reviewing, or fixing a shared Spring Boot adapter library JAR that wraps a third-party REST/HTTP API behind reactive client ports, Spring Boot auto-configuration, configuration properties, DTOs, token handling, and common-lib WebClient transport. Triggers include adapter-lib, shared adapter library, client port, AutoConfiguration.imports, HeaderObject, RequestContext, token retry, or downstream API wrapper.
 ---
 
