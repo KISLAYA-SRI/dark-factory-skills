@@ -19,18 +19,27 @@ src/main/java/<root-package>/<service>/
   controller/       REST controllers and endpoint validation
   service/          service interfaces
   service/impl/     business orchestration and adapter calls
-  config/           security, Jackson, downstream error mapping, validators
-  dto/              public API request/response DTOs
+  client/           reactive/HTTP clients invoking downstream/adapter services
+  transformer/      MapStruct or local mappers between public DTOs and downstream DTOs
+  model/            internal carrier objects (e.g., grouped headers) passed across layers
+  constant/         header names, paths, regex patterns, and shared literal values
+  config/           security, Jackson, downstream service properties, WebClient/client config, validators
+  dto/              request/response DTOs, split into public API DTOs and downstream/adapter DTOs
   exception/        canonical exceptions and global handler
-  mapper/           MapStruct or local mappers when present
+  mapper/           MapStruct or local mappers when present (use transformer/ when mapping public <-> downstream DTOs)
 src/main/resources/
   application.yml
   application-local.yml
 src/test/java/<root-package>/<service>/
   controller/
   service/
+  service/impl/
+  client/
+  transformer/
   config/
+  constant/
   exception/
+  integration/
   karate/
 src/test/resources/
   application-test.yaml
@@ -71,6 +80,39 @@ Controller -> Service interface -> ServiceImpl -> adapter/shared-lib client
 - In reactive code, return `Mono<T>`/`Flux<T>`, keep the chain non-blocking, and use `doOnSuccess`/`doOnError` for logs.
 - Use `Mono.defer(...)` or the existing reactive validation style when validation must be deferred until subscription.
 - Do not call `block()` inside the service.
+
+## Client Pattern
+
+- Place downstream/adapter HTTP calls in dedicated `client/` classes, one client per downstream resource or capability.
+- Clients accept request DTOs/values and a headers map (or the internal headers carrier model), and return the downstream response type.
+- Read base URL, paths, and timeouts from typed configuration properties in `config/`; do not hardcode downstream URLs or paths in the client.
+- In reactive services, clients return `Mono<T>`/`Flux<T>` and stay non-blocking; do not call `block()` inside a client.
+- Apply timeouts and retry policies consistently across clients using the project's existing resilience approach (e.g., Resilience4j, reactor retry).
+- Map 4xx responses to client-side exceptions and 5xx/connectivity failures to service-side exceptions; do not leak raw downstream error bodies that may contain sensitive data.
+- Reuse an existing client for a downstream resource instead of creating a duplicate; only add a new client class when a genuinely new downstream resource or capability is introduced.
+
+## Transformer Pattern
+
+- Place mapping logic between public API DTOs and downstream/adapter DTOs in `transformer/`, one transformer per resource/domain area.
+- Prefer MapStruct interfaces for structural request/response mapping; use `@Mapping` to reconcile field name or shape differences between layers.
+- Use a local/manual transformer implementation only when mapping logic is conditional, derived, or otherwise unsuitable for declarative MapStruct mapping.
+- Transformers must not perform I/O, call clients, or contain business/orchestration logic — that belongs in `ServiceImpl`.
+- Keep transformer methods pure and one-directional per method (request mapping and response mapping as separate methods) so they remain independently testable.
+- Reuse an existing transformer for a resource instead of duplicating mapping logic in a controller or service.
+
+## Model Pattern
+
+- Use `model/` for internal carrier objects that group related values (e.g., a set of headers or context fields) passed between Controller, Service, and Client layers.
+- Model classes exist to avoid long method signatures and are not part of the public API contract; do not expose them directly as request/response bodies.
+- Keep model classes immutable where practical (builder pattern or similar) and free of business logic.
+- Populate model objects from incoming request data (headers, path/query values) at the controller or service boundary, not deep inside client code.
+
+## Constant Pattern
+
+- Centralize header names, downstream/internal path literals, regex/validation patterns, and repeated literal values in a `constant/` class (or a small set of them grouped by concern).
+- Declare constants as `public static final` on a non-instantiable utility class (private constructor).
+- Reference constants from controllers, services, clients, and transformers instead of duplicating literal strings; add a new constant when a literal is used in more than one place or represents a contract value (header name, path, error message key).
+- Do not put environment-specific values (URLs, credentials, timeouts) in `constant/`; those belong in typed configuration properties under `config/` and `application*.yml`.
 
 ## Error Model
 
