@@ -33,6 +33,24 @@ Re-reading these large artifacts during Phase 8 multiplies cost on every tool ca
 
 Before producing any output document, the Analysis Agent MUST validate whether all required analysis areas have been completed. This checklist is a mandatory quality gate — not optional.
 
+---
+
+### ⚡ PRESENTATIONAL COMPONENT FAST PATH — READ FIRST
+
+If Phase 3 classified this story as **Presentational**, apply the following rules **before** running any checklist section:
+
+| Checklist Section                                                                                     | Action for Presentational Component                                                                    |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Section 5: Backend / API Analysis                                                                     | Mark ALL rows as `Not Applicable`. Do not analyse.                                                     |
+| Section 9: State, Behaviour and Interaction Analysis — Loading / Error / Empty rows tied to API calls | Mark those rows as `Not Applicable`. UI interaction state rows (tabs, expand, visibility) still apply. |
+| Section 12: Code Generation Readiness — Data Fetching Pattern, Hook / Service / Query Key rows        | Mark as `Not Applicable`. Skip entirely.                                                               |
+
+All other sections (1–4, 6–8, 10–11, 13) MUST still be fully completed.
+
+> **Rule**: Do NOT write empty tables or placeholder rows for skipped sections. Write the section header followed by: `Not Applicable — Presentational component. No API integration required.`
+
+---
+
 **Rules:**
 
 - You must not hide missing inputs.
@@ -366,15 +384,15 @@ Do this in **one combined check** — not a series of separate commands. Remove 
 
 ### ANALYSIS_PLAN.md — 7 chunks
 
-| Chunk | Mode     | Sections                                                                                          |
-| ----- | -------- | ------------------------------------------------------------------------------------------------- |
-| 1     | `create` | Header + Section 1 (Dev Notes Applied) + Section 2 (Story Summary)                                |
-| 2     | `append` | Section 3 (Classification) + Section 4 (Derived Scope) + Section 5 (AC Analysis)                  |
-| 3     | `append` | Section 6 (Agent Decisions) + Section 7 (Component Hierarchy) + Section 8 (Responsibility Matrix) |
-| 4     | `append` | Section 9 (Container/View) + Section 10 (Folder Structure) + Section 11 (Code Generation Plan)    |
-| 5     | `append` | Section 12 (Assumptions) + Section 13 (Interactions) + Section 14 (State/Edge Cases)              |
-| 6     | `append` | Section 15 (Ownership) + Section 16 (Sitecore API Analysis) + Section 17 (BFF API Analysis)       |
-| 7     | `append` | Section 18 (Prop Model) + Section 19 (Reuse Validation) + Section 20 (NFR Analysis)               |
+| Chunk | Mode     | Sections                                                                                                                                                                                                |
+| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | `create` | Header + Section 1 (Dev Notes Applied) + Section 2 (Story Summary)                                                                                                                                      |
+| 2     | `append` | Section 3 (Classification) + Section 4 (Derived Scope) + Section 5 (AC Analysis)                                                                                                                        |
+| 3     | `append` | Section 6 (Agent Decisions) + Section 7 (Component Hierarchy) + Section 8 (Responsibility Matrix)                                                                                                       |
+| 4     | `append` | Section 9 (Container/View) + Section 10 (Folder Structure) + Section 11 (Code Generation Plan)                                                                                                          |
+| 5     | `append` | Section 12 (Assumptions) + Section 13 (Interactions) + Section 14 (State/Edge Cases)                                                                                                                    |
+| 6     | `append` | Section 15 (Ownership) + Section 16 (Sitecore API Analysis) + Section 17 (BFF API Analysis) — For **Presentational** components write: `NOT REQUIRED — Presentational component` for Sections 16 and 17 |
+| 7     | `append` | Section 18 (Prop Model) + Section 19 (Reuse Validation) + Section 20 (NFR Analysis)                                                                                                                     |
 
 **Section cursor after each chunk:**
 
@@ -716,6 +734,7 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 
 - **Chunk 1 (`create`):** Header + DN + AC + INT + STATE + SCOPE + PROP
 - **Chunk 2 (`append`):** CMS + API + COMP + DS + RESP + A11Y + RTL + NFR + FILE + TEST
+  - **For Presentational components**: omit the `API` prefix category entirely from Chunk 2.
 
 **Required Sections (ALL must be populated with story-specific items):**
 
@@ -772,6 +791,8 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 ---
 
 ## API — Backend / API Ownership
+
+> **SKIP for Presentational components** — omit this entire section.
 
 - [ ] API-001: [endpoint] consumed via [HookName] + [ServiceName]
 - [ ] API-002: Raw API response transformed by [MapperName] before reaching display components
@@ -839,6 +860,7 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 ### Always Do
 
 - Complete ALL 13 self-validation checks before producing any document.
+- **For Presentational components**: skip Self-Validation Sections 5, 9 (API-state rows), and 12 (data-fetching rows). Mark those rows `Not Applicable`. Skip ANALYSIS_PLAN.md Sections 16 and 17 (write `NOT REQUIRED — Presentational component`). Skip CODING_AGENT_CHECKLIST.md `API` prefix category entirely.
 - If any check fails — complete the missing analysis first, then re-run the check.
 - Populate EVERY section of EVERY template — no empty sections, no placeholder text left unfilled.
 - Produce all three documents in order: ANALYSIS_PLAN.md → DEV_REVIEW.md → CODING_AGENT_CHECKLIST.md.

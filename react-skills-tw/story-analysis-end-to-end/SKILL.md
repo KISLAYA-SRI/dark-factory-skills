@@ -89,6 +89,34 @@ Rationale: [one clear sentence explaining why]
 
 ---
 
+---
+
+## Scope Rules Based on Classification
+
+After completing Step 2 (Component Classification), apply the following scope rules for the remainder of this skill.
+
+### If Classification = Presentational
+
+Execute ONLY the following steps from this skill:
+
+| Step | Execute? | Notes |
+| ---- | -------- | ----- |
+| Step 3: Scope Derivation | Yes | Full scope |
+| Step 4: Acceptance Criteria Analysis | Yes | Full scope |
+| Step 5: Interaction Analysis | Yes | UI-level only — carousel, accordion, hover, scroll; no API triggers |
+| Step 6: State and Edge Case Analysis | **SKIP** | No API loading/error/empty states needed |
+| Step 7.1: Ownership Separation | Yes | Sitecore vs FE only — no API column needed |
+| Step 7.2: Prop-Driven Model | Yes | Sitecore props + FE-derived props only; no BFF API props |
+| Step 8: NFR Analysis | Yes | Full scope (RTL, Accessibility, Responsive, Overflow) |
+
+>  **SKIP for Presentational:** Step 6 (API loading/error/empty states), API correlation in Step 7, Data Fetching Pattern.
+
+### If Classification = Transactional or Hybrid
+
+Execute ALL steps (Step 3 through Step 8) in full. No step may be skipped.
+
+---
+
 ## Step 3 — Scope Derivation
 
 Derive out-of-scope items from:

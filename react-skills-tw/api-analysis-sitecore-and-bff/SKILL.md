@@ -50,24 +50,34 @@ Do not invent API fields or endpoints. Mark the Sitecore API section as:
 
 ## BFF API Analysis
 
+
+### Pre-Check — BFF API Folder Presence (MANDATORY FIRST STEP)
+
+>  ⚠️ **Before any BFF analysis, check whether API spec files exist in `{{$var[BITBUCKET_API_CLONE_DIR]s}}`.**
+>
+> - If the folder is **empty or contains no JSON/YAML API spec files** — BFF API is not required for this story.
+>   Mark the BFF API section as: `BFF API NOT REQUIRED — No API spec files found in BITBUCKET_API_CLONE_DIR`
+>   Skip all remaining BFF steps (Step 1 through Step 4) entirely.
+> - If the folder **contains API spec files** — proceed with Step 1 below.
+
 ### Step 1 — Identify BFF/Backend Endpoints
 
-From the JIRA Story data, identify all backend/BFF endpoints/OperationId mentioned for integration. The BFF API JSON specs are all extracted under `{{$var[BITBUCKET_CLONE_DIR]s}}`.
+From the JIRA Story data, identify all backend/BFF endpoints/OperationId mentioned for integration. The BFF API JSON specs are all extracted under `{{$var[BITBUCKET_API_CLONE_DIR]s}}`.
 
 ### Step 2 — If NO BFF API Details Are Found
 
-If it is only a presentational component or no BFF API details are found, do not invent API fields.
+If no BFF API endpoints or OperationIds are found in the JIRA story, do not invent API fields.
 Mark it as:
 
 > `BFF API NOT FOUND / NOT REQUIRED`
 
 ### Step 3 — If BFF API Details ARE Found
 
-The BFF API Spec repository is cloned under `{{$var[BITBUCKET_CLONE_DIR]s}}`.
+The BFF API Spec repository is cloned under `{{$var[BITBUCKET_API_CLONE_DIR]s}}`.
 
 > ⚠️ **STRICT ENDPOINT LOOKUP RULE — MANDATORY:**
 >
-> - You MUST look up **only** the exact endpoint(s) inside `{{$var[BITBUCKET_CLONE_DIR]s}}`.
+> - You MUST look up **only** the exact endpoint(s) inside `{{$var[BITBUCKET_API_CLONE_DIR]s}}`.
 > - Do NOT browse other folder, list directory contents, or scan other JSON files.
 > - If the exact endpoint file is not immediately found, do **NOT** fall back to nearby, similarly-named, or related JSON files.
 > - If the exact endpoint cannot be located, mark as: `BFF API CONTRACT NOT FOUND — endpoint [name] could not be located. Developer must provide the correct file path or confirm the endpoint.`
@@ -277,8 +287,8 @@ Endpoint: [HTTP Method] [endpoint path]
 Consuming Component: [ComponentName]
 Hook: use[FeatureName]Data (Hooks/use[FeatureName]Data.ts)
 Service: [FeatureName]Service (Services/[FeatureName]Service.ts)
-Query Key Factory: [FEATURE_NAME]\_QUERY_KEYS.[keyName]([params])
-Endpoint Constant: [FEATURE_NAME]\_ENDPOINTS.[endpointName]
+Query Key Factory: [FEATURE_NAME]_QUERY_KEYS.[keyName]([params])
+Endpoint Constant: [FEATURE_NAME]_ENDPOINTS.[endpointName]
 
 State Rendering Rules:
 isLoading → [skeleton / spinner / placeholder]

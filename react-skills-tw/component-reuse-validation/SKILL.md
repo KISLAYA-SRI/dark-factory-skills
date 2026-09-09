@@ -49,6 +49,27 @@ Only **display components** (atoms, molecules, organisms, feature display compon
 
 ---
 
+## Scope Rules Based on Classification
+
+The classification produced in Phase 3 determines the scope of this skill:
+
+### If Classification = Presentational
+
+- Execute the 4-Step Reuse Workflow for **display/UI components only**.
+- **Skip** reuse validation for:
+  - Containers / controllers
+  - Hook files
+  - Mapper files
+  - Type files
+  - Any component that is a direct Sitecore-mapped wrapper with no reusable UI pattern
+
+### If Classification = Transactional or Hybrid
+
+- Execute the 4-Step Reuse Workflow for all applicable display components as defined in the Exclusions section above.
+
+---
+
+
 ## Step 1 — Classify the Atomic Level (ALWAYS First)
 
 For every applicable component, classify its atomic level before any catalogue check.

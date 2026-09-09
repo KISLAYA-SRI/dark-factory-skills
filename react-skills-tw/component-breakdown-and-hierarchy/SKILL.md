@@ -36,6 +36,12 @@ When two sources conflict, the higher-priority source wins. The conflict and res
 
 Based on the classification from Phase 3, apply the matching breakdown rules below.
 
+>  **Presentational Scope Note**: For **Presentational** components, also apply the following additional rules:
+> - Skip the Component Responsibility Matrix for any component that is a pure design-system passthrough with no logic or state.
+> - Only document components with meaningful rendering responsibility.
+> - Do NOT create a container — Presentational components have no API, state, or persona dependency.
+
+
 - If **Presentational** → apply Presentational Breakdown Rules (P1–P8).
 - If **Transactional** → apply Transactional Breakdown Rules (T1–T8).
 - If **Hybrid** → apply both sets of rules to the appropriate sections.

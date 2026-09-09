@@ -48,10 +48,10 @@ Before starting, confirm what inputs are available:
 
 ## Mandatory Execution Sequence
 
-The Analysis Agent MUST execute all phases in the exact order below. No phase may be skipped. No phase may be reordered.
+The Analysis Agent MUST execute all phases in the order below for every story. Component classification is performed inside Phase 3 (`story-analysis-end-to-end`). The classification result (Presentational / Transactional / Hybrid) is then used by each sub-skill to apply the correct scope internally.
 
 ```
-PHASE 0  →  PHASE 1  →  PHASE 2  →  PHASE 4  →  PHASE 3  →  PHASE 5  →  PHASE 6  →  PHASE 8  →  OUTPUT
+PHASE 0 → PHASE 1 → PHASE 2 → PHASE 4 → PHASE 3 → PHASE 5 → PHASE 6 → PHASE 8 → OUTPUT
 ```
 
 Run phases strictly in order. Load ONE sub-skill's context per phase and discard it before the next phase to conserve tokens.
@@ -144,9 +144,9 @@ After this phase, the following are available for use in all subsequent phases:
 
 > **Invoke: `api-analysis-sitecore-and-bff`**
 
-> ⚠️ **This phase runs BEFORE Phase 3 (Story Analysis).** Both Sitecore and BFF API contracts must be fetched and fully analysed first, so that API data, request/response scenarios, and field contracts are available to inform and correlate with the story analysis in Phase 3.
+>  ⚠️ **This phase runs BEFORE Phase 3 (Story Analysis).** Sitecore API contracts must be fetched and fully analysed first so that CMS field contracts are available to inform story analysis in Phase 3. BFF API contracts are also fetched here when applicable.
 
-This phase performs BOTH Sitecore API and BFF API analysis. There is no separate API analysis agent.
+This phase performs Sitecore API analysis for every story. BFF API analysis is conditional — see Step 4.2 below.
 
 ### What to Do
 
@@ -159,13 +159,17 @@ This phase performs BOTH Sitecore API and BFF API analysis. There is no separate
    - If exact file not found → mark as `SITECORE API CONTRACT NOT FOUND — endpoint [name] could not be located.`
 4. Analyse: CMS rendering to FE component mapping, CMS-authored props, missing fields.
 
-**Step 4.2 — BFF API Analysis**
+**Step 4.2 — BFF API Analysis (Conditional)**
+
+>  ⚠️ **BFF API SKIP RULE**: Before doing anything else in this step, check whether any JSON/YAML API spec files exist under `{$var[BITBUCKET_API_CLONE_DIR]s}`.
+> - If **no API spec files are present** in that folder — BFF API is not required for this story. Mark the BFF section as `BFF API NOT REQUIRED — No API spec files found in BITBUCKET_API_CLONE_DIR` and skip the rest of Step 4.2.
+> - If **API spec files are present** — proceed with BFF API analysis below.
 
 1. Identify BFF endpoints from the JIRA story.
-2. If no BFF endpoints found → mark section as `BFF API NOT FOUND / NOT REQUIRED`.
-3. If found → look up ONLY the exact endpoint in `{{$var[BITBUCKET_CLONE_DIR]s}}`.
+2. If no BFF endpoints found in the story — mark section as `BFF API NOT FOUND / NOT REQUIRED`.
+3. If found — look up ONLY the exact endpoint in `{$var[BITBUCKET_API_CLONE_DIR]s}`.
    - Do NOT browse folders, list files, or fall back to similar files.
-   - If exact file not found → mark as `BFF API CONTRACT NOT FOUND — endpoint [name] could not be located.`
+   - If exact file not found — mark as `BFF API CONTRACT NOT FOUND — endpoint [name] could not be located.`
 4. Read the **complete** YAML/JSON spec file — do NOT skim.
 5. Extract and analyse:
    - ALL request scenarios (every variant, optional vs required fields)
@@ -174,16 +178,17 @@ This phase performs BOTH Sitecore API and BFF API analysis. There is no separate
    - ALL conditional / nullable fields
    - ALL example payloads
 
-> ⚠️ **MANDATORY**: Every request scenario and every response scenario MUST be individually listed. Omitting any scenario is a critical failure.
+>  ⚠️ **MANDATORY**: Every request scenario and every response scenario MUST be individually listed. Omitting any scenario is a critical failure.
 
 ### Gate: Phase 4 Complete When
 
 - [ ] Sitecore API section completed (or marked NOT REQUIRED).
-- [ ] BFF API section completed (or marked NOT REQUIRED).
-- [ ] All request scenarios individually listed.
-- [ ] All response scenarios individually listed.
-- [ ] All error codes listed.
-- [ ] All conditional/nullable fields listed.
+- [ ] BFF API skip check performed — confirmed whether API spec files exist in `BITBUCKET_API_CLONE_DIR`.
+- [ ] BFF API section completed (or marked NOT REQUIRED / NOT APPLICABLE based on skip check).
+- [ ] All request scenarios individually listed (when BFF applicable).
+- [ ] All response scenarios individually listed (when BFF applicable).
+- [ ] All error codes listed (when BFF applicable).
+- [ ] All conditional/nullable fields listed (when BFF applicable).
 - [ ] Strict endpoint lookup rule followed — no folder browsing.
 - [ ] API analysis output is ready to be used in Phase 3 story analysis.
 
@@ -195,7 +200,7 @@ This phase performs BOTH Sitecore API and BFF API analysis. There is no separate
 
 > ⚠️ **Prerequisite**: Phase 4 (API Analysis) MUST be complete before this phase begins. The API contracts fetched in Phase 4 must be actively used during story analysis to correlate API data with story functionality, ACs, ownership, and prop models.
 
-This phase performs complete end-to-end analysis of the user story. All 11 steps of `story-analysis-end-to-end` must be executed in order. No step may be skipped.
+This phase performs complete end-to-end analysis of the user story. The `story-analysis-end-to-end` sub-skill handles component classification internally and applies the correct scope (full or condensed) based on the classification result. Follow all steps as directed by the sub-skill.
 
 ### What `story-analysis-end-to-end` Covers (in order)
 
@@ -227,7 +232,7 @@ This phase performs complete end-to-end analysis of the user story. All 11 steps
 
 > **Invoke: `component-breakdown-and-hierarchy`**
 
-This phase produces the complete component hierarchy and folder structure.
+This phase produces the complete component hierarchy and folder structure. The `component-breakdown-and-hierarchy` sub-skill applies the correct breakdown rules (Presentational / Transactional / Hybrid) based on the classification produced in Phase 3.
 
 ### What to Do
 
@@ -290,7 +295,7 @@ Apply naming conventions:
 
 > **Invoke: `component-reuse-validation`**
 
-This phase validates every component against `component-catalogue.json`. There is no separate Component Reuse Agent — all reuse analysis is performed here.
+This phase validates every applicable component against `component-catalogue.json`. There is no separate Component Reuse Agent — all reuse analysis is performed here. The `component-reuse-validation` sub-skill applies the correct scope based on the classification produced in Phase 3.
 
 ### What to Do
 
@@ -352,6 +357,14 @@ Assign:
 ## PHASE 8 — Self-Validation and Output Production
 
 > **Invoke: `analysis-output-contract`**
+
+>  ⚠️ **PRESENTATIONAL CONDENSED SELF-VALIDATION.**
+> If Phase 3 classified this story as **Presentational**, mark the following checklist sections as `Not Applicable` without analysis:
+> - Section 5: Backend / API Analysis
+> - Section 9: Loading / error / empty API states (still validate UI interaction states)
+> - Section 12: Data Fetching Pattern, hook/service/query key (skip entirely)
+>
+> For ANALYSIS_PLAN.md output, mark Sections 16 and 17 as `NOT REQUIRED — Presentational component`. All other sections must still be fully populated.
 
 This phase has **two mandatory responsibilities** executed in sequence:
 
@@ -534,6 +547,8 @@ This priority order is non-negotiable. When two sources conflict, the higher-pri
 ### Always Do
 
 - Execute all 8 phases in order. No skipping, no reordering.
+- Component classification is performed inside Phase 3 (`story-analysis-end-to-end`). Each sub-skill uses the classification result to apply the correct scope internally.
+- For Phase 4: always run Sitecore API analysis; skip BFF API analysis only when no API spec files exist in `BITBUCKET_API_CLONE_DIR` (the sub-skill enforces this check).
 - Extract Dev Notes FIRST — before any other analysis.
 - Make every decision yourself — no open questions, no deferred approvals.
 - Apply the priority order at every decision point.
@@ -583,14 +598,16 @@ PHASE 2  Figma Fetch, Reconcile, Analyse     [figma-fetch-reconcile-and-analyse]
          → Fetch Figma context, reconcile if both viewports, prepare design inputs
 
 PHASE 4  API Analysis                        [api-analysis-sitecore-and-bff]  ← Runs BEFORE Phase 3
-         → Sitecore API + BFF API — strict endpoint lookup, full YAML analysis
-         → Data Fetching Pattern produced per endpoint (hook, service, query key factory,
-           endpoint constant, state rendering rules, mutation/infinite scroll flags)
+          Sitecore API — always runs; strict endpoint lookup, full JSON analysis
+          BFF API — runs ONLY if API spec files exist in BITBUCKET_API_CLONE_DIR
+            (sub-skill checks folder first; marks NOT REQUIRED if empty)
+          Data Fetching Pattern produced per BFF endpoint when applicable
          → API contracts + fetching patterns made available for Phase 3 story analysis
 
 PHASE 3  Story Analysis End to End           [story-analysis-end-to-end]
          → Story understanding, classification, ACs, interactions, states
-         → Step 7.1: Ownership separation (Sitecore / API / FE)
+          Sub-skill classifies component (Presentational/Transactional/Hybrid) and
+           applies correct scope internally (condensed for Presentational, full for others)
          → Step 7.2: Prop-driven model per component (explicit prop table with source,
            type, source detail, Sitecore Helper functions identified)
          → NFR: RTL, a11y, Responsive, Overflow (Sections 6,7,9,10 only)
