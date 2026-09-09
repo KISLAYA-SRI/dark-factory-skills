@@ -31,6 +31,6 @@ Generated output should:
 
 ## When Not To Use
 
-Do not use this skill for implementing new business features (`generate-api-code`, `generate-async-code`, `generate-adapter-lib-code`), test generation (`generate-unit-test-code`), test execution (`execute-unit-tests`), build validation (`build-project`), or mock-service configuration (`configure-mock-server`). Use this skill alongside those, typically after implementation or when a design/architecture concern is raised.
+Do not use this skill for implementing new business features (`generate-api-code`, `generate-async-code`, `generate-adapter-lib-code`), test generation (`generate-unit-test-code`), test execution (`execute-unit-tests`), build validation (`validate-project-compile`), or mock-service configuration (`configure-mock-server`). Use this skill alongside those, typically after implementation or when a design/architecture concern is raised.
 
 See [SKILL.md](./SKILL.md) for the full execution rules.

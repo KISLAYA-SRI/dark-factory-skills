@@ -1,5 +1,5 @@
 ---
-name: build-project
+name: validate-project-compile
 description: Use when compiling a Java Maven backend API microservice or adapter library after code changes. Triggers include build project, compile project, package project, Maven compile, Maven package, Java 25 build failure, annotation processor failure, dependency resolution during build, or keep building until success.
 ---
 

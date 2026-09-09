@@ -5,7 +5,7 @@ description: Use when running, fixing, or stabilizing Java Maven tests for backe
 
 # Test Project
 
-Use this skill for executing and stabilizing tests. Test generation belongs to `generate-unit-test-code`; compile/package-only validation belongs to `build-project`.
+Use this skill for executing and stabilizing tests. Test generation belongs to `generate-unit-test-code`; compile/package-only validation belongs to `validate-project-compile`.
 
 ## Commands
 
