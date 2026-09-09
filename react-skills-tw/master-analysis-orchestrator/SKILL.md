@@ -41,7 +41,7 @@ Before starting, confirm what inputs are available:
 | JIRA User Story             | `.SS_WF/{{$var[ticket_id]s}}_jira_output.json`   | **Mandatory**                     |
 | Developer Notes / Dev Notes | Section inside the JIRA story                    | If present — SACRED LAW           |
 | Sitecore API Spec           | Cloned under `{{$var[BITBUCKET_SC_CLONE_DIR]s}}` | If Sitecore endpoints in story    |
-| BFF API Spec (YAML)         | Cloned under `{{$var[BITBUCKET_CLONE_DIR]s}}`    | If BFF endpoints in story         |
+| BFF API Spec                | Cloned under `{{$var[BITBUCKET_CLONE_DIR]s}}`    | If BFF endpoints in story         |
 | Component Catalogue         | `component-catalogue.json` at repo root          | **Mandatory** for reuse decisions |
 
 ---
@@ -55,6 +55,8 @@ PHASE 0 → PHASE 1 → PHASE 2 → PHASE 4 → PHASE 3 → PHASE 5 → PHASE 6 
 ```
 
 Run phases strictly in order. Load ONE sub-skill's context per phase and discard it before the next phase to conserve tokens.
+
+For each phase, do not create analysis document indvidually. Always create the final document in Phase - 8 only.
 
 ---
 
@@ -144,7 +146,7 @@ After this phase, the following are available for use in all subsequent phases:
 
 > **Invoke: `api-analysis-sitecore-and-bff`**
 
->  ⚠️ **This phase runs BEFORE Phase 3 (Story Analysis).** Sitecore API contracts must be fetched and fully analysed first so that CMS field contracts are available to inform story analysis in Phase 3. BFF API contracts are also fetched here when applicable.
+> ⚠️ **This phase runs BEFORE Phase 3 (Story Analysis).** Sitecore API contracts must be fetched and fully analysed first so that CMS field contracts are available to inform story analysis in Phase 3. BFF API contracts are also fetched here when applicable.
 
 This phase performs Sitecore API analysis for every story. BFF API analysis is conditional — see Step 4.2 below.
 
@@ -161,7 +163,8 @@ This phase performs Sitecore API analysis for every story. BFF API analysis is c
 
 **Step 4.2 — BFF API Analysis (Conditional)**
 
->  ⚠️ **BFF API SKIP RULE**: Before doing anything else in this step, check whether any JSON/YAML API spec files exist under `{$var[BITBUCKET_API_CLONE_DIR]s}`.
+> ⚠️ **BFF API SKIP RULE**: Before doing anything else in this step, check whether any JSON/YAML API spec files exist under `{$var[BITBUCKET_API_CLONE_DIR]s}`.
+>
 > - If **no API spec files are present** in that folder — BFF API is not required for this story. Mark the BFF section as `BFF API NOT REQUIRED — No API spec files found in BITBUCKET_API_CLONE_DIR` and skip the rest of Step 4.2.
 > - If **API spec files are present** — proceed with BFF API analysis below.
 
@@ -178,7 +181,7 @@ This phase performs Sitecore API analysis for every story. BFF API analysis is c
    - ALL conditional / nullable fields
    - ALL example payloads
 
->  ⚠️ **MANDATORY**: Every request scenario and every response scenario MUST be individually listed. Omitting any scenario is a critical failure.
+> ⚠️ **MANDATORY**: Every request scenario and every response scenario MUST be individually listed. Omitting any scenario is a critical failure.
 
 ### Gate: Phase 4 Complete When
 
@@ -358,7 +361,7 @@ Assign:
 
 > **Invoke: `analysis-output-contract`**
 
->  ⚠️ **PRESENTATIONAL CONDENSED SELF-VALIDATION.**
+> ⚠️ **PRESENTATIONAL CONDENSED SELF-VALIDATION.**
 > If Phase 3 classified this story as **Presentational**, mark the following checklist sections as `Not Applicable` without analysis:
 > - Section 5: Backend / API Analysis
 > - Section 9: Loading / error / empty API states (still validate UI interaction states)
