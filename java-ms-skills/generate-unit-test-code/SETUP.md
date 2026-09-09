@@ -9,15 +9,15 @@ Slingshot discovers skills from workspace or user-level skill folders. The inter
 Workspace-level examples:
 
 ```text
-<repo>/.slingshot/skills/generate-api-code/SKILL.md
-<repo>/.agent/skills/generate-api-code/SKILL.md
+<repo>/.slingshot/skills/generate-unit-test-code/SKILL.md
+<repo>/.agent/skills/generate-unit-test-code/SKILL.md
 ```
 
 User-level examples:
 
 ```text
-~/.slingshot/skills/generate-api-code/SKILL.md
-~/.agent/skills/generate-api-code/SKILL.md
+~/.slingshot/skills/generate-unit-test-code/SKILL.md
+~/.agent/skills/generate-unit-test-code/SKILL.md
 ```
 
 After adding a user-level skill, refresh and enable agent skills from Slingshot using the refresh control next to the `@` button, or run `Refresh Agent Skills and Local Prompts for Agent Mode` from the VS Code command palette. You can also manage installed skills with `Slingshot: Manage Skills`.
@@ -25,7 +25,7 @@ After adding a user-level skill, refresh and enable agent skills from Slingshot 
 Example prompt:
 
 ```text
-Use the generate-api-code skill in Agent mode to implement this Spring Boot REST API from the JIRA and OpenAPI details.
+Use the generate-unit-test-code skill in Agent mode to add unit tests for the newly changed ServiceImpl behavior.
 ```
 
 
@@ -36,13 +36,13 @@ Install the skill in the Codex skills location used by your environment, or keep
 Example prompt:
 
 ```text
-Use the generate-api-code skill to implement the account summary API from the attached OpenAPI contract and JIRA notes.
+Use the generate-unit-test-code skill to add tests for the newly changed controller and service behavior.
 ```
 
 If the skill is loaded by name, use the frontmatter skill name from `SKILL.md`:
 
 ```text
-Use generate-api-code for this Spring Boot endpoint change.
+Use generate-unit-test-code for this test coverage change.
 ```
 
 ## Claude Code
@@ -50,14 +50,14 @@ Use generate-api-code for this Spring Boot endpoint change.
 Install as either a personal or project skill:
 
 ```text
-~/.claude/skills/generate-api-code/SKILL.md
-.claude/skills/generate-api-code/SKILL.md
+~/.claude/skills/generate-unit-test-code/SKILL.md
+.claude/skills/generate-unit-test-code/SKILL.md
 ```
 
 Claude Code can invoke the skill automatically from its description, or you can call it directly:
 
 ```text
-/generate-api-code implement the customer profile REST endpoint using the provided API contract.
+/generate-unit-test-code add unit tests for the changed adapter client behavior.
 ```
 
 ## GitHub Copilot
@@ -67,22 +67,22 @@ For Copilot agent skills, install the folder in a supported skills directory.
 Project-level examples:
 
 ```text
-.github/skills/generate-api-code/SKILL.md
-.claude/skills/generate-api-code/SKILL.md
-.agents/skills/generate-api-code/SKILL.md
+.github/skills/generate-unit-test-code/SKILL.md
+.claude/skills/generate-unit-test-code/SKILL.md
+.agents/skills/generate-unit-test-code/SKILL.md
 ```
 
 Personal examples:
 
 ```text
-~/.copilot/skills/generate-api-code/SKILL.md
-~/.agents/skills/generate-api-code/SKILL.md
+~/.copilot/skills/generate-unit-test-code/SKILL.md
+~/.agents/skills/generate-unit-test-code/SKILL.md
 ```
 
 Example prompt:
 
 ```text
-Use the generate-api-code skill to add the order lookup API. Follow the OpenAPI contract, preserve the existing response envelope, and reuse the configured adapter client.
+Use the generate-unit-test-code skill to add focused tests for the changed order lookup service method, covering success, validation, and error propagation.
 ```
 
 
@@ -90,10 +90,9 @@ Use the generate-api-code skill to add the order lookup API. Follow the OpenAPI 
 
 Before invoking the skill, provide or attach:
 
-- JIRA story or acceptance criteria.
-- OpenAPI/spec details for paths, methods, headers, request bodies, responses, and errors.
+- The changed production class(es) or code-generation handoff from a prior implementation skill.
+- Any updated contract details relevant to expected test behavior.
 - Target repository or module.
-- Downstream adapter/shared-lib client expectations.
-- Any security, validation, logging, or response envelope constraints.
+- Existing test fixtures, builders, or object mappers to reuse.
 
-Expected result: code changes that extend the existing Spring Boot microservice layers cleanly, plus a concise handoff of changed files, assumptions, and any tests that were run or still need to be run.
+Expected result: focused unit tests for the changed behavior only, following existing test conventions, plus a concise handoff of created/modified test files and a recommendation to run `execute-unit-tests` next.

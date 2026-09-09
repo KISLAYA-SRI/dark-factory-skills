@@ -1,11 +1,11 @@
 ---
-name: test-project
+name: execute-unit-tests
 description: Use when running, fixing, or stabilizing Java Maven tests for backend API microservices or adapter libraries. Triggers include run tests, fix tests, mvn test, mvn verify, unit test failure, integration test failure, Karate, Surefire, Failsafe, JaCoCo coverage failure, or keep testing until success.
 ---
 
 # Test Project
 
-Use this skill for executing and stabilizing tests. Test generation belongs to `unit-testing`; compile/package-only validation belongs to `build-project`.
+Use this skill for executing and stabilizing tests. Test generation belongs to `generate-unit-test-code`; compile/package-only validation belongs to `validate-project-compile`.
 
 ## Commands
 

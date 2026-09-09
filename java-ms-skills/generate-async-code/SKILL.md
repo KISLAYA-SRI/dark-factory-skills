@@ -1,5 +1,5 @@
 ---
-name: backend-async-microservice
+name: generate-async-code
 description: Use when implementing, reviewing, or fixing Spring Boot asynchronous backend microservices that consume or publish Kafka messages or platform events through listeners/handlers, delegate to service interfaces and ServiceImpl orchestration, handle idempotency, retries, DLQ, correlation metadata. Triggers include async backend, Kafka listener, event listener, @KafkaListener, @EventHandler, @HandleEvent, listener-service-serviceimpl, event-driven workflow, or platform-events consumption.
 ---
 

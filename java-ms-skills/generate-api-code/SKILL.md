@@ -1,5 +1,5 @@
 ---
-name: backend-api-microservice
+name: generate-api-code
 description: Use when implementing, extending, reviewing, or fixing Spring Boot backend API microservice that exposes REST endpoints, controllers, service interfaces, ServiceImpl orchestration, adapter-lib/shared-lib client consumption, DTO mapping, validation, OpenAPI annotations, global exception handling, and security headers. Triggers include backend API, Java microservice, Spring Boot endpoint, controller-service-serviceimpl, customer accounts style service, or downstream adapter client reuse.
 ---
 

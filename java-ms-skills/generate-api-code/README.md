@@ -27,6 +27,6 @@ Generated code should:
 
 ## When Not To Use
 
-Do not use this skill for asynchronous Kafka or event-handler services, shared adapter library implementation, unit-test-only generation, generic Java refactoring, or frontend API integration. Use the corresponding async, adapter-lib, unit-testing, or frontend skills for those cases.
+Do not use this skill for asynchronous Kafka or event-handler services, shared adapter library implementation, unit-test-only generation, generic Java refactoring, or frontend API integration. Use the corresponding `generate-async-code`, `generate-adapter-lib-code`, `generate-unit-test-code`, or frontend skills for those cases.
 
 See [SKILL.md](./SKILL.md) for the full execution rules.

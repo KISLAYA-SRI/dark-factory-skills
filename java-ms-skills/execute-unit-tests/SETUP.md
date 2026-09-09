@@ -9,15 +9,15 @@ Slingshot discovers skills from workspace or user-level skill folders. The inter
 Workspace-level examples:
 
 ```text
-<repo>/.slingshot/skills/generate-api-code/SKILL.md
-<repo>/.agent/skills/generate-api-code/SKILL.md
+<repo>/.slingshot/skills/execute-unit-tests/SKILL.md
+<repo>/.agent/skills/execute-unit-tests/SKILL.md
 ```
 
 User-level examples:
 
 ```text
-~/.slingshot/skills/generate-api-code/SKILL.md
-~/.agent/skills/generate-api-code/SKILL.md
+~/.slingshot/skills/execute-unit-tests/SKILL.md
+~/.agent/skills/execute-unit-tests/SKILL.md
 ```
 
 After adding a user-level skill, refresh and enable agent skills from Slingshot using the refresh control next to the `@` button, or run `Refresh Agent Skills and Local Prompts for Agent Mode` from the VS Code command palette. You can also manage installed skills with `Slingshot: Manage Skills`.
@@ -25,7 +25,7 @@ After adding a user-level skill, refresh and enable agent skills from Slingshot 
 Example prompt:
 
 ```text
-Use the generate-api-code skill in Agent mode to implement this Spring Boot REST API from the JIRA and OpenAPI details.
+Use the execute-unit-tests skill in Agent mode to run and stabilize the tests for the changed service class.
 ```
 
 
@@ -36,13 +36,13 @@ Install the skill in the Codex skills location used by your environment, or keep
 Example prompt:
 
 ```text
-Use the generate-api-code skill to implement the account summary API from the attached OpenAPI contract and JIRA notes.
+Use the execute-unit-tests skill to run and fix the failing OrderServiceTest class.
 ```
 
 If the skill is loaded by name, use the frontmatter skill name from `SKILL.md`:
 
 ```text
-Use generate-api-code for this Spring Boot endpoint change.
+Use execute-unit-tests for this test run.
 ```
 
 ## Claude Code
@@ -50,14 +50,14 @@ Use generate-api-code for this Spring Boot endpoint change.
 Install as either a personal or project skill:
 
 ```text
-~/.claude/skills/generate-api-code/SKILL.md
-.claude/skills/generate-api-code/SKILL.md
+~/.claude/skills/execute-unit-tests/SKILL.md
+.claude/skills/execute-unit-tests/SKILL.md
 ```
 
 Claude Code can invoke the skill automatically from its description, or you can call it directly:
 
 ```text
-/generate-api-code implement the customer profile REST endpoint using the provided API contract.
+/execute-unit-tests run and stabilize the tests for the changed controller class.
 ```
 
 ## GitHub Copilot
@@ -67,22 +67,22 @@ For Copilot agent skills, install the folder in a supported skills directory.
 Project-level examples:
 
 ```text
-.github/skills/generate-api-code/SKILL.md
-.claude/skills/generate-api-code/SKILL.md
-.agents/skills/generate-api-code/SKILL.md
+.github/skills/execute-unit-tests/SKILL.md
+.claude/skills/execute-unit-tests/SKILL.md
+.agents/skills/execute-unit-tests/SKILL.md
 ```
 
 Personal examples:
 
 ```text
-~/.copilot/skills/generate-api-code/SKILL.md
-~/.agents/skills/generate-api-code/SKILL.md
+~/.copilot/skills/execute-unit-tests/SKILL.md
+~/.agents/skills/execute-unit-tests/SKILL.md
 ```
 
 Example prompt:
 
 ```text
-Use the generate-api-code skill to add the order lookup API. Follow the OpenAPI contract, preserve the existing response envelope, and reuse the configured adapter client.
+Use the execute-unit-tests skill to run the class-level test for PaymentClientImplTest and fix any failures until it passes.
 ```
 
 
@@ -90,10 +90,9 @@ Use the generate-api-code skill to add the order lookup API. Follow the OpenAPI 
 
 Before invoking the skill, provide or attach:
 
-- JIRA story or acceptance criteria.
-- OpenAPI/spec details for paths, methods, headers, request bodies, responses, and errors.
+- The changed or failing test class name(s).
 - Target repository or module.
-- Downstream adapter/shared-lib client expectations.
-- Any security, validation, logging, or response envelope constraints.
+- Any known environment constraints (credentials, network access, external services).
+- Coverage or integration gate requirements, if applicable.
 
-Expected result: code changes that extend the existing Spring Boot microservice layers cleanly, plus a concise handoff of changed files, assumptions, and any tests that were run or still need to be run.
+Expected result: the exact Maven command that passed, or a concise report of the failing test class/method, root cause, and whether the failure is code, test, or environment related.
