@@ -1,6 +1,8 @@
 # Setup
 
-This skill is portable across tools that support Agent Skills-style folders. Keep the directory intact — including the `references/` subfolder — and make sure `SKILL.md` remains at the root of the skill folder.
+This skill is portable across tools that support Agent Skills-style folders. Keep the directory intact — including the `references/` subfolder and the `scripts/execute-sonar.sh` script — and make sure `SKILL.md` remains at the root of the skill folder.
+
+After installing the skill in any of the locations below, ensure `scripts/execute-sonar.sh` keeps its executable bit (`chmod +x scripts/execute-sonar.sh`) if your install/copy mechanism does not preserve file permissions.
 
 ## Slingshot
 
@@ -105,4 +107,4 @@ Before invoking the skill, provide or attach:
 - Confirmation that the project currently builds/compiles, since the analysis command runs a full build/verify (Maven) or relies on the project's existing lint/build/test setup (Node/React) before publishing.
 - For Mixed repositories, which module(s) to analyze.
 
-Expected result: the detected project family, the exact analysis command run (token masked), the build/scan outcome, and the SonarQube quality gate status, with a handoff recommendation to `fix-sonar-issues` if the quality gate failed.
+Expected result: the detected project family, which Node/React scanner resolution path was used (if applicable), the exact analysis command run (token masked), the build/scan outcome, and the SonarQube quality gate status, with a handoff recommendation to `fix-sonar-issues` if the quality gate failed.

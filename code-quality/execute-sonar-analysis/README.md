@@ -7,21 +7,40 @@ Use this skill when the task is to run, trigger, or execute a SonarQube scan —
 ## Applies To
 
 - Running a SonarQube analysis for a Maven-based Java microservice or adapter library (`mvn verify sonar:sonar`).
-- Running a SonarQube analysis for a Node.js/React/TypeScript project (`sonar-scanner` via `npx` or an existing npm script).
+- Running a SonarQube analysis for a Node.js/React/TypeScript project (a resolved `sonar-scanner` binary, falling back to `npx` only as a last resort).
 - Publishing analysis results to a SonarQube server using project-specific credentials.
 - Waiting on and reporting the SonarQube quality gate result for the current analysis.
 - Multi-module Maven projects and npm/yarn/pnpm workspaces, when run from the appropriate module/workspace root.
 - Mixed repositories containing both a Maven module and a Node/React module, analyzed per module.
 
+## Deterministic Execution via Script
+
+This skill ships [`scripts/execute-sonar.sh`](./scripts/execute-sonar.sh), a single script that performs project-type detection and tool resolution itself, so the same invocation behaves the same way every run:
+
+```bash
+SONAR_PROJECT_ID=<<SONAR_PROJECT_ID>> \
+SONAR_URL=<<SONAR_URL>> \
+SONAR_TOKEN=<<SONAR_TOKEN>> \
+./scripts/execute-sonar.sh <<TARGET_DIR>>
+```
+
+The script:
+
+- Detects Maven (`pom.xml`) vs Node/React (`package.json`) automatically.
+- For Node/React, resolves the scanner binary in order: `sonar-scanner` on `PATH` -> `node_modules/.bin/sonar-scanner` -> `npx --yes sonar-scanner` (last resort, with an explicit warning since `npx` can re-download the package on every run).
+- Fails fast with a clear message if required environment variables or tools are missing.
+
+The agent prefers running this script over hand-assembling the Maven/npx command; the `references/maven.md` and `references/node.md` files exist mainly to document what the script does, and as a manual fallback if script execution is not available in the current environment.
+
 ## Project Type Detection
 
-Before running any command, the agent detects the project family:
+The script (and the manual fallback path) detect the project family the same way:
 
 | Signal | Project Family | Reference |
 |---|---|---|
 | `pom.xml` present | Maven (Java) | [`references/maven.md`](./references/maven.md) |
 | `package.json` present, no `pom.xml` | Node/React | [`references/node.md`](./references/node.md) |
-| Both present | Mixed | Both references, run per module |
+| Both present | Mixed | Both references, run the script once per module |
 
 Only the reference file matching the detected project family is loaded — this keeps the skill's context usage lean.
 
@@ -50,4 +69,4 @@ The agent must have these three values before running the analysis, regardless o
 
 Do not use this skill to interpret, triage, or fix reported SonarQube findings — use `fix-sonar-issues` for that. Do not use this skill for plain unit test execution without a Sonar analysis — use `execute-unit-tests` for that.
 
-See [SKILL.md](./SKILL.md) for the full execution rules, and `references/maven.md` / `references/node.md` for the exact commands per project family.
+See [SKILL.md](./SKILL.md) for the full execution rules, [`scripts/execute-sonar.sh`](./scripts/execute-sonar.sh) for the deterministic runner, and `references/maven.md` / `references/node.md` for the exact commands and tool-resolution logic per project family.
