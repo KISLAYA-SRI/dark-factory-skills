@@ -1,8 +1,6 @@
-
-
 ---
 name: feature-context-fetch-and-reconcile
-description: >
+description:
   Use when a JIRA user story references Sitecore API endpoints, BFF/OpenAPI
   operation IDs, or Figma design links, and a downstream Analysis Agent needs a
   complete, validated context bundle. The skill classifies every logical feature
@@ -78,7 +76,11 @@ The JIRA story is the only discovery source for:
 If the JIRA input cannot be read, terminate immediately with:
 
 ```json
-{"status":"failed","reason":"REQUIRED CONTEXT NOT FOUND","detail":"JIRA_INPUT_NOT_FOUND"}
+{
+  "status": "failed",
+  "reason": "REQUIRED CONTEXT NOT FOUND",
+  "detail": "JIRA_INPUT_NOT_FOUND"
+}
 ```
 
 ---
@@ -98,7 +100,6 @@ If the JIRA input cannot be read, terminate immediately with:
 - Prevent path traversal and invalid filesystem characters.
 
 ### Output in Root Directory
-
 
 ### Required Structure
 
@@ -421,7 +422,6 @@ not ask the model to semantically rewrite or compress schemas.
 
 Continue with the remaining operations.
 
-
 ---
 
 ## 10. Phase 6 — Extract Figma Design Intent
@@ -705,9 +705,6 @@ If only one viewport is supplied for a feature:
 A single viewport does NOT fail the completeness gate. The gate requires Figma
 context to exist, not both viewports.
 
-
-
-
 ---
 
 ## 12. Phase 8 — Completeness Gate (Mandatory)
@@ -731,11 +728,11 @@ feature.
 
 ### Gate — Presentational Feature
 
-| Source Type | Requirement |
-| --- | --- |
-| Sitecore | **Required.** Every discovered endpoint must be fetched and its artifact created. |
-| Figma | **Required.** Every discovered design must be extracted and its artifact created. Reconciliation is required only when both viewports exist. |
-| BFF | **Optional.** A presentational feature may legitimately have no backend API. |
+| Source Type | Requirement                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sitecore    | **Required.** Every discovered endpoint must be fetched and its artifact created.                                                            |
+| Figma       | **Required.** Every discovered design must be extracted and its artifact created. Reconciliation is required only when both viewports exist. |
+| BFF         | **Optional.** A presentational feature may legitimately have no backend API.                                                                 |
 
 Pass condition:
 
@@ -759,11 +756,11 @@ BFF handling for a presentational feature:
 
 ### Gate — Transactional Feature
 
-| Source Type | Requirement |
-| --- | --- |
-| Sitecore | **Required.** |
-| BFF | **Required.** |
-| Figma | **Required.** |
+| Source Type | Requirement   |
+| ----------- | ------------- |
+| Sitecore    | **Required.** |
+| BFF         | **Required.** |
+| Figma       | **Required.** |
 
 Pass condition:
 
@@ -802,8 +799,6 @@ code generation on an incomplete context bundle.
 - Never pass the gate when the manifest itself could not be written.
 
 ---
-
-
 
 ## 13. Context Reuse and Cost Controls
 
@@ -873,19 +868,19 @@ After the gate is evaluated and the manifest is written:
 Run passed for every feature:
 
 ```json
-{"status":"Success"}
+{ "status": "Success" }
 ```
 
 One or more features failed the gate:
 
 ```json
-{"status":"failed","reason":"REQUIRED CONTEXT NOT FOUND"}
+{ "status": "failed", "reason": "REQUIRED CONTEXT NOT FOUND" }
 ```
 
 JIRA input unreadable or output root not creatable:
 
 ```json
-{"status":"failed","reason":"REQUIRED CONTEXT NOT FOUND"}
+{ "status": "failed", "reason": "REQUIRED CONTEXT NOT FOUND" }
 ```
 
 Maximum final response: 20 tokens. All diagnostic detail belongs in
