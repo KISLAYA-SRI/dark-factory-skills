@@ -1,431 +1,353 @@
 ---
 name: analysis-output-contract
-description: Use when performing final self-validation and producing all three output documents (ANALYSIS_PLAN.md, DEV_REVIEW.md, CODING_AGENT_CHECKLIST.md) for the FE Story Analysis Agent. Runs 13-section self-validation checklist, prohibition check, and mandatory output templates. Triggers include output contract, self-validation, analysis output, ANALYSIS_PLAN, DEV_REVIEW, CODING_AGENT_CHECKLIST, or Phase-8.
+description: Use this skill to perform final self-validation and produce all three output documents (ANALYSIS_PLAN.md, DEV_REVIEW.md, CODING_AGENT_CHECKLIST.md). Runs the 13-section self-validation checklist, the content prohibition check, and the mandatory output templates including the API Contract Gaps section. Triggers include output contract, self-validation, analysis output, ANALYSIS_PLAN, DEV_REVIEW, CODING_AGENT_CHECKLIST, or Phase-9.
 ---
 
-# Analysis Output Contract
+## Analysis Output Contract
 
-## Purpose
+### Purpose
 
-This skill is the **final phase** of the FE Story Analysis Agent workflow. It has two mandatory responsibilities:
+This skill has two mandatory responsibilities:
 
-1. **Self-Validation** — Run the complete 13-section checklist to verify all analysis areas are complete and correct before any document is produced.
-2. **Output Production** — Generate all three output documents using the mandatory templates defined in this skill, with full detail populated from the analysis completed in Phases 1–7.
+- **Self-Validation** — Run the complete 13-section checklist to verify all analysis areas are complete and correct before any document is produced.
+- **Output Production** — Generate all three output documents using the mandatory templates, fully populated from the analysis completed in all the Phases.
 
-> **CRITICAL**: No output document may be produced until ALL self-validation checks are completed. If any check fails, the agent must complete the missing analysis before proceeding to output production.
+**CRITICAL**: No output document may be produced until ALL self-validation checks are completed. If any check fails, complete the missing analysis before proceeding.
+---
+
+### ⚠️ ANALYSIS_PLAN.md IS A HANDOFF CONTRACT — NOT AN ANALYSIS TRANSCRIPT
+
+ANALYSIS_PLAN.md exists for **one consumer**: the Code Generation Agent.
+
+> Every coding skill is self-contained — folder placement, naming, PascalCase, container/view rules, RTL, accessibility, prop-driven discipline and design-token usage are already embedded in the coding skills. Therefore any plan content that merely **restates a project rule is dead weight**. The plan carries only the **story-specific decision**.
+
+**Provenance belongs in DEV_REVIEW.md, never in ANALYSIS_PLAN.md.** Columns such as `Basis`, `Confidence`, `Source`, `Confirmed In` and `Agent Decision` do not change what the Coding Agent builds.
+
+**Analyse wide, hand off narrow.** Exhaustive extraction happens during analysis — that is how edge cases and contract gaps are discovered. Only the FE-relevant slice is serialised into the plan.
+
+⚠️ **One exception: contract gaps are never compressed.** Every gap found during API analysis is reported in full in DEV_REVIEW.md §5.
 
 ---
 
-## ⚠️ PHASE 8 CONTEXT RULE — READ FIRST
+### ⚠️ PHASE 9 CONTEXT RULE — READ FIRST
 
-**All analysis is already complete before Phase 8 begins.** The large raw source artifacts loaded in earlier phases — the full API spec file, the full component catalogue JSON, and the raw Figma design trees — are **no longer needed** and must NOT be re-opened or re-read during Phase 8.
+**All analysis is already complete.** The large raw artefacts — the full API spec files, the full component catalogue, and the raw Figma design trees — are **no longer needed** and must NOT be re-opened.
 
-- Do **NOT** re-read the raw API spec file.
+- Do **NOT** re-read the raw API spec files.
 - Do **NOT** re-read the full component catalogue.
 - Do **NOT** re-read the raw Figma JSON trees.
-- If any detail appears to be missing, pull it from the **already-distilled Phase 1–7 outputs** in the current session context — never from re-reading original large files.
-
-Re-reading these large artifacts during Phase 8 multiplies cost on every tool call. Everything needed to write the three documents is already in the analysis results.
+- If a detail seems missing, pull it from the **already-distilled Phase 1–8 outputs** in session context.
 
 ---
 
 ## PART A — Self-Validation Checklist
 
-Before producing any output document, the Analysis Agent MUST validate whether all required analysis areas have been completed. This checklist is a mandatory quality gate — not optional.
+Before producing any document, validate that all required analysis areas are complete. This is a mandatory quality gate.
 
----
+> **Note:** This checklist validates **analysis completeness**. It is different from the 13 sections of ANALYSIS_PLAN.md, which is the **handoff contract**. A check passing here does not mean its content is written into the plan — much of it goes to DEV_REVIEW.md instead.
 
 ### ⚡ PRESENTATIONAL COMPONENT FAST PATH — READ FIRST
 
-If Phase 3 classified this story as **Presentational**, apply the following rules **before** running any checklist section:
+If Phase 3 classified this story as **Presentational**:
 
-| Checklist Section                                                                                     | Action for Presentational Component                                                                    |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Section 5: Backend / API Analysis                                                                     | Mark ALL rows as `Not Applicable`. Do not analyse.                                                     |
-| Section 9: State, Behaviour and Interaction Analysis — Loading / Error / Empty rows tied to API calls | Mark those rows as `Not Applicable`. UI interaction state rows (tabs, expand, visibility) still apply. |
-| Section 12: Code Generation Readiness — Data Fetching Pattern, Hook / Service / Query Key rows        | Mark as `Not Applicable`. Skip entirely.                                                               |
+| Checklist Section | Action for Presentational Component |
+| --- | --- |
+| Section 5: Backend / API Analysis | Mark ALL rows Not Applicable. Do not analyse. |
+| Section 9: Loading / Error / Empty / Partial / Success / Unavailable rows | Mark Not Applicable. **UI interaction rows still apply — see below.** |
+| Section 12: Data Fetching Pattern, Hook / Service / Query Key rows | Mark Not Applicable. Skip entirely. |
+| Section 12: Container/mapper boundary rows | Mark Not Applicable. No container or mapper exists. |
 
 All other sections (1–4, 6–8, 10–11, 13) MUST still be fully completed.
 
-> **Rule**: Do NOT write empty tables or placeholder rows for skipped sections. Write the section header followed by: `Not Applicable — Presentational component. No API integration required.`
+#### ⚠️ DEFENSIVE RULE — STATE ANALYSIS IS SCOPED, NEVER SKIPPED
 
----
+**A Presentational component still has real states.** Skipping state analysis leaves §10 empty, deprives the Coding Agent of a state contract, and leaves Test Generation with no state cases.
+
+For a Presentational story, §10 MUST contain:
+
+```text
+✅ Default / initial
+✅ Active / selected (e.g. current carousel slide, selected tab)
+✅ Hover / focus
+✅ Transitioning / paused (autoplay, animation, carousel motion)
+✅ Disabled
+✅ Hidden (conditional render)
+✅ Media edge cases (missing image / broken media URL)
+✅ Overflow edge cases (long text, localisation growth, narrow viewport)
+
+❌ Loading, Success, Empty, Partial data, Error, Unavailable  — API-driven, omit
+❌ API failure, missing/partial/invalid data, unauthorised, empty list — API-driven, omit
+```
+
+If §10 is empty for a Presentational story, the analysis is **incomplete** — return to Phase 3 and scope it correctly.
+
+**Corresponding output rules for Presentational:**
+- §11 → `NOT REQUIRED — Presentational component. No API integration.`
+- §6 → omit `Container` and `View` types.
+- §10 → UI interaction states only.
+- §8 → omit the State Handling Placement table.
 
 **Rules:**
-
-- You must not hide missing inputs.
-- If information is not available in the user story, Figma, Sitecore details or backend API spec, clearly mark it as `Not Provided`.
-- If behaviour is recommended using project/frontend best practices, clearly mark it as `Derived`.
-- If the analysis depends on developer judgement or had uncertainty, make the best decision, mark the basis clearly, and record it in DEV_REVIEW.md.
-- If any task is not completed, do not assume any information and do not provide incorrect information. Complete that analysis before generating the analysis document.
-
----
+- Do not hide missing inputs. Mark unavailable information as Not Provided.
+- Behaviour recommended from best practice → mark Derived **in DEV_REVIEW.md**, not the plan.
+- Uncertain decisions → make the best decision, write it into the plan, record basis and confidence in DEV_REVIEW.md.
+- If any task is incomplete, do not assume or fabricate. Complete the analysis first.
 
 ### 1. Story Understanding
-
-| Check                          | What to Validate                                      | Status | Notes |
-| ------------------------------ | ----------------------------------------------------- | ------ | ----- |
-| Story objective understood     | Identify what user/business outcome the story enables |        |       |
-| Story scope extracted          | Capture what is in scope for this story               |        |       |
-| Out-of-scope items identified  | Capture items explicitly excluded or deferred         |        |       |
-| Acceptance criteria mapped     | Each AC is translated into FE implications            |        |       |
-| Page/component name identified | Identify target page, section, or component           |        |       |
-| Journey context captured       | Identify where user enters this experience from       |        |       |
-| Personas/roles captured        | Identify relevant personas if story mentions them     |        |       |
-
----
+- [ ] Story objective understood
+- [ ] Story scope extracted
+- [ ] Out-of-scope items identified *(→ §8, Things NOT to Implement)*
+- [ ] Acceptance criteria mapped to FE implications
+- [ ] Page/component name identified
+- [ ] Journey context captured *(→ internal + DEV_REVIEW context)*
+- [ ] Personas/roles captured
+- [ ] All 11 story-understanding items extracted, including the 7 not emitted
 
 ### 2. Story Classification
-
-| Check                                   | What to Validate                                           | Status | Notes |
-| --------------------------------------- | ---------------------------------------------------------- | ------ | ----- |
-| Component classification completed      | Presentational / Transactional / Hybrid                    |        |       |
-| Classification rationale documented     | Explain why the classification was chosen                  |        |       |
-| Data-fetching responsibility identified | Confirm whether API/BFF data is required                   |        |       |
-| CMS-authored responsibility identified  | Confirm whether Sitecore fields/config are required        |        |       |
-| FE-only responsibility identified       | Confirm local state, visibility, mapping, and layout logic |        |       |
-
----
+- [ ] Classification completed — Presentational / Transactional / Hybrid
+- [ ] Classification rationale documented
+- [ ] **Classification derived from the story text alone, before Figma/API analysis**
+- [ ] Data-fetching responsibility identified
+- [ ] CMS-authored responsibility identified
+- [ ] FE-only responsibility identified
 
 ### 3. Developer Notes Compliance
+- [ ] Dev Notes extracted before any other analysis
+- [ ] All Dev Notes numbered (DN-001, DN-002, …)
+- [ ] Every analysis decision checked against the DN list
+- [ ] Dev Notes Applied table completed as §1
+- [ ] Every DN-xxx item appears in the table
+- [ ] Every DN-influenced item labelled with its DN ID
+- [ ] §1 table uses exactly the four required columns
+- [ ] DN conflicts → DEV_REVIEW.md §3; DN ambiguity → DEV_REVIEW.md §4
 
-| Check                                           | What to Validate                                                | Status | Notes |
-| ----------------------------------------------- | --------------------------------------------------------------- | ------ | ----- |
-| Dev Notes extracted before any other analysis   | Scanned Jira story for Developer Notes / Dev Notes section      |        |       |
-| All Dev Notes numbered (DN-001, DN-002, ...)    | Every note is numbered and recorded in working list             |        |       |
-| Every analysis decision checked against DN list | No topic covered by a Dev Note has a conflicting recommendation |        |       |
-| Dev Notes Applied table completed in Section 1  | Table appears as Section 1 of ANALYSIS_PLAN.md                  |        |       |
-| Every DN-xxx item appears in the table          | No Dev Note is missing from the Applied table                   |        |       |
-| Every DN-influenced item labelled with DN ID    | All analysis items reference their source Dev Note ID           |        |       |
-
----
-
-### 4. Sitecore / CMS Analysis
-
-| Check                                 | What to Validate                                                                | Status | Notes |
-| ------------------------------------- | ------------------------------------------------------------------------------- | ------ | ----- |
-| Sitecore input read                   | Confirm Sitecore rendering/layout contract was available                        |        |       |
-| Page route captured                   | Route name/path/language/site documented if available                           |        |       |
-| Renderings identified                 | List all Sitecore renderings relevant to the story                              |        |       |
-| FE mapping identified                 | Map each rendering to FE entry component                                        |        |       |
-| Placeholder usage captured            | Identify placeholder where component is placed                                  |        |       |
-| Datasource/template noted             | Capture datasource/template name if provided                                    |        |       |
-| Authored fields listed                | Identify all CMS-authored labels/copy/config                                    |        |       |
-| Rendering parameters listed           | Capture variant/config/default state fields                                     |        |       |
-| Authoring boundary defined            | Confirm which components are CMS-authored vs FE-composed                        |        |       |
-| Inner FE components not over-authored | Ensure agent does not make every card/tab a Sitecore rendering unless specified |        |       |
-| CMS vs FE ownership table created     | Separate Sitecore-authored, FE-controlled, and API-controlled values            |        |       |
-| Sitecore gaps captured                | Missing field/template/rendering details documented                             |        |       |
-
----
+### 4. Context Acquisition and Validation
+- [ ] CONTEXT_MANIFEST produced by the context gathering phase
+- [ ] Context Validation gate passed for this classification
+- [ ] Sitecore artefact present and validated
+- [ ] Figma artefacts present and validated for every declared URL
+- [ ] BFF artefacts present and validated *(Transactional/Hybrid only)*
+- [ ] BFF check correctly skipped for Pure Presentational
 
 ### 5. Backend / API Analysis
+- [ ] Spec files read from disk — no fetching in the analysis phase
+- [ ] Required endpoints identified from the CONTEXT_MANIFEST
+- [ ] ALL request scenarios extracted *(analysis-wide)*
+- [ ] ALL response scenarios extracted (2xx, 4xx, 5xx, empty, partial) *(analysis-wide)*
+- [ ] ALL error codes and messages extracted *(analysis-wide)*
+- [ ] ALL example payloads reviewed to validate contract understanding *(never emitted)*
+- [ ] Response fields relevant to the FE story identified
+- [ ] Conditional / nullable fields identified → mapper defaults
+- [ ] Field-to-UI mapping drafted
+- [ ] API-owned vs CMS-owned values separated
+- [ ] Raw API response not passed to display components — mapper boundary defined
+- [ ] Strict lookup rule followed — no folder browsing, no fallback files
+- [ ] Data fetching pattern produced per endpoint
+- [ ] **Distil step performed** — FE-relevant slice separated from full extraction
 
-| Check                                             | What to Validate                                             | Status | Notes |
-| ------------------------------------------------- | ------------------------------------------------------------ | ------ | ----- |
-| API spec input read                               | Confirm API/OpenAPI details were available, if provided      |        |       |
-| Required endpoints identified                     | List endpoint(s) needed for the story                        |        |       |
-| HTTP method captured                              | GET/POST/PUT/etc.                                            |        |       |
-| Request inputs identified                         | Path/query/body/header requirements                          |        |       |
-| ALL request scenarios from YAML extracted         | Every distinct request variant individually listed           |        |       |
-| Response fields identified                        | Only fields relevant to FE story extracted                   |        |       |
-| ALL response scenarios from YAML extracted        | Every response case (2xx, 4xx, 5xx, empty, partial) listed   |        |       |
-| ALL error codes and messages extracted            | Every error code and message from spec listed                |        |       |
-| Conditional / nullable fields identified          | Fields that appear only in certain scenarios captured        |        |       |
-| Field-to-UI mapping drafted                       | Map API fields to display/view model fields                  |        |       |
-| API-owned vs CMS-owned values separated           | Values from API not confused with labels from CMS            |        |       |
-| Missing API data captured                         | Any UI field not supported by API response flagged           |        |       |
-| Error/loading/empty requirements identified       | UI states needed from API behaviour derived                  |        |       |
-| Raw API response not passed to display components | Mapper/view model boundary defined                           |        |       |
-| Strict endpoint lookup rule followed              | Only exact endpoint looked up — no folder browsing           |        |       |
-| Data fetching pattern produced per endpoint       | Hook / Service / Query Key / Endpoint Constant / State rules |        |       |
+### 6. Contract Gap Analysis
+- [ ] Gap sweep run against the prop model
+- [ ] Gap sweep run against the acceptance criteria
+- [ ] Gap sweep run against Figma-identified content
+- [ ] Gap sweep run against states requiring data
+- [ ] Every gap has a GAP-xxx ID and all eight columns populated
+- [ ] Every gap cites contract evidence proving absence
+- [ ] Every gap names a concrete consumer (AC / component / prop)
+- [ ] Every prop marked `Unknown` has a corresponding GAP entry
+- [ ] **DEV_REVIEW.md §5 populated — or explicitly states no gaps**
+- [ ] §11.1 / §11.2 Gaps lines carry brief notes with GAP IDs
 
----
+### 7. Figma / Design Context Analysis
+- [ ] Figma context read from disk — no fetching in the analysis phase
+- [ ] Viewport identified per file from `screenMetadata`, not filename
+- [ ] Target frame/node identified
+- [ ] Layer hierarchy reviewed
+- [ ] Text/copy ownership inferred carefully — CMS vs API vs system
+- [ ] Icon references noted (names only)
+- [ ] Auto-layout/layout hints used as guidance, not hardcoded values
+- [ ] Design ambiguity captured *(→ DEV_REVIEW.md §4)*
+- [ ] Reconciliation performed only when both viewports present and no existing file
+- [ ] Reconciliation JSON treated as authoritative once produced
+- [ ] Design-only interactions added to §9 with continued INT-xxx numbering
+- [ ] Design-required content captured in §12 for the gap sweep
+- [ ] Classification left unchanged by design analysis
 
-### 6. Figma / Design Context Analysis
+### 8. Component Breakdown Analysis
+- [ ] Component hierarchy created without file paths
+- [ ] Hierarchy uses approved markers
+- [ ] Containers separated from display components *(Transactional/Hybrid only)*
+- [ ] View component responsibility defined
+- [ ] Feature display components identified
+- [ ] Design-system candidates identified
+- [ ] No unnecessary lowest-level atom detail
+- [ ] Component responsibilities documented — owns / must-not-own
+- [ ] `Type` assigned per component (carries the container/view decision)
+- [ ] Placement decision tree run; ownership marker assigned per component
+- [ ] Naming conventions applied internally to derive §8 filenames
+- [ ] 4-Step Reuse Workflow completed for each applicable component
+- [ ] `component-catalogue.json` consulted
+- [ ] Containers excluded from reuse check
 
-| Check                                  | What to Validate                                                        | Status | Notes |
-| -------------------------------------- | ----------------------------------------------------------------------- | ------ | ----- |
-| Figma context read                     | Confirm figma data was available                                        |        |       |
-| Target frame/node identified           | Node name and type captured                                             |        |       |
-| Layer hierarchy reviewed               | Understand visible UI structure                                         |        |       |
-| Text/copy ownership inferred carefully | Determine whether labels come from CMS or API/system                    |        |       |
-| Icon references noted                  | Capture icon names only, not actual assets                              |        |       |
-| Auto-layout/layout hints considered    | Use dimensions/layout only as guidance, not hardcoded implementation    |        |       |
-| Design ambiguity captured              | Missing/unclear component intent documented                             |        |       |
-| Responsive Reconciliation JSON used    | If both viewports provided, reconciliation JSON used as source of truth |        |       |
-| Reconciliation not repeated            | Did not re-reconcile if responsive_design_intent.json already exists    |        |       |
+### 9. Props / View Model Analysis
+- [ ] Prop-driven model defined — no hardcoded labels, values, messages, CTA text
+- [ ] Prop shape produced per component with source, type, source detail
+- [ ] Sitecore props identified; API props identified; derived props identified
+- [ ] **Every provisional `Source Detail` resolved or gap-recorded**
+- [ ] View model drafted for display components
+- [ ] Mapper responsibility defined *(Transactional/Hybrid only)*
+- [ ] Optional/missing data handling noted
+- [ ] Sitecore helpers identified where relevant
+- [ ] **Every ownership item from Phase 3 Step 7.1 appears as a prop row in §12**
 
----
+### 10. State, Behaviour and Interaction Analysis
+- [ ] Default / initial state analysed
+- [ ] Active / selected state analysed *(applies to Presentational)*
+- [ ] Hover / focus state analysed *(applies to Presentational)*
+- [ ] Transitioning / paused state analysed *(applies to Presentational)*
+- [ ] Disabled state analysed *(applies to Presentational)*
+- [ ] Hidden / conditional-render state analysed *(applies to Presentational)*
+- [ ] Media edge cases analysed *(applies to Presentational)*
+- [ ] Overflow edge cases analysed *(applies to Presentational)*
+- [ ] Loading / error / empty / partial / success / unavailable states analysed *(Transactional/Hybrid only)*
+- [ ] API-driven edge cases analysed *(Transactional/Hybrid only)*
+- [ ] Visibility rules analysed — persona/role/config-driven
+- [ ] Interaction behaviour analysed
+- [ ] State ownership assigned
+- [ ] **§10 is non-empty** — including for Presentational stories
 
-### 7. Component Breakdown Analysis
+### 11. Accessibility, RTL and Responsive Analysis
+- [ ] Semantic structure considered
+- [ ] Keyboard interaction considered
+- [ ] ARIA requirements noted
+- [ ] RTL readiness considered — no left/right assumptions
+- [ ] Localisation readiness considered — no hardcoded text
+- [ ] Responsive behaviour considered
+- [ ] Design tokens assumed over hardcoded colours/spacing
+- [ ] Overflow & scroll handling considered
 
-| Check                                        | What to Validate                                                     | Status | Notes |
-| -------------------------------------------- | -------------------------------------------------------------------- | ------ | ----- |
-| Component hierarchy created                  | Show logical FE hierarchy without file paths                         |        |       |
-| Hierarchy uses approved markers              | Use markers like `[design-system]`, `[feature]`, `[Sitecore-mapped]` |        |       |
-| Containers separated from display components | Data/state components separated from presentational components       |        |       |
-| View component responsibility defined        | Layout composition only                                              |        |       |
-| Feature display components identified        | Business-meaningful UI blocks listed                                 |        |       |
-| Design-system candidates identified          | Generic reusable UI patterns identified                              |        |       |
-| No unnecessary lowest-level atom detail      | Avoid over-documenting atoms/molecules if not needed                 |        |       |
-| Component responsibilities documented        | Each component has clear owns/does-not-own definition                |        |       |
-| 4-Step Reuse Workflow completed for each     | Every component went through all applicable steps                    |        |       |
-| component-catalogue.json consulted           | Reuse decisions based on catalogue, not assumptions                  |        |       |
-| Containers excluded from reuse check         | Containers/controllers not validated against catalogue               |        |       |
+> All four categories analysed in full. Only **story-specific exceptions** written into §13.2.
 
----
-
-### 8. Props / View Model Analysis
-
-| Check                                | What to Validate                                                       | Status | Notes |
-| ------------------------------------ | ---------------------------------------------------------------------- | ------ | ----- |
-| Prop-driven model defined            | No hardcoded labels, values, messages, CTA text                        |        |       |
-| Prop shape produced per component    | Every component has explicit prop table with source, type, detail      |        |       |
-| Sitecore props identified            | Labels/copy/config from CMS                                            |        |       |
-| API props identified                 | Runtime values from BFF/API                                            |        |       |
-| Derived props identified             | FE-computed flags, visibility, active state                            |        |       |
-| View model drafted                   | Clean props shape for view/display components                          |        |       |
-| Mapper responsibility defined        | API/CMS data transformed before display                                |        |       |
-| Optional/missing data handling noted | Avoid brittle UI assumptions                                           |        |       |
-| Sitecore Helpers identified          | extractFormField, extractCTA, extractLink, etc. applied where relevant |        |       |
-
----
-
-### 9. State, Behaviour and Interaction Analysis
-
-| Check                          | What to Validate                            | Status | Notes |
-| ------------------------------ | ------------------------------------------- | ------ | ----- |
-| Default state analysed         | Initial render state documented             |        |       |
-| Loading state analysed         | Required for API-driven sections            |        |       |
-| Error state analysed           | Inline/error boundary/empty handling noted  |        |       |
-| Empty state analysed           | No data / partial data behaviour            |        |       |
-| Partial data state analysed    | Render available data where appropriate     |        |       |
-| Visibility rules analysed      | Persona/role/config-driven visibility       |        |       |
-| Interaction behaviour analysed | Tabs, CTA, navigation, expansion, selection |        |       |
-| State ownership assigned       | Container/view/component ownership clear    |        |       |
-
----
-
-### 10. Accessibility, RTL and Responsive Analysis
-
-| Check                             | What to Validate                                      | Status | Notes |
-| --------------------------------- | ----------------------------------------------------- | ------ | ----- |
-| Semantic structure considered     | Headings, sections, labels, lists                     |        |       |
-| Keyboard interaction considered   | Required for tabs/buttons/interactive UI              |        |       |
-| ARIA requirements noted           | Only where interactive semantics need support         |        |       |
-| RTL readiness considered          | Avoid left/right assumptions                          |        |       |
-| Localisation readiness considered | No hardcoded text/copy                                |        |       |
-| Responsive behaviour considered   | Desktop/mobile layout implications                    |        |       |
-| Design tokens assumed             | Avoid hardcoded colours/spacing where DS tokens exist |        |       |
-
----
-
-### 11. ANALYSIS_PLAN.md Content Compliance
-
-| Check                                              | What to Validate                                                          | Status | Notes |
-| -------------------------------------------------- | ------------------------------------------------------------------------- | ------ | ----- |
-| No reference to DEV_REVIEW in ANALYSIS_PLAN.md     | Search for "DEV REVIEW", "DEV_REVIEW", "dev review" must not appear       |        |       |
-| No open questions in ANALYSIS_PLAN.md              | No "please confirm", "needs developer approval", "option A or B"          |        |       |
-| No deferred decisions in ANALYSIS_PLAN.md          | Every decision is finalised with a clear answer                           |        |       |
-| Every uncertain decision recorded in DEV_REVIEW.md | Uncertainty captured with options, decision, reason, and confidence level |        |       |
-| ANALYSIS_PLAN.md is 100% actionable                | Coding Agent can act on it without re-analysing the story                 |        |       |
-| All 20 required sections present                   | All sections from the output template are populated                       |        |       |
-
----
-
-### 12. Code Generation Readiness
-
-| Check                               | What to Validate                                                    | Status | Notes |
-| ----------------------------------- | ------------------------------------------------------------------- | ------ | ----- |
-| Implementation plan created         | Ordered steps for Code Generation Agent                             |        |       |
-| Files to create listed              | Every file identified with name and purpose                         |        |       |
-| Component creation order defined    | Sequence from root to leaf components                               |        |       |
-| Type/model creation order defined   | TypeScript interfaces/types ordered before components that use them |        |       |
-| Mapper/helper creation defined      | Mapper files and visibility helpers identified                      |        |       |
-| Component assembly sequence defined | How components are composed and wired together                      |        |       |
-| State handling placement defined    | Which layer owns which state                                        |        |       |
-| Visibility rule placement defined   | Where conditional rendering logic lives                             |        |       |
-| Prop-driven wiring defined          | How props flow from Sitecore/API through mapper to display          |        |       |
-| Things NOT to implement listed      | Explicit out-of-scope guardrails for Coding Agent                   |        |       |
-| Design-system reuse wired           | Reuse decisions from Phase 6 incorporated into the plan             |        |       |
-| Index exports included              | Barrel exports planned for all public components                    |        |       |
-| Completion checklist referenced     | Plan ends with validate-against-checklist step                      |        |       |
-| Component contracts ready           | Props/responsibilities clear                                        |        |       |
-| API mapper plan ready               | Mapper/hook/container boundary clear                                |        |       |
-| Sitecore prop mapping ready         | CMS fields mapped to FE props                                       |        |       |
-| Reuse decisions finalised           | All components have a definitive reuse category                     |        |       |
-| Gaps documented                     | Missing API/Sitecore/Figma decisions listed                         |        |       |
-
----
+### 12. ANALYSIS_PLAN.md Content Compliance
+- [ ] No reference to DEV_REVIEW in ANALYSIS_PLAN.md
+- [ ] No open questions or deferred decisions
+- [ ] No `Needs clarification` reuse category and no `approval required` phrasing
+- [ ] Every uncertain decision recorded in DEV_REVIEW.md §1
+- [ ] 100% actionable without re-analysing the story
+- [ ] **All 13 required sections present and populated**
+- [ ] **No provenance columns** — no Basis, Confidence, Source, Confirmed In, Agent Decision
+- [ ] **No project-rule restatement** — no folder trees, naming lists, generic NFR baselines
+- [ ] **No eliminated sections** — no standalone Scope, Ownership, Container/View, Agent Decision Summary, or Assumptions section
 
 ### 13. Final Analysis Quality Gate
-
-| Check                           | What to Validate                                           | Status | Notes |
-| ------------------------------- | ---------------------------------------------------------- | ------ | ----- |
-| No unsupported assumptions      | Agent does not invent missing Sitecore/API fields          |        |       |
-| No over-fragmentation           | Agent does not create unnecessary components/renderings    |        |       |
-| No hardcoded implementation     | Labels/values/config remain prop-driven                    |        |       |
-| Ownership boundaries clear      | Sitecore vs API vs FE ownership documented                 |        |       |
-| Component hierarchy is readable | Developer and coding agent can follow it                   |        |       |
-| Code agent can act on output    | Plan is actionable without re-analysing the story          |        |       |
-| Three output files created      | ANALYSIS_PLAN.md, DEV_REVIEW.md, CODING_AGENT_CHECKLIST.md |        |       |
-| All files saved to correct path | `.SS_WF/Agent/Analysis/` folder                            |        |       |
-
----
+- [ ] No unsupported assumptions — no invented Sitecore/API fields
+- [ ] No over-fragmentation
+- [ ] No hardcoded implementation
+- [ ] Ownership boundaries clear
+- [ ] Component hierarchy readable
+- [ ] Coding Agent can act without re-analysing the story
+- [ ] Three output files created
+- [ ] All files saved to `.SS_WF/Agent/Analysis/`
 
 ### Coverage Status Values
 
-Mark each analysis area with one of:
-
-| Status                         | Meaning                                                             |
-| ------------------------------ | ------------------------------------------------------------------- |
-| `Covered`                      | Analysis completed with sufficient information                      |
-| `Partially Covered`            | Analysis done but some details are missing or unclear               |
-| `Not Provided`                 | Required input was not available in the story/Figma/API spec        |
-| `Derived`                      | Recommendation based on project best practices, not story-confirmed |
-| `Not Applicable`               | This area does not apply to this story/component type               |
-| `Needs Developer Confirmation` | Decision made but requires developer validation                     |
+| Status | Meaning |
+| --- | --- |
+| Covered | Analysis completed with sufficient information |
+| Partially Covered | Analysis done but some details missing or unclear |
+| Not Provided | Required input not available |
+| Derived | Recommendation based on project best practices |
+| Not Applicable | Does not apply to this story/component type |
+| Needs Developer Confirmation | Decision made but requires validation *(status only — never a phrase in the plan)* |
 
 ---
 
-## PART B — ANALYSIS_PLAN.md Content Prohibition (Mandatory Pre-Generation Rule)
+## PART B — ANALYSIS_PLAN.md Content Prohibition
 
-> **This check runs BEFORE generating each chunk — not as a post-write cleanup step.**
-> Applying this rule before writing eliminates the need for any `sed`/`grep` repair pass.
+**Apply this check to the content you are about to write, before writing it.**
 
-Before generating content for ANY chunk of ANALYSIS_PLAN.md, confirm that the content you are about to write does NOT contain any of the following:
+### B.1 — Deferred-decision phrases
+- "DEV REVIEW", "DEV_REVIEW", "dev review"
+- "see DEV REVIEW", "confirm in DEV REVIEW"
+- "needs developer approval", "to be confirmed", "pending review", "check with developer"
+- "needs developer confirmation", "needs confirmation"
+- "option A or B", any open question, any deferred decision
+- **"Needs clarification"** · **"approval required"**, "requires approval", "awaiting approval"
+- **"To be resolved in API analysis"** — provisional markers must be resolved or gap-recorded by Phase 6
 
-- `"DEV REVIEW"`, `"DEV_REVIEW"`, `"dev review"`
-- `"see DEV REVIEW"`, `"confirm in DEV REVIEW"`, `"Check if supported in DEV REVIEW"`
-- `"needs developer approval"`, `"to be confirmed"`, `"pending review"`, `"check with developer"`
-- `"option A or B"`, any open question, or any deferred decision
+### B.2 — Provenance columns
+- `Basis`, `Confidence`, `Source`, `Confirmed In`, `Agent Decision`
+- Any column explaining *why* a decision was reached rather than *what* to build
 
-**Every decision written into ANALYSIS_PLAN.md must be final and definitive.** Any uncertainty belongs in DEV_REVIEW.md only.
+### B.3 — Rule-restatement content
+- Folder-structure tree diagrams
+- Naming-convention lists
+- Folder-boundary or export-pattern tables
+- Generic NFR baselines already embedded in the coding skills
+- Generic responsibility rows such as "design-system components must not contain API calls"
 
-If you find yourself about to write any of the above phrases into ANALYSIS_PLAN.md, stop — make a definitive decision using the priority order below, write that decision into ANALYSIS_PLAN.md, and record the uncertainty in DEV_REVIEW.md instead:
+### B.4 — Eliminated sections
+- Standalone Derived Scope *(out-of-scope belongs to §8)*
+- Standalone Sitecore/Backend/Frontend Ownership *(belongs per-prop to §12)*
+- Standalone Container / View Decision *(belongs to §6's `Type` column)*
+- Agent Decision Summary *(belongs to DEV_REVIEW.md §1)*
+- Assumptions and Decisions Made *(belongs to DEV_REVIEW.md §2)*
+- Full example payloads or unsurfaced response scenarios
+- Standalone Sitecore-Authored Props table *(belongs to §12)*
+- "How it will be used in development" narrative sections
 
-```
-Dev Notes → Project Guidelines → Figma → React/Frontend Best Practices
-```
+**Every decision in ANALYSIS_PLAN.md must be final and definitive.** Uncertainty, basis, and confidence belong in DEV_REVIEW.md only.
+
+⚠️ **Gaps are stated as fact, not as questions.** Write `policyEndDate not present in response (GAP-001)` — never `needs developer confirmation`.
 
 ---
 
 ## PART C — Output Document Production
 
-After all 13 self-validation checks pass, produce all three output documents in this order. Every section of every template MUST be fully populated — no empty sections, no placeholder text left unfilled.
+After all 13 self-validation checks pass, produce all three documents. Every section must be fully populated.
+
+### ⚠️ HOW TO WRITE THE DOCUMENTS
+
+**This skill defines WHAT each document must contain. You decide HOW to write it using your available file-writing tool.**
+
+Write each document **completely, in a single write operation**. Do not artificially split a document across multiple writes.
+
+#### If a single write fails or is rejected for size
+
+1. Write the document with the leading sections first, creating the file.
+2. To add the remaining sections: **read the file's current content, concatenate the new sections onto it, and write the complete combined content back.** Repeat until all sections are present.
+3. Choose your own split points. Keep sections whole — never split mid-section or mid-table.
+4. Always write sections in ascending order.
+
+⚠️ Do not assume an append mode exists. If your write tool only creates or overwrites files, read-concatenate-rewrite is the correct way to grow a document.
+
+#### Non-negotiable outcomes
+
+| Outcome | Requirement |
+| --- | --- |
+| **Completeness** | Every required section present and fully populated |
+| **Order** | Sections in ascending numerical order |
+| **Integrity** | No duplicated, truncated, or orphaned sections; no partial tables |
+| **Content compliance** | Part B check applied before writing |
+| **No loss** | Rewriting to add sections preserves all prior content verbatim |
+
+#### Efficiency rules
+- **Reuse computed content.** If a write fails, reuse what you already generated — never regenerate the analysis.
+- **Do not re-read a file you just wrote** to confirm success — rely on the tool result.
+- **Never restart the analysis** because of a write failure.
+- **Do not use shell commands** to assemble, repair, or reorder documents.
+- **If content must be reduced**, condense tables to essential rows; note as `[Condensed: Section X]`. **Never condense DEV_REVIEW.md §5 gaps.**
+
+#### Final verification — one pass only
+- All three files exist at the correct paths.
+- ANALYSIS_PLAN.md contains all 13 section headers, in order, no duplicates.
+- DEV_REVIEW.md contains all 5 sections.
+- No prohibited phrases, provenance columns, or eliminated sections present.
 
 ---
 
-## ⚠️ MANDATORY WRITE RULES — READ BEFORE WRITING ANY DOCUMENT
+### Document 1: ANALYSIS_PLAN.md
 
-These rules are **absolute**. Violating any of them is the primary cause of Phase 8 cost overruns.
-
-### Rule 1 — NEVER write a document in a single `write_file` call
-
-This is an **absolute prohibition**. A single oversized `write_file` call will fail with an invalid input format error, forcing a full regeneration pass. Every document MUST be written in multiple chunks.
-
-### Rule 2 — Write in strict ascending section order (1 → 20)
-
-Maintain an explicit **section cursor** tracking the last section written. Before writing the next chunk, verify:
-
-- Previous chunk's highest section = (next chunk's lowest section − 1)
-- If a gap is detected: re-emit the missing chunk **in order** before proceeding
-- **Never skip ahead to a later section** — write every section in sequence
-
-The document is assembled **exclusively** through sequential `write_file` create/append calls in ascending section order. **Shell-based file reconstruction is prohibited.**
-
-### Rule 3 — Use `create` for chunk 1, `append` for all subsequent chunks
-
-- **First chunk** of each document → `write_file` with `mode: create`
-- **Every later chunk** of the same document → `write_file` with `mode: append`
-
-### Rule 4 — Retry cap: 3 attempts per chunk, then condense and continue
-
-If a `write_file` chunk fails:
-
-1. Retry the **same chunk with identical content** — attempt 2
-2. If it fails again — retry once more — attempt 3
-3. If it fails a third time: write a **condensed version** of that chunk (reduce tables to key rows only) and continue to the next chunk
-4. Log inline: `[WRITE FAILED: Section X — condensed]` in the next successful chunk
-5. **Never regenerate the entire document** on a chunk failure
-6. **Never restart the analysis** or loop back to an earlier phase because of a write failure
-
-### Rule 5 — Confirm each chunk before proceeding
-
-After each `write_file` call, verify the tool returned success before writing the next chunk. If it did not return success, apply Rule 4.
-
-### Rule 6 — No intermediate re-reads between chunks
-
-Do **not** re-read the document between chunk writes. Rely on the section cursor (Rule 2) to track progress — not on reading the file back. This is the single biggest cost multiplier in Phase 8.
-
-### Rule 7 — Shell/CLI file reconstruction is absolutely prohibited
-
-Do **not** use `cat`, `cp`, `sed`, `head`, `tail`, temp-file merges, header-prepend tricks, or any other shell command to assemble, repair, or reorder documents. If a file is discovered to be out of order or incomplete, the only permitted recovery is:
-
-- Overwrite from scratch: `write_file` with `mode: create` for chunk 1
-- Then append chunks 2..N in order
-
-Never patch a file with shell surgery.
-
-### Rule 8 — One consolidated validation pass after ALL documents are written
-
-Perform **at most one** final validation pass after all three documents are fully written. That single pass checks:
-
-- All three files exist
-- ANALYSIS_PLAN.md has all 20 section headers
-- No prohibited phrases are present in ANALYSIS_PLAN.md
-
-Do this in **one combined check** — not a series of separate commands. Remove all intermediate `cat`/`head`/`tail`/`wc`/`grep` inspection steps.
-
----
-
-## Chunk Boundaries — Mandatory
-
-### ANALYSIS_PLAN.md — 7 chunks
-
-| Chunk | Mode     | Sections                                                                                                                                                                                                |
-| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | `create` | Header + Section 1 (Dev Notes Applied) + Section 2 (Story Summary)                                                                                                                                      |
-| 2     | `append` | Section 3 (Classification) + Section 4 (Derived Scope) + Section 5 (AC Analysis)                                                                                                                        |
-| 3     | `append` | Section 6 (Agent Decisions) + Section 7 (Component Hierarchy) + Section 8 (Responsibility Matrix)                                                                                                       |
-| 4     | `append` | Section 9 (Container/View) + Section 10 (Folder Structure) + Section 11 (Code Generation Plan)                                                                                                          |
-| 5     | `append` | Section 12 (Assumptions) + Section 13 (Interactions) + Section 14 (State/Edge Cases)                                                                                                                    |
-| 6     | `append` | Section 15 (Ownership) + Section 16 (Sitecore API Analysis) + Section 17 (BFF API Analysis) — For **Presentational** components write: `NOT REQUIRED — Presentational component` for Sections 16 and 17 |
-| 7     | `append` | Section 18 (Prop Model) + Section 19 (Reuse Validation) + Section 20 (NFR Analysis)                                                                                                                     |
-
-**Section cursor after each chunk:**
-
-- After Chunk 1: cursor = 2
-- After Chunk 2: cursor = 5
-- After Chunk 3: cursor = 8
-- After Chunk 4: cursor = 11
-- After Chunk 5: cursor = 14
-- After Chunk 6: cursor = 17
-- After Chunk 7: cursor = 20 ✓ COMPLETE
-
-### DEV_REVIEW.md — 1 chunk
-
-| Chunk | Mode     | Sections                                                             |
-| ----- | -------- | -------------------------------------------------------------------- |
-| 1     | `create` | Header + Section 1 + Section 2 + Section 3 (entire document — small) |
-
-### CODING_AGENT_CHECKLIST.md — 2 chunks
-
-| Chunk | Mode     | Sections                                                      |
-| ----- | -------- | ------------------------------------------------------------- |
-| 1     | `create` | Header + DN + AC + INT + STATE + SCOPE + PROP                 |
-| 2     | `append` | CMS + API + COMP + DS + RESP + A11Y + RTL + NFR + FILE + TEST |
-
----
-
-## Document 1: ANALYSIS_PLAN.md
-
-**File path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_ANALYSIS_PLAN.md`
-
-> **ABSOLUTE PROHIBITION**: This document must NEVER reference DEV_REVIEW.md or contain any deferred decision. Apply the Part B prohibition check BEFORE generating each chunk's content.
-
-**Required Sections (in order — ALL must be populated):**
+**Path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_ANALYSIS_PLAN.md`
 
 ```markdown
 # ANALYSIS PLAN {{ticket_id}}
@@ -434,265 +356,238 @@ Do this in **one combined check** — not a series of separate commands. Remove 
 
 ## 1. Developer Notes Applied
 
-> ALWAYS first — even if no Dev Notes found.
+| DN ID | Dev Note (verbatim) | Applied Where | Files / Components Affected |
+| ----- | ------------------- | ------------- | --------------------------- |
+| DN-001 |                    |               |                             |
 
-| DN ID  | Dev Note (verbatim) | Applied Where | Impact on Analysis |
-| ------ | ------------------- | ------------- | ------------------ |
-| DN-001 |                     |               |                    |
+> If none: "No Developer Notes / Dev Notes section found in the user story. Normal source priority order applied."
 
-> If no Dev Notes found: "No Developer Notes found in this story. Normal source priority order applies."
+⚠️ Exactly these four columns. Do NOT add `Sections Affected`, `Basis`, `Confidence`, or `Impact if Wrong`.
 
 ---
 
-## 2. Story Summary
+## 2. Story Context
 
 - **Story Title:** [exact JIRA title]
 - **Page / Component:** [target page or component name]
-- **User Goal:** [what the user is trying to achieve]
-- **Business Intent:** [why this feature exists]
-- **Journey Context:** [where this sits in the user journey]
 - **Default View / State:** [what the user sees on first load]
-- **Major UI Sections:** [named visible regions]
-- **Personas / Roles:** [relevant personas if mentioned]
-- **Dependencies:** [other stories, components, systems]
+- **Personas / Roles:** [personas driving visibility branching, or: None]
 
 ---
 
-## 3. Classification Rationale
+## 3. Classification
 
 - **Classification:** Presentational / Transactional / Hybrid
-- **Rationale:** [one clear sentence explaining why]
+- **Rationale:** [one clear sentence]
 - **Data-Fetching Required:** Yes / No
 - **CMS-Authored Required:** Yes / No
-- **FE-Only Logic:** [local state, visibility, mapping, layout logic summary]
+- **FE-Only Logic:** [local state, visibility, mapping, layout summary]
 
 ---
 
-## 4. Derived Scope
+## 4. Acceptance Criteria
 
-**In Scope:**
-
-- [item 1]
-- [item 2]
-
-**Out of Scope (Derived):**
-
-- [item 1] — Reason: [why derived as out of scope]
-- [item 2] — Reason: [why derived as out of scope]
+| AC ID | AC Statement | FE Implication | Owner Component | State / Interaction Impact |
+| ----- | ------------ | -------------- | --------------- | -------------------------- |
+| AC-001 |             |                |                 |                            |
 
 ---
 
-## 5. Acceptance Criteria Analysis
-
-| AC ID  | AC Statement | FE Implication | Owner Component | State / Interaction Impact | Agent Decision | Basis |
-| ------ | ------------ | -------------- | --------------- | -------------------------- | -------------- | ----- |
-| AC-001 |              |                |                 |                            |                |       |
-
----
-
-## 6. Agent Decision Summary
-
-| Decision Area | Decision Made | Basis | Confidence |
-| ------------- | ------------- | ----- | ---------- |
-|               |               |       |            |
-
----
-
-## 7. Proposed Component Hierarchy
-```
+## 5. Component Hierarchy
 
 [ComponentName] [Sitecore-mapped]
-[ComponentName] [container]
-[ComponentName] [view]
-[ComponentName] [feature]
-[ComponentName] [design-system]
-[ComponentName] [feature]
-
-```
+  [ComponentName] [container]
+    [ComponentName] [view]
+      [ComponentName] [feature]
+        [ComponentName] [design-system]
 
 > Markers: `[design-system]` | `[feature]` | `[Sitecore-mapped]` | `[container]` | `[view]`
-> No file paths in this diagram.
+> No file paths. A Presentational story typically has no `[container]` or `[view]` nodes.
 
 ---
 
-## 8. Component Responsibility Matrix
+## 6. Component Responsibility Matrix
 
-| Component | Type | Owns | Logic Allowed | Must NOT Own |
-| --- | --- | --- | --- | --- |
-| | | | | |
+| Component | Type | Owns | Must NOT Own |
+| --------- | ---- | ---- | ------------ |
+|           |      |      |              |
 
----
-
-## 9. Container / View Decision
-
-| Component | Container? | View? | Reason |
-| --- | --- | --- | --- |
-| | | | |
+> `Type` carries the container/view distinction. For Presentational, omit `Container`/`View`.
+> Only story-specific responsibilities — no generic rule restatement.
 
 ---
 
-## 10. Folder Structure Proposal
+## 7. Folder Placement
 
-```
+| Component / File | Ownership Marker |
+| ---------------- | ---------------- |
+| [ComponentName]  | [design-system] / [cms] / [feature] / [shared] |
 
-Portals/Sme/Features/[DomainName]/[FeatureName]/
-Components/
-[ComponentName].tsx
-Hooks/
-use[FeatureName]Data.ts
-Services/
-[FeatureName]Service.ts
-Types/
-[FeatureName]Types.ts
-Constants/
-[FEATURE_NAME]_CONSTANTS.ts
-index.ts
-
-Packages/Cms/CmsComponents/[ComponentName]/
-[ComponentName].tsx
-index.ts
-
-```
+> Ownership markers only. The Coding Agent resolves full path, casing, naming, export style and barrel target.
 
 ---
 
-## 11. Code Generation Plan
-
-> The generated code plan must be ordered and implementation-ready.
+## 8. Code Generation Plan
 
 ### Files to Create
 
 | # | File Name | Path | Purpose |
-| - | --- | --- | --- |
-| 1 | | | |
+| - | --------- | ---- | ------- |
+| 1 |           |      |         |
+
+### Files to Update
+
+| # | File Name | Path | Reason |
+| - | --------- | ---- | ------ |
+| 1 |           |      |        |
 
 ### Ordered Implementation Steps
 
-1. **Create root Sitecore-mapped component**
-2. **Create type files**
-3. **Create display components**
-4. **Create container (if required)**
-5. **Create view component (if required)**
-6. **Create feature display components**
-7. **Create mapper files**
-8. **Create visibility helper (if needed)**
-9. **Wire design-system reuse points**
-10. **Add index exports**
-11. **Validate against CODING_AGENT_CHECKLIST.md**
+1. [story-specific step]
+...
+N. Validate against CODING_AGENT_CHECKLIST.md
 
 ### State Handling Placement
 
+> **Transactional / Hybrid only.** Omit for Presentational — local UI state described inline in the ordered steps.
+
 | State | Owned By | Mechanism |
-| --- | --- | --- |
-| Loading | Container | `isLoading` from useQuery |
-| Error | Container | `isError` from useQuery |
-| Empty | Container | Check `data` length/null |
+| ----- | -------- | --------- |
+|       |          |           |
 
 ### Visibility Rule Placement
 
 | Visibility Rule | Condition | Placed In | Passed As Prop? |
-| --- | --- | --- | --- |
-| | | | |
+| --------------- | --------- | --------- | --------------- |
+|                 |           |           |                 |
 
 ### Prop-Driven Wiring
 
 | Prop Flow Step | From | To | Prop Name | Transformation |
-| --- | --- | --- | --- | --- |
-| | | | | |
+| -------------- | ---- | -- | --------- | -------------- |
+|                |      |    |           |                |
 
 ### Things NOT to Implement
 
+> The single authoritative out-of-scope guardrail. Include features blocked by a contract gap, with the GAP ID.
+
 - [item 1 — with reason]
-- [item 2 — with reason]
 
 ---
 
-## 12. Assumptions and Decisions Made
+## 9. Interaction Analysis
 
-| Area | Assumption / Decision | Basis | Confidence |
-| --- | --- | --- | --- |
-| | | | |
-
----
-
-## 13. Interaction Analysis
-
-| Interaction ID | Interaction Description | Trigger | Owner Component | State Impact | Confirmed In | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| INT-001 | | | | | Story / Figma / Derived | |
+| Interaction ID | Description | Trigger | Owner Component | State Impact |
+| -------------- | ----------- | ------- | --------------- | ------------ |
+| INT-001        |             |         |                 |              |
 
 ---
 
-## 14. State, Error and Edge Case Analysis
+## 10. State, Error and Edge Case Analysis
 
-| State / Edge Case | Applicable Component | Trigger / Condition | Expected FE Behaviour | Source |
-| --- | --- | --- | --- | --- |
-| Loading | | API call in progress | Show skeleton | Derived |
+> **Presentational:** UI interaction states only. Omit API-driven rows.
+> **This section must never be empty, including for Presentational stories.**
 
----
-
-## 15. Sitecore / Backend / Frontend Ownership
-
-| Area | Expected Source | Owner | Notes |
-| --- | --- | --- | --- |
-| | | | |
+| State / Edge Case | Applicable Component | Trigger / Condition | Expected FE Behaviour |
+| ----------------- | -------------------- | ------------------- | --------------------- |
+|                   |                      |                     |                       |
 
 ---
 
-## 16. Sitecore API Analysis
+## 11. API Contracts
 
-> If not applicable: `SITECORE API NOT FOUND / NOT REQUIRED`
+> If not applicable: `NOT REQUIRED — Presentational component. No API integration.`
+
+### 11.1 Sitecore Contract
+
+| Rendering | FE Entry Component | Field Name | Field Type | Maps To Prop |
+| --------- | ------------------ | ---------- | ---------- | ------------ |
+|           |                    |            |            |              |
+
+- **Placeholder:** [key, or: None]
+- **Datasource / Template:** [name, or: Not Provided]
+- **Gaps:** [brief note per gap with GAP ID, or: None]
+
+### 11.2 BFF Contract
+
+> FE-relevant slice only. No full example payloads, no unsurfaced response scenarios,
+> no error codes without distinct UI treatment.
+
+- **Endpoint:** [path]
+- **Method:** [GET/POST/…]
+
+**Request shape (fields actually sent):**
+
+| Field | In | Type | Required? |
+| ----- | -- | ---- | --------- |
+|       |    |      |           |
+
+**Response fields actually rendered:**
+
+| Field | Type | Nullable / Conditional? | Mapper Default | Maps To Prop |
+| ----- | ---- | ----------------------- | -------------- | ------------ |
+|       |      |                         |                |              |
+
+**Error → UI state mapping:**
+
+| Error Code | UI State | Component |
+| ---------- | -------- | --------- |
+|            |          |           |
+
+**Data Fetching Pattern:**
+
+| Hook | Service | Query Key | Endpoint Constant |
+| ---- | ------- | --------- | ----------------- |
+|      |         |           |                   |
+
+- **Gaps:** [brief note per gap with GAP ID, or: None]
 
 ---
 
-## 17. BFF API Analysis
-
-> If not applicable: `BFF API NOT FOUND / NOT REQUIRED`
-
----
-
-## 18. Prop-Driven Component Model
-
-[For every component in the hierarchy:]
+## 12. Prop-Driven Component Model
 
 **Component: [ComponentName]**
 Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 
-| Prop Name | Type | Source | Source Detail (field/endpoint) | Required? | Notes |
-| --- | --- | --- | --- | --- | --- |
-| | | | | | |
+| Prop Name | Type | Source | Source Detail (field/endpoint) | Required? |
+| --------- | ---- | ------ | ------------------------------ | --------- |
+|           |      | Sitecore / BFF API / FE Derived / Unknown | | |
+
+> `Source` + `Source Detail` are the authoritative per-prop ownership record.
+> Every `Unknown` must have a corresponding GAP entry in DEV_REVIEW.md §5.
+> No `To be resolved` markers may remain.
 
 ---
 
-## 19. Component Inventory & Reuse Validation
+## 13. Reuse Validation & NFR Exceptions
+
+### 13.1 Component Inventory & Reuse Validation
 
 | Component | Atomic Level | Reuse Decision | Existing Component | Gap / Enhancement | New Component Name | Catalogue Update? |
-| --- | --- | --- | --- | --- | --- | --- |
-| | | | | | | |
+| --------- | ------------ | -------------- | ------------------ | ----------------- | ------------------ | ----------------- |
+|           |              |                |                    |                   |                    |                   |
 
----
+> Definitive categories only. `Needs clarification` and `approval required` are prohibited.
 
-## 20. Responsive / Accessibility / RTL / NFR Analysis
+### 13.2 NFR Exceptions
 
-| NFR Category | Applies? | Agent Decision / Recommendation | Source |
-| --- | --- | --- | --- |
-| RTL | Yes/No | | Story / Figma / Derived |
-| Accessibility | Yes/No | | Story / Figma / Derived |
-| Responsive | Yes/No | | Story / Figma / Derived |
-| Overflow & Scroll | Yes/No | | Story / Figma / Derived |
+> **Story-specific exceptions ONLY.** Baseline RTL, a11y, responsive and overflow rules are
+> already enforced by the coding skills.
+
+| NFR Category | Story-Specific Exception / Requirement |
+| ------------ | ------------------------------------- |
+|              |                                       |
+
+> If none: "No story-specific NFR exceptions. Standard project NFR rules apply."
 ```
 
 ---
 
-## Document 2: DEV_REVIEW.md
+### Document 2: DEV_REVIEW.md
 
-**File path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_DEV_REVIEW.md`
+**Path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_DEV_REVIEW.md`
 
-> This document is for the developer to review **after** development is complete. It contains ONLY decisions made under uncertainty, assumptions due to missing information, and conflicts resolved.
-
-**Write in 1 chunk (entire document is small — fits in a single `create` call).**
-
-**Required Sections (ALL must be populated — write "None" if no items):**
+The **sole home for all provenance** and the **authoritative record of contract gaps**.
 
 ```markdown
 # DEV REVIEW {{ticket_id}}
@@ -701,8 +596,8 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 
 ## 1. Decisions Made Under Uncertainty
 
-| Decision ID | Area | Options Considered | Decision Made | Reason | Confidence Level    |
-| ----------- | ---- | ------------------ | ------------- | ------ | ------------------- |
+| Decision ID | Area | Options Considered | Decision Made | Reason | Confidence Level |
+| ----------- | ---- | ------------------ | ------------- | ------ | ---------------- |
 | DEC-001     |      |                    |               |        | High / Medium / Low |
 
 ---
@@ -720,137 +615,111 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 | Conflict ID | Sources in Conflict | Resolution | Priority Rule Applied | Notes |
 | ----------- | ------------------- | ---------- | --------------------- | ----- |
 | CON-001     |                     |            |                       |       |
+
+---
+
+## 4. Derived Items and Provenance
+
+| Plan Section | Item ID | Derived / Story-Confirmed / Figma | Basis |
+| ------------ | ------- | --------------------------------- | ----- |
+|              |         |                                   |       |
+
+> Write "None" if every item was story-confirmed.
+
+---
+
+## 5. API Contract Gaps
+
+> ⚠️ **MANDATORY SECTION.** Data the frontend requires that the API or CMS contract does not
+> currently provide. Each gap blocks or degrades specific functionality and requires a
+> backend/CMS decision before implementation can be completed.
+
+| Gap ID | Category | What FE Needs | Needed For | Expected Source | Contract Evidence | Impact if Unresolved | Recommended Action |
+| ------ | -------- | ------------- | ---------- | --------------- | ----------------- | -------------------- | ------------------ |
+| GAP-001 | Missing field | [data item] | [AC-00x / component / prop] | [endpoint or Sitecore rendering] | [what the contract actually contains] | [what breaks or degrades] | [specific backend/CMS ask] |
+
+**Categories:** Missing field · Missing endpoint · Insufficient detail · Missing error semantics ·
+Missing pagination/metadata · Type/format mismatch · Missing CMS field
+
+> If there are no gaps, write exactly:
+> `No API contract gaps identified. All frontend data requirements are satisfied by the available contracts.`
+>
+> ⚠️ **Never leave this section blank** — blank is indistinguishable from "not checked".
+> ⚠️ **Never condense or omit a gap**, even if the document must be reduced for size.
 ```
 
 ---
 
-## Document 3: CODING_AGENT_CHECKLIST.md
+### Document 3: CODING_AGENT_CHECKLIST.md
 
-**File path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_CODING_AGENT_CHECKLIST.md`
+**Path:** `.SS_WF/Agent/Analysis/{{ticket_id}}_CODING_AGENT_CHECKLIST.md`
 
-> A validation checklist the Code Generation Agent MUST complete before marking implementation done. Every item is derived from the analysis in ANALYSIS_PLAN.md.
-
-**Write in 2 chunks:**
-
-- **Chunk 1 (`create`):** Header + DN + AC + INT + STATE + SCOPE + PROP
-- **Chunk 2 (`append`):** CMS + API + COMP + DS + RESP + A11Y + RTL + NFR + FILE + TEST
-  - **For Presentational components**: omit the `API` prefix category entirely from Chunk 2.
-
-**Required Sections (ALL must be populated with story-specific items):**
+**For Presentational components:** omit the API prefix category entirely.
 
 ```markdown
 # CODING AGENT CHECKLIST {{ticket_id}}
 
-> This checklist must be completed before marking implementation done.
-> Every item is derived from the analysis in ANALYSIS_PLAN.md.
+> Complete before marking implementation done. Every item derived from ANALYSIS_PLAN.md.
 
 ---
 
 ## DN — Developer Notes Compliance (ALWAYS first)
-
 - [ ] DN-001: [verbatim dev note — confirm implemented as specified]
 
----
-
 ## AC — Acceptance Criteria
-
 - [ ] AC-001: [AC statement] — [what FE must do to satisfy it]
 
----
-
 ## INT — Interaction Behaviour
-
 - [ ] INT-001: [interaction] — [expected FE behaviour]
 
----
-
 ## STATE — State / Error / Empty Behaviour
-
-- [ ] STATE-001: Loading state renders [skeleton/spinner] in [component]
-- [ ] STATE-002: Error state renders [error message/boundary] in [component]
-- [ ] STATE-003: Empty state renders [empty UI] in [component]
-
----
+- [ ] STATE-001: [state] renders [UI] in [component]
 
 ## SCOPE — Out-of-Scope Protection
-
 - [ ] SCOPE-001: [out-of-scope item] NOT implemented in this story
 
----
-
 ## PROP — Prop-Driven Implementation
-
 - [ ] PROP-001: No hardcoded labels, values, copy, or colours in any feature component
-
----
+- [ ] PROP-002: Props linked to a DEV_REVIEW §5 gap remain prop-driven — no hardcoded substitute
 
 ## CMS — Sitecore / Content Ownership
-
 - [ ] CMS-001: [Sitecore field] mapped via [extractCTA/extractLink/extractFormField]
 
----
-
 ## API — Backend / API Ownership
-
 > **SKIP for Presentational components** — omit this entire section.
-
 - [ ] API-001: [endpoint] consumed via [HookName] + [ServiceName]
 - [ ] API-002: Raw API response transformed by [MapperName] before reaching display components
 
----
-
 ## COMP — Component Responsibility
-
 - [ ] COMP-001: [ComponentName] does NOT contain API calls
 - [ ] COMP-002: [ComponentName] does NOT contain business logic
 - [ ] COMP-003: Container/View separation maintained as specified
 
----
-
 ## DS — Design System Reuse
-
 - [ ] DS-001: [ComponentName] reuses [DesignSystemComponent] with variant [variant]
 
----
-
 ## RESP — Responsive Behaviour
-
 - [ ] RESP-001: Mobile-first implementation — base classes for mobile, `lg:` for desktop
 
----
-
 ## A11Y — Accessibility
-
 - [ ] A11Y-001: [interactive element] has aria-label or visible label
 - [ ] A11Y-002: All interactive elements are keyboard-navigable
 
----
-
 ## RTL — RTL / Localisation
-
-- [ ] RTL-001: No `ml-`, `mr-`, `pl-`, `pr-` in layout-critical styles — logical properties used
+- [ ] RTL-001: No `ml-`, `mr-`, `pl-`, `pr-` in layout-critical styles
 - [ ] RTL-002: No `text-left` / `text-right` — `text-start` / `text-end` used
 
----
-
 ## NFR — Non-Functional Requirements
-
 - [ ] NFR-001: [specific NFR requirement from analysis]
 
----
-
 ## FILE — Folder / File Structure
-
-- [ ] FILE-001: All files created in correct folders per Folder Structure Proposal
-- [ ] FILE-002: Naming conventions followed (PascalCase components, camelCase hooks, etc.)
+- [ ] FILE-001: All files created in correct folders per ownership markers
+- [ ] FILE-002: Naming conventions followed
 - [ ] FILE-003: index.ts barrel exports added
 
----
-
 ## TEST — Testability / Validation
-
-- [ ] TEST-001: All props are testable via prop injection — no hardcoded values
-- [ ] TEST-002: All states (loading, error, empty, success) are testable via prop/mock
+- [ ] TEST-001: All props testable via prop injection — no hardcoded values
+- [ ] TEST-002: All states testable via prop/mock
 ```
 
 ---
@@ -858,41 +727,42 @@ Type: [Sitecore-mapped / Container / View / Feature Display / Design System]
 ## Guardrails
 
 ### Always Do
-
 - Complete ALL 13 self-validation checks before producing any document.
-- **For Presentational components**: skip Self-Validation Sections 5, 9 (API-state rows), and 12 (data-fetching rows). Mark those rows `Not Applicable`. Skip ANALYSIS_PLAN.md Sections 16 and 17 (write `NOT REQUIRED — Presentational component`). Skip CODING_AGENT_CHECKLIST.md `API` prefix category entirely.
-- If any check fails — complete the missing analysis first, then re-run the check.
-- Populate EVERY section of EVERY template — no empty sections, no placeholder text left unfilled.
-- Produce all three documents in order: ANALYSIS_PLAN.md → DEV_REVIEW.md → CODING_AGENT_CHECKLIST.md.
-- Save all three files to `.SS_WF/Agent/Analysis/` with the correct ticket ID prefix.
-- Populate the Code Generation Plan (Section 11) with story-specific files, order, state handling, visibility rules, prop wiring, and things NOT to implement.
-- Derive CODING_AGENT_CHECKLIST.md items from the actual analysis — not generic boilerplate.
-- **Apply the Part B prohibition check BEFORE generating each chunk's content** — not after writing.
-- **Write ANALYSIS_PLAN.md in exactly 7 chunks** using the mandatory chunk boundaries above.
-- **Write DEV_REVIEW.md in 1 chunk** (entire document — small).
-- **Write CODING_AGENT_CHECKLIST.md in 2 chunks** using the mandatory chunk boundaries above.
-- **Use `mode: create` for chunk 1 of each document; `mode: append` for all subsequent chunks.**
-- **Maintain the section cursor** — write sections in strict ascending order (1 → 20), no exceptions.
-- **Confirm each `write_file` call succeeded** before writing the next chunk.
-- **If a chunk fails, retry the same chunk up to 2 more times (3 total)** before condensing.
-- **After all three documents are written, run exactly one consolidated validation pass.**
+- **For Presentational**: skip API checks and API-driven state rows — but **scope UI-interaction rows, never skip them**.
+- Verify §10 is non-empty for every classification.
+- **Verify DEV_REVIEW.md §5 is populated or explicitly states no gaps.**
+- Populate EVERY section of EVERY template.
+- Produce documents in order: ANALYSIS_PLAN.md → DEV_REVIEW.md → CODING_AGENT_CHECKLIST.md.
+- Save all three to `.SS_WF/Agent/Analysis/` with the ticket ID prefix.
+- Route every `Basis`, `Confidence`, `Source`, `Confirmed In` into DEV_REVIEW.md.
+- Use exactly four columns in the §1 table.
+- **Apply the Part B prohibition check before writing.**
+- **Write each document completely in a single write operation where possible.**
+- **If a write fails, reuse already-generated content** — read, concatenate, rewrite whole.
+- **Verify once** after all three documents are written.
 
 ### Never Do
-
-- Never produce any document before completing all 13 self-validation checks.
+- Never produce any document before completing all 13 checks.
 - Never leave a template section empty or with placeholder text.
+- **Never leave §10 empty for a Presentational story.**
+- **Never leave DEV_REVIEW.md §5 blank.**
+- **Never condense or omit a contract gap.**
 - Never reference DEV_REVIEW.md inside ANALYSIS_PLAN.md.
-- Never write "DEV REVIEW", "DEV_REVIEW", "dev review", "see DEV REVIEW", "confirm in DEV REVIEW", "needs developer approval", "to be confirmed", "pending review", "option A or B", or any open question / deferred decision in ANALYSIS_PLAN.md.
-- Never produce a Code Generation Plan that is generic — it must be specific to this story.
-- Never omit the "Things NOT to Implement" section from the Code Generation Plan.
-- Never omit the Data Fetching Pattern from the BFF API Analysis section.
-- Never omit the Prop-Driven Component Model — every component must have its prop table.
-- **Never write an entire document in a single `write_file` call** — always use the mandatory chunk boundaries.
-- **Never write chunks out of order** — sections must be written in strict ascending order.
-- **Never re-read the document between chunk writes** — use the section cursor, not file reads.
-- **Never use shell commands (`cat`, `cp`, `sed`, `head`, `tail`, temp-file merges) to assemble or repair documents.**
-- **Never retry a failed chunk more than 2 additional times** — condense and continue instead of looping.
-- **Never regenerate the full analysis output after a write failure** — reuse already-computed content.
-- **Never restart the analysis or loop back to an earlier phase** because of a write failure.
-- **Never run more than one validation pass** — one combined check after all three documents are written.
-- **Never re-open the raw API spec, full component catalogue, or raw Figma JSON trees during Phase 8.**
+- Never write deferred-decision phrases, `Needs clarification`, or `approval required` in the plan.
+- **Never leave a `To be resolved in API analysis` marker in the final plan.**
+- **Never write a provenance column into ANALYSIS_PLAN.md.**
+- **Never restate a project rule in ANALYSIS_PLAN.md.**
+- **Never write a separate scope, ownership, container/view, agent-decision or assumptions section.**
+- **Never add a fifth column to the Developer Notes Applied table.**
+- **Never dump full example payloads or unsurfaced response scenarios into §11.**
+- Never produce a generic Code Generation Plan.
+- Never omit "Things NOT to Implement", the Data Fetching Pattern, or the Prop-Driven Model.
+- **Never assume an append mode exists.**
+- **Never lose previously written content** when rewriting a file.
+- **Never split a section or table across two writes.**
+- **Never write sections out of ascending order.**
+- **Never re-read a file you just wrote** merely to confirm success.
+- **Never use shell commands to assemble or repair documents.**
+- **Never regenerate the full analysis after a write failure.**
+- **Never run more than one verification pass.**
+- **Never re-open raw API specs, the full catalogue, or raw Figma trees in this phase.**

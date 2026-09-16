@@ -1,42 +1,53 @@
 ---
 name: component-reuse-validation
-description: Use when validating every applicable component against component-catalogue.json using the mandatory 4-step reuse decision workflow. Assigns a definitive reuse category (reuse existing, enhance existing, create new reusable, or create feature-specific) to every display component. Triggers include component reuse, catalogue validation, reuse decision, component catalogue, enhance existing component, or create new component.
+description: Use this Skill to validate every applicable component against component-catalogue.json using the mandatory 4-step reuse decision workflow. Assigns a definitive reuse category to every display component. Triggers include component reuse, catalogue validation, reuse decision, component catalogue, enhance existing component, or create new component.
 ---
 
-# Component Reuse Validation
+## Component Reuse Validation
 
-## Purpose
+### Purpose
 
-This skill validates every applicable component against `component-catalogue.json` and assigns a definitive reuse decision. It is invoked as Phase 6 of the master analysis orchestrator and must complete before Phase 7 (Prop-Driven Model and Code Generation Plan) begins.
+This skill validates every applicable component against `component-catalogue.json` and assigns a definitive reuse decision.
 
 This skill covers:
 
-1. Running the mandatory 4-step reuse decision workflow for every applicable component from Phase 5.
-2. Assigning a definitive reuse category to every component.
-3. Excluding non-applicable component types (containers, hooks, types, etc.).
-4. Producing a complete Component Inventory & Reuse Validation table for inclusion in ANALYSIS_PLAN.md.
+- Running the mandatory 4-step reuse decision workflow for every applicable component from Phase 7.
+- Assigning a definitive reuse category to every component.
+- Excluding non-applicable component types.
+- Producing the Component Inventory & Reuse Validation table for **ANALYSIS_PLAN.md §13.1**.
 
-> ⚠️ **Prerequisite**: Phase 5 (Component Breakdown and Hierarchy) MUST be complete. The full component hierarchy and responsibility matrix produced in Phase 5 are the mandatory inputs to this skill.
+⚠️ **There is no separate Component Reuse Agent.** All reuse analysis is performed here. Do NOT defer, skip, or delegate any step.
 
-> ⚠️ **There is no separate Component Reuse Agent.** All reuse analysis is performed directly within this phase. Do NOT defer, skip, or delegate any step.
+### Priority Order (Non-Negotiable at Every Decision Point)
 
----
-
-## Priority Order (Non-Negotiable at Every Decision Point)
-
-```
+```text
 Dev Notes  →  Project Guidelines  →  Figma  →  React / Frontend Best Practices
 ```
 
-When two sources conflict, the higher-priority source wins. The conflict and resolution MUST be recorded in DEV_REVIEW.md.
-
-> ⚠️ **Dev Notes are SACRED LAW.** If a Dev Note covers a topic, it IS the answer. Label every decision influenced by a Dev Note with its DN ID (e.g., "Per DN-002").
+⚠️ **Dev Notes are SACRED LAW.** Label every decision influenced by a Dev Note with its DN ID (e.g., "Per DN-002").
 
 ---
 
-## Exclusions — Do NOT Validate for Reuse
+### ⚠️ ANALYSIS DEPTH vs OUTPUT WIDTH
 
-The following component types are **excluded** from the 4-step reuse workflow. Do not run any reuse check on them:
+Run all four steps in full for every applicable component. The per-component output block below is an **internal working record** that disciplines the decision; only the summary table reaches the plan.
+
+| Work Performed (always, in full)                 | Emitted To                              |
+| ------------------------------------------------ | --------------------------------------- |
+| Atomic level classification + reason             | **§13.1** (level only; reason internal) |
+| Step 2 exact-match check                         | Internal → determines category          |
+| Step 3 partial-match + mandatory code check      | Internal → determines category          |
+| Step 4 reuse-potential evaluation                | Internal → determines category          |
+| Per-component output block                       | Internal working record                 |
+| Final reuse category + gap + catalogue flag      | **§13.1**                               |
+| Uncertainty about catalogue data or Figma intent | **DEV_REVIEW.md §1**                    |
+| Backward-compatibility impact of an enhancement  | **DEV_REVIEW.md §1**                    |
+
+---
+
+### Exclusions — Do NOT Validate for Reuse
+
+The following are **excluded** from the 4-step workflow:
 
 - Containers / controllers
 - Mapper files
@@ -45,68 +56,50 @@ The following component types are **excluded** from the 4-step reuse workflow. D
 - Visibility utilities
 - API service files
 
-Only **display components** (atoms, molecules, organisms, feature display components) go through the 4-step workflow.
+Only **display components** (atoms, molecules, organisms, feature display components) go through the workflow.
+
+### Scope Rules Based on Classification
+
+#### If Classification = Presentational
+
+- Execute the 4-Step Workflow for **display/UI components only**.
+- Skip reuse validation for containers, hooks, mappers, type files, and any direct Sitecore-mapped wrapper with no reusable UI pattern.
+
+#### If Classification = Transactional or Hybrid
+
+- Execute the 4-Step Workflow for all applicable display components per the Exclusions above.
 
 ---
 
-## Scope Rules Based on Classification
-
-The classification produced in Phase 3 determines the scope of this skill:
-
-### If Classification = Presentational
-
-- Execute the 4-Step Reuse Workflow for **display/UI components only**.
-- **Skip** reuse validation for:
-  - Containers / controllers
-  - Hook files
-  - Mapper files
-  - Type files
-  - Any component that is a direct Sitecore-mapped wrapper with no reusable UI pattern
-
-### If Classification = Transactional or Hybrid
-
-- Execute the 4-Step Reuse Workflow for all applicable display components as defined in the Exclusions section above.
-
----
-
-
-## Step 1 — Classify the Atomic Level (ALWAYS First)
-
-For every applicable component, classify its atomic level before any catalogue check.
+### Step 1 — Classify the Atomic Level (ALWAYS First)
 
 | Level        | Definition                                                                                                                | Examples                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | **Atom**     | Smallest indivisible UI unit. No meaningful sub-components. Single visual or interactive primitive.                       | Button, Icon, Label, Input, Badge, Avatar, Spinner   |
 | **Molecule** | Meaningful combination of atoms forming a single functional unit with a clear, self-contained purpose.                    | InputField (Label + Input + Error), Card, Tag, Toast |
-| **Organism** | Complex, self-contained UI section composed of molecules and/or atoms. Represents a distinct region of a page or feature. | Header, Form, DataTable, IdentityOrganism, TabsPanel |
+| **Organism** | Complex, self-contained UI section composed of molecules and/or atoms. Represents a distinct region of a page or feature. | Header, Form, DataTable, HeroCarousel, TabsPanel     |
 
-Record: `Component: [Name] | Atomic Level: Atom / Molecule / Organism | Reason: [one-line justification]`
+Record internally: `Component: [Name] | Atomic Level: Atom / Molecule / Organism | Reason: [one-line justification]`
 
----
-
-## Step 2 — Exact Match Check Against `component-catalogue.json`
+### Step 2 — Exact Match Check Against component-catalogue.json
 
 - Check whether the component exists with an exact match (name/purpose, visual pattern, required variant/state/config).
 - **`component-catalogue.json` is the ONLY source of truth for existence validation.**
-- **If exact match found:** Assign `Reuse existing variant`. Specify component name, variant/config, props. **STOP — do not proceed to Step 3.**
+- **If exact match found:** Assign `Reuse existing variant`. Specify component name, variant/config, props. **STOP.**
 - **If no exact match:** Proceed to Step 3.
 
----
-
-## Step 3 — Partial Match Check (Catalogue + Code Verification)
+### Step 3 — Partial Match Check (Catalogue + Code Verification)
 
 - Check whether a related component covers the same pattern but is missing a specific variant, state, prop, or configuration.
 - **If partial match found in catalogue:**
-  > ⚠️ **MANDATORY CODE CHECK**: Before assigning `Enhance existing component`, you MUST check the component's actual source code to verify the required variant/state does NOT already exist in code.
+
+  ⚠️ **MANDATORY CODE CHECK**: Before assigning `Enhance existing component`, you MUST check the component's actual source code to verify the required variant/state does NOT already exist.
   - If variant/state **IS found in code** → treat as exact match. Assign `Reuse existing variant`. **STOP.**
-  - If variant/state **IS NOT found in code** → Assign `Enhance existing component`. Specify: existing component name, current gap, proposed new prop/variant/slot/state, backward compatibility impact, approval required: Yes. **STOP.**
+  - If variant/state **IS NOT found in code** → Assign `Enhance existing component`. Specify: existing component name, current gap, proposed new prop/variant/slot/state. Record backward-compatibility impact in **DEV_REVIEW.md §1**. **STOP.**
+
 - **If no partial match:** Proceed to Step 4.
 
----
-
-## Step 4 — No Match: Evaluate Reuse Potential
-
-When no exact or partial match is found, evaluate whether the component should be reusable or feature-specific:
+### Step 4 — No Match: Evaluate Reuse Potential
 
 | Evaluation Question                                               | If YES                                       | If NO                                       |
 | ----------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------- |
@@ -115,84 +108,110 @@ When no exact or partial match is found, evaluate whether the component should b
 | Does it represent a named UI concept (not a business concept)?    | Propose as reusable design-system component  | Propose as feature display component        |
 | Is it tightly coupled to a specific business domain or API shape? | Propose as feature-specific component        | Propose as reusable design-system component |
 
-- **If reusable:** Assign `Create new reusable component`. Specify: proposed name, atomic level, expected props, expected variants, expected states, why reusable, Storybook required: Yes, catalogue update required: Yes.
-- **If feature-specific:** Assign `Create feature-specific component`. Specify: feature component name, reason it is feature-specific, which existing catalogue/design-system components it reuses internally, expected props.
+- **If reusable:** Assign `Create new reusable component`. Specify proposed name, atomic level, expected props, variants, states. Storybook required: Yes. Catalogue update required: Yes.
+- **If feature-specific:** Assign `Create feature-specific component`. Specify name, reason, which existing catalogue/design-system components it reuses internally, expected props.
 
 ---
 
-## Reuse Decision Categories
+### Reuse Decision Categories
 
-| Category                                          | When Assigned                                                                                 |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `Reuse existing variant`                          | Step 2: Exact match found in catalogue, OR Step 3: variant found in code                      |
-| `Enhance existing component`                      | Step 3: Partial match in catalogue AND variant NOT found in code                              |
-| `Compose from existing components`                | No single component fits, but lower-level existing components can compose the UI              |
-| `Extract reusable pattern from feature component` | Existing feature component contains reusable visual pattern that should be promoted/extracted |
-| `Create new reusable component`                   | Step 4: No match AND pattern is generic/reusable                                              |
-| `Create feature-specific component`               | Step 4: No match AND pattern is business-specific/feature-coupled                             |
-| `Needs clarification`                             | Requirement, Figma intent, or catalogue data is unclear                                       |
+| Category                                        | When Assigned                                                                         |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Reuse existing variant                          | Step 2 exact match, OR Step 3 variant found in code                                   |
+| Enhance existing component                      | Step 3 partial match AND variant NOT found in code                                    |
+| Compose from existing components                | No single component fits, but lower-level existing components can compose the UI      |
+| Extract reusable pattern from feature component | Existing feature component contains a reusable visual pattern that should be promoted |
+| Create new reusable component                   | Step 4: no match AND pattern is generic/reusable                                      |
+| Create feature-specific component               | Step 4: no match AND pattern is business-specific/feature-coupled                     |
+
+⚠️ **The `Needs clarification` category is prohibited.** ANALYSIS_PLAN.md must contain no deferred decisions — the output contract's prohibition check blocks them. When catalogue data or Figma intent is genuinely unclear:
+
+1. Make the **most defensible definitive decision** using the priority order.
+2. Emit that definitive category into §13.1.
+3. Record the uncertainty, the options considered, and your confidence in **DEV_REVIEW.md §1 (Decisions Made Under Uncertainty)**.
+
+Likewise, never emit `approval required: Yes` into the plan. An enhancement decision is final for code generation; its backward-compatibility risk is a DEV_REVIEW concern.
 
 ---
 
-## Output Format Per Component
+### Per-Component Working Record (Internal)
 
-For every component that goes through the workflow, produce the following output block:
+Produce this for every component that goes through the workflow. It is **not** emitted into ANALYSIS_PLAN.md — it exists to prove no step was skipped.
 
-```
+```text
 Component: [Name]
 Atomic Level: Atom / Molecule / Organism / Feature Display / CMS Component
 Step 2 — Exact Match: [Yes — use ComponentX with variant=Y] / [No]
 Step 3 — Partial Match: [Yes — ComponentX is close, missing variant Z] / [No]
-         Code Check: [Variant Z not found in source code] / [Variant Z found — treat as exact match]
-Step 4 — No Match Decision: [Create new reusable atom/molecule/organism] / [Create feature-specific component]
+           Code Check: [Variant Z not found in source] / [Variant Z found — treat as exact match]
+Step 4 — No Match Decision: [Create new reusable ...] / [Create feature-specific ...]
 Final Reuse Category: [category]
 Decision: [one clear sentence]
 Catalogue Update Required: Yes / No
 Storybook Required: Yes / No
 ```
 
+### Output → §13.1
+
+| Component | Atomic Level | Reuse Decision | Existing Component | Gap / Enhancement | New Component Name | Catalogue Update? |
+| --------- | ------------ | -------------- | ------------------ | ----------------- | ------------------ | ----------------- |
+|           |              |                |                    |                   |                    |                   |
+
+This table feeds two downstream consumers:
+
+- **Coding Phase 4** — `presentational-ui-generation` honours each reuse decision before creating anything.
+- **Coding Phase 9** — `storybook-and-component-catalogue` uses `Catalogue Update?` and the new/enhanced flags to determine story eligibility.
+
 ---
 
-## Guardrails
+### Guardrails
 
-### Always Do
+#### Always Do
 
-- Check active Dev Notes list before every decision. If a Dev Note covers the topic, it IS the answer.
-- Label every decision influenced by a Dev Note with its DN ID (e.g., "Per DN-002").
-- Apply the priority order at every decision point: Dev Notes → Guidelines → Figma → Best Practices.
+- Check the active Dev Notes list before every decision; label items with their DN ID.
+- Apply the priority order at every decision point.
 - Run all 4 steps in order for every applicable component — no skipping.
-- Assign a definitive reuse category to every applicable component before proceeding to Phase 7.
+- Assign a **definitive** reuse category to every applicable component.
 - Use `component-catalogue.json` as the ONLY source of truth for existence validation.
-- Perform the mandatory code check for every partial match before assigning `Enhance existing component`.
-- Exclude containers, hooks, mappers, types, utilities, and service files from the reuse workflow.
-- Record every uncertain decision in DEV_REVIEW.md — never in ANALYSIS_PLAN.md.
-- Mark every derived recommendation clearly: `Derived from project frontend best practices.`
+- Perform the mandatory code check for every partial match.
+- Exclude containers, hooks, mappers, types, utilities, and service files.
+- Route uncertainty and backward-compatibility impact to DEV_REVIEW.md §1.
+- Produce the internal working record for every component.
+- Set the `Catalogue Update?` flag correctly — it drives Storybook eligibility downstream.
 
-### Never Do
+#### Never Do
 
-- Never skip a step in the 4-step workflow for any applicable component.
+- Never skip a step in the 4-step workflow.
 - Never assign a reuse category without completing all applicable prior steps.
-- Never skip the mandatory code check when a partial match is found in the catalogue.
+- Never skip the mandatory code check when a partial match is found.
 - Never validate containers, controllers, hooks, mappers, or service files for reuse.
-- Never use any source other than `component-catalogue.json` to determine component existence.
-- Never leave any component without a definitive reuse category — `Needs clarification` is only valid when the requirement or Figma intent is genuinely unclear.
-- Never override a Dev Note — not even as a "suggestion" or "recommendation".
-- Never generate implementation code — that is the Coding Agent's job.
-- Never defer reuse decisions to Phase 7 — all reuse decisions must be finalised in this phase.
+- Never use any source other than `component-catalogue.json` to determine existence.
+- **Never emit `Needs clarification` into ANALYSIS_PLAN.md** — decide definitively, log the uncertainty in DEV_REVIEW.md §1.
+- **Never emit `approval required` or any deferred-decision phrasing into ANALYSIS_PLAN.md.**
+- **Never emit the per-component working record into ANALYSIS_PLAN.md** — only the §13.1 summary table.
+- Never override a Dev Note.
+- Never generate implementation code.
+- Never defer reuse decisions to a later phase — all are finalised here.
 
 ---
 
-## Output Checklist (Self-Verify Before Proceeding to Phase 7)
+### Gate: Phase 8 Complete When
 
-Before passing output to Phase 7 (Prop-Driven Model and Code Generation Plan), verify:
+**Analysis completeness:**
 
-- [ ] Every applicable display component has gone through all 4 steps in order
+- [ ] Every applicable display component went through all 4 steps in order
 - [ ] No step skipped for any applicable component
-- [ ] Every applicable component has a definitive reuse category assigned
-- [ ] Mandatory code check performed for every partial match (Step 3)
-- [ ] Containers, controllers, hooks, mappers, types, utilities, and service files excluded from reuse check
-- [ ] `component-catalogue.json` used as the ONLY source of truth for existence validation
-- [ ] Output block produced for every component that went through the workflow
-- [ ] Component Inventory & Reuse Validation table ready for inclusion in ANALYSIS_PLAN.md (Section 19)
-- [ ] Every Dev Note applied and labelled with DN ID
-- [ ] Every uncertain decision recorded in DEV_REVIEW.md, not in ANALYSIS_PLAN.md
+- [ ] Mandatory code check performed for every partial match
+- [ ] Containers, controllers, hooks, mappers, types, utilities, service files excluded
+- [ ] `component-catalogue.json` used as the ONLY existence source
+- [ ] Internal working record produced for every component
+
+**Emission discipline:**
+
+- [ ] Every component has a **definitive** reuse category — no `Needs clarification`
+- [ ] No `approval required` or deferred phrasing in the emitted table
+- [ ] §13.1 table complete and ready for ANALYSIS_PLAN.md
+- [ ] `Catalogue Update?` flag set correctly for Storybook eligibility downstream
+- [ ] Working records kept internal — not emitted
+- [ ] Every Dev Note applied and labelled with its DN ID
+- [ ] Every uncertainty routed to DEV_REVIEW.md §1
