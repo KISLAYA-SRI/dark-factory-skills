@@ -24,7 +24,7 @@ This skill describes **one continuous run of nine phases**. It is not nine separ
 ### Rule 1 — Run all nine phases without stopping
 
 ```text
-PHASE 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → DONE
+PHASE 1 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → DONE
 ```
 
 When a phase's gate passes, **immediately invoke the next phase in the same run**. Do not pause. Do not summarise progress and wait. Do not ask whether to continue. Do not treat a completed phase as a completed task.
@@ -41,7 +41,6 @@ When a phase's gate passes, **immediately invoke the next phase in the same run*
 ```text
 ❌ Producing the CONTEXT_MANIFEST does NOT end the run   → go to Phase 3
 ❌ A phase gate passing does NOT end the run             → go to the next phase
-❌ A per-task fetch failure in Phase 2 does NOT end it    → go to Phase 3
 ❌ "Phase N complete" does NOT end the run                → go to Phase N+1
 ❌ Phase 4 emitting SUCCESS does NOT end the run          → go to Phase 5
 ```
@@ -53,7 +52,7 @@ When a phase's gate passes, **immediately invoke the next phase in the same run*
 After each phase, state one line and continue in the same turn:
 
 ```text
-Phase 2 complete → proceeding to Phase 3 (Story Analysis)
+Phase 1 complete → proceeding to Phase 3 (Story Analysis)
 Phase 3 complete → proceeding to Phase 4 (Context Validation)
 ```
 
@@ -66,9 +65,7 @@ This line is a transition marker, **not** a request for permission and **not** a
 ```text
 ❌ No per-phase report file
 ❌ No intermediate summary file
-❌ No PHASE_2_CONTEXT.md, no STORY_ANALYSIS.md, no scratch notes file
 ❌ No partial ANALYSIS_PLAN.md that later phases append to
-❌ No CONTEXT_MANIFEST.md — the manifest is IN-MEMORY and reported inline
 ```
 
 ### ⚠️ How to read every "§" reference in this skill
@@ -103,7 +100,7 @@ You are the **FE Story Analysis Agent**. Your job is to:
 
 ### ⚠️ THE THREE ARCHITECTURAL PRINCIPLES
 
-**1. Acquisition is separate from interpretation.** All external context is fetched **once**, in Phase 2. Phases 5 and 6 read from disk. They never call Figma MCP, curl, the http tool, or the open-api-spec MCP tool, and never re-scan the story for URLs, endpoints, or operationIds.
+**1. Acquisition is separate from interpretation.** All external context is already fetched \*\*. Phases 5 and 6 read from disk. They never call Figma MCP, curl, the http tool, or the open-api-spec MCP tool, and never re-scan the story for URLs, endpoints, or operationIds.
 
 **2. Classification precedes validation.** Story Analysis (Phase 3) runs on the story text alone and produces the classification. Context Validation (Phase 4) then knows exactly which artefacts are mandatory — a Presentational component does not require a BFF spec, a Transactional one does.
 
@@ -113,7 +110,6 @@ You are the **FE Story Analysis Agent**. Your job is to:
 
 ```text
 PHASE 1  Dev Notes Extraction     [developer-notes-protocol]
-PHASE 2  Context Gathering        [context-gathering]           ← ONLY phase that fetches
 PHASE 3  Story Analysis           [story-analysis-end-to-end]   ← produces classification
 PHASE 4  Context Validation       [context-validation]          ← HARD GATE, may halt
 PHASE 5  Figma Analysis           [figma-design-analysis]
@@ -127,27 +123,14 @@ Run phases strictly in order, **continuously**. Load ONE sub-skill's context per
 
 ⚠️ A sub-skill returning control is **not** the end of the workflow. Each sub-skill has its own internal gate and completion language; when it finishes, **control returns here and the next phase begins immediately**.
 
-### ⚠️ TWO DIFFERENT FAILURE MODELS — DO NOT CONFUSE THEM
-
-|            | Phase 2 — Context Gathering              | Phase 4 — Context Validation            |
-| ---------- | ---------------------------------------- | --------------------------------------- |
-| Level      | Per task (Sitecore / BFF / Figma)        | Whole agent                             |
-| On failure | Stop **that task only**; others continue | **Halt everything**                     |
-| Records    | Failure noted in CONTEXT_MANIFEST        | Error report; **no documents produced** |
-| Downstream | **Later phases still run**               | **No later phase runs**                 |
-
-Phase 2 is permissive so one broken fetch does not block the others. Phase 4 is strict: once the classification is known, missing mandatory context makes the analysis unsound.
-
-⚠️ **A Phase 2 fetch failure never stops the run.** Record it in the manifest and proceed to Phase 3. Phase 4 decides whether that failure is fatal.
-
 ### Canonical Artefact Paths
 
-| Artefact                  | Path                                                | Written By | Read By               |
-| ------------------------- | --------------------------------------------------- | ---------- | --------------------- |
-| Sitecore API JSON         | `./.SC_API_SPEC/sitecore-api.json`                  | Phase 2    | Phase 6               |
-| BFF API spec              | `./.BFF_API_SPEC/{operationId}.json`                | Phase 2    | Phase 6               |
-| Figma Design Intent       | `figma-output/figma_design_{Node_id}_-context.json` | Phase 2    | Phase 5               |
-| Responsive Reconciliation | `figma-output/responsive_design_intent.json`        | Phase 5    | Phase 7, Coding Agent |
+| Artefact                  | Path                                                | Read By               |
+| ------------------------- | --------------------------------------------------- | --------------------- |
+| Sitecore API JSON         | `./.SC_API_SPEC/sitecore-api.json`                  | Phase 6               |
+| BFF API spec              | `./.BFF_API_SPEC/{operationId}.json`                | Phase 6               |
+| Figma Design Intent       | `figma-output/figma_design_{Node_id}_-context.json` | Phase 5               |
+| Responsive Reconciliation | `figma-output/responsive_design_intent.json`        | Phase 7, Coding Agent |
 
 ### Inputs Available to the Analysis Agent
 
@@ -157,7 +140,7 @@ Phase 2 is permissive so one broken fetch does not block the others. Phase 4 is 
 | Developer Notes / Dev Notes | Section inside the JIRA story                   | If present — SACRED LAW           |
 | Component Catalogue         | `component-catalogue.json` at repo root         | **Mandatory** for reuse decisions |
 
-All other context is **produced by Phase 2**, not supplied externally.
+All other context is **already produced**, not supplied externally.
 
 ---
 
@@ -165,7 +148,7 @@ All other context is **produced by Phase 2**, not supplied externally.
 
 **Invoke: developer-notes-protocol** (extraction mode)
 
-The **first and highest-priority phase**. It MUST complete before any other work — including context gathering.
+The **first and highest-priority phase**. It MUST complete before any other work.
 
 #### What to Do
 
@@ -194,42 +177,6 @@ DN conflicts → **DEV_REVIEW.md §3**. DN ambiguity and the interpretation chos
 - [ ] Section 1 table shape confirmed as the four required columns.
 
 ⚠️ **If this phase is skipped, the entire analysis is invalid.**
-
----
-
-### PHASE 2 — Context Gathering (Acquisition Only)
-
-**Invoke: context-gathering**
-
-Acquires **all** external context in one pass and writes it to disk. **No reconciliation, no analysis.**
-
-#### What to Do
-
-- Read the JIRA story **once**; extract all Sitecore endpoints, BFF operationIds, and Figma URLs.
-- Execute the Context Synthesisor prompt **verbatim** — it is validated in production.
-- Fetch and write to the canonical paths above.
-- Produce the **CONTEXT_MANIFEST** recording what was fetched, what was missing, and what failed — including a `VIEWPORT COVERAGE` block.
-
-#### Scope Clarification
-
-The embedded prompt says _"SKIP the whole task"_ when no Backend API details are provided. **"The whole task" means the BFF task only.** Sitecore and Figma extraction always proceed independently.
-
-#### Fail-Stop (Per Task)
-
-If any fetch fails, stop **that task only**, record it in the CONTEXT_MANIFEST, and continue with the other two. Never invent an endpoint, field, node, token, or component.
-
-⚠️ Do **not** halt here for missing context. Phase 4 decides what is fatal, because only then is the classification known.
-
-#### Gate: Phase 2 Complete When
-
-- [ ] JIRA story read once; all endpoints, operationIds and Figma URLs extracted.
-- [ ] Sitecore task completed — fetched, or recorded as Not Found / Fetch Failed.
-- [ ] BFF task completed — each operationId written as `{operationId}.json`, or recorded.
-- [ ] Figma task completed — each URL written, or recorded as Fetch Failed.
-- [ ] Every Figma file has fully populated `screenMetadata` — the only viewport signal downstream.
-- [ ] No invented endpoints, fields, nodes, or components.
-- [ ] A failure in one task did not stop the other two.
-- [ ] CONTEXT_MANIFEST produced, including VIEWPORT COVERAGE.
 
 ---
 
@@ -345,7 +292,7 @@ PART 2 — MATERIALISED?  Was the artefact written to disk, non-empty and readab
 
 **Invoke: figma-design-analysis**
 
-Reconciles and analyses the Figma files from Phase 2. **Never fetches.**
+Reconciles and analyses the Figma files. **Never fetches.**
 
 #### What to Do
 
@@ -375,7 +322,7 @@ Reconciles and analyses the Figma files from Phase 2. **Never fetches.**
 
 **Invoke: api-analysis-sitecore-and-bff**
 
-Analyses the Sitecore and BFF specs from Phase 2. **Never fetches.**
+Analyses the Sitecore and BFF specs. **Never fetches.**
 
 ⚠️ **ANALYSE WIDE, HAND OFF NARROW.** Exhaustive extraction discovers edge cases and gaps. Only the FE-relevant slice reaches §11 — **but every gap is reported in full.**
 
@@ -606,7 +553,6 @@ Prefixes: DN · AC · INT · STATE · SCOPE · PROP · CMS · API _(omit for Pre
 | Phase | Skill                                   | Purpose                                                |
 | ----- | --------------------------------------- | ------------------------------------------------------ |
 | 1     | developer-notes-protocol _(extraction)_ | Extract Dev Notes as SACRED LAW                        |
-| 2     | **context-gathering**                   | Fetch Sitecore, BFF, Figma; produce CONTEXT_MANIFEST   |
 | 3     | story-analysis-end-to-end               | Story-only analysis; **produces classification**       |
 | 4     | **context-validation**                  | **Classification-aware hard gate; may halt the agent** |
 | 5     | figma-design-analysis                   | Reconcile viewports + enrich story analysis            |
@@ -633,8 +579,7 @@ Non-negotiable. Higher-priority source wins; conflict and resolution recorded in
 
 - **Execute all nine phases in one continuous run.** No skipping, no reordering, no pausing between phases.
 - **Transition immediately when a gate passes** — announce the transition and take it in the same turn.
-- Extract Dev Notes FIRST — before context gathering.
-- **Acquire all external context once, in Phase 2.**
+- Extract Dev Notes FIRST.
 - **Classify in Phase 3 from the story alone**, before validation.
 - **Halt completely if and only if Phase 4 emits `REQUIRED CONTEXT NOT FOUND`.**
 - **Hold every analysis result in ANALYSIS_STATE** until Phase 9 renders it.
@@ -660,11 +605,11 @@ Non-negotiable. Higher-priority source wins; conflict and resolution recorded in
 - **Never write more than three `.md` files per run.**
 - **Never interpret a "§" reference as an instruction to create or edit a file** — it names a destination inside a Phase 9 document.
 - Never skip Phase 1 (Dev Notes extraction).
-- **Never fetch in Phases 3–9** — acquisition belongs to Phase 2 only.
+- **Never fetch in Phases 3–9**.
 - **Never read Figma or API artefacts in Phase 3** — classification comes from the story.
 - **Never continue past a failed Phase 4** — not even partially.
 - **Never produce any document when Phase 4 fails.**
-- **Never re-scan the JIRA story for URLs, endpoints, or operationIds after Phase 2.**
+- **Never re-scan the JIRA story for URLs, endpoints, or operationIds**
 - **Never invent an endpoint, field, node, token, or component** to fill a gap — record the gap.
 - **Never leave a prop `Unknown` without a corresponding GAP entry.**
 - **Never leave DEV_REVIEW.md §5 blank.**
@@ -695,14 +640,6 @@ Non-negotiable. Higher-priority source wins; conflict and resolution recorded in
 ```text
 PHASE 1  Dev Notes           [developer-notes-protocol]
          → DN-xxx list, 4-column contract, sacred law for all later phases
-
-PHASE 2  Context Gathering   [context-gathering]  ← ONLY phase that fetches
-         → Context Synthesisor prompt VERBATIM
-         → .SC_API_SPEC/sitecore-api.json
-         → .BFF_API_SPEC/{operationId}.json
-         → figma-output/figma_design_{Node_id}_-context.json
-         → CONTEXT_MANIFEST (incl. VIEWPORT COVERAGE)
-         → Fail-stop PER TASK; never invent; never halt the agent here
 
 PHASE 3  Story Analysis      [story-analysis-end-to-end]  ← STORY TEXT ONLY
          → Classification (drives Phase 4), ACs, scope, provisional §9/§10/§12/§13
