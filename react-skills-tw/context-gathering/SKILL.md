@@ -25,11 +25,11 @@ It performs **acquisition only**:
 
 ### Output Locations (Canonical)
 
-| Artefact                      | Path                                                  |
-| ----------------------------- | ----------------------------------------------------- |
-| Sitecore API JSON             | `./.SC_API_SPEC/sitecore-api.json`                    |
-| BFF API spec (per operation)  | `./.BFF_API_SPEC/{operationId}.json`                  |
-| Figma Design Intent (per URL) | `./figma-output/figma_design_{Node_id}_-context.json` |
+| Artefact                      | Path                                                |
+| ----------------------------- | --------------------------------------------------- |
+| Sitecore API JSON             | .SC_API_SPEC/sitecore-api.json`                     |
+| BFF API spec (per operation)  | `.BFF_API_SPEC/{operationId}.json`                  |
+| Figma Design Intent (per URL) | `figma-output/figma_design_{Node_id}_-context.json` |
 
 These are the locations Phases 4, 5 and 6 read from. Do not vary them.
 
@@ -59,10 +59,10 @@ bash scripts/fetch-sitecore-api.sh "<complete-endpoint-url>"
 ### Usage
 
 ```bash
-# Default output path (./.SC_API_SPEC/sitecore-api.json)
+# Default output path (.SC_API_SPEC/sitecore-api.json)
 bash scripts/fetch-sitecore-api.sh "https://cm.dev.internal.example.net/sitecore/api/layout/render/jss?item=/path&sc_apikey=XXX"
 # Explicit output path (rarely needed)
-bash scripts/fetch-sitecore-api.sh "<endpoint>" "./.SC_API_SPEC/sitecore-api.json"
+bash scripts/fetch-sitecore-api.sh "<endpoint>" "./src/.SC_API_SPEC/sitecore-api.json"
 ```
 
 Pass the **complete endpoint** exactly as derived from the JIRA story — full scheme, host, path, and query string. The script rejects anything that is not a complete `http://` or `https://` URL.
@@ -112,15 +112,13 @@ You are context Context synthesisor.
 Read the JIRA User story to extract out the -
 
 - Sitecore API Endpoints - Analyse the story to fetch the complete endpoint of Sitecore API. Always use the complete endpoint.
-  and then save the output in ./.SC_API_SPEC/sitecore-api.json
-- BFF Endpoints - use open-api-spec MCP Tool to get data for all the operation ids mentioned in the Jira story. Save the output inside ./.BFF_API_SPEC/.json. If NO Backend API details are provided, do not invent API fields or endpoints, THEN SKIP the whole task and output with just "API NOT FOUND". Never use Yaml Spec file name as the operationId or Endpoint. Endpoint or operationId is different from name of Yaml spec file and is mentioned indvidually.
+  and then save the output in .SC_API_SPEC/sitecore-api.json
+- BFF Endpoints - use open-api-spec MCP Tool to get data for all the operation ids mentioned in the Jira story. Save the output inside .BFF_API_SPEC/.json. If NO Backend API details are provided, do not invent API fields or endpoints, THEN SKIP the whole task and output with just "API NOT FOUND". Never use Yaml Spec file name as the operationId or Endpoint. Endpoint or operationId is different from name of Yaml spec file and is mentioned indvidually.
 
 FOLDER / FILE STRUCTURE VIOLATIONS (HARD RULES — Zero Exceptions):
 
 - Do NOT create a new src folder — it already exists at the repository root; use the existing one
-- The existing src folder is the code base; place all files and folder inside it
-Everything is written under the **existing** `src` folder. The skill never creates a new `src` or a `.src` folder. 
-The skill never write any file outside src folder. This is the root folder and all path of files to be created are relative to it.
+- The skill never write any file outside "src" folder. This is the root folder and all files are to be created inside `src` folder. Path of files to be created are relative to `src` folder.
 
 From the data of JIRA Story, find all the Figma URL endpoints which are mentioned in it.
 
@@ -555,11 +553,11 @@ Repeat the above steps for all the Figma URLS found and Save the output in figma
 
 These clarify the prompt's intent without altering its instructions:
 
-| Artefact | Written as                                                                                        |
-| -------- | ------------------------------------------------------------------------------------------------- |
-| Sitecore | `./.SC_API_SPEC/sitecore-api.json` — one file, fixed name                                         |
-| BFF      | `./.BFF_API_SPEC/{operationId}.json` — **one file per operationId**, named after that operationId |
-| Figma    | `./figma-output/figma_design_{Node_id}_-context.json` — one file per Figma URL                    |
+| Artefact | Written as                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| Sitecore | `.SC_API_SPEC/sitecore-api.json` — one file, fixed name                                         |
+| BFF      | `.BFF_API_SPEC/{operationId}.json` — **one file per operationId**, named after that operationId |
+| Figma    | `figma-output/figma_design_{Node_id}_-context.json` — one file per Figma URL                    |
 
 ⚠️ **Figma filenames do not carry a viewport marker.** The viewport is recorded **inside** each file, in `screenMetadata` (Device Type and Frame Dimensions). Phase 5 identifies mobile vs desktop from that content, not from the filename. Ensure `screenMetadata` is fully populated for every extracted file — it is the only viewport signal available downstream.
 
@@ -579,20 +577,20 @@ SITECORE
   Endpoint:    [complete endpoint used, or: None found in story]
   Fetched via: scripts/fetch-sitecore-api.sh
   Script exit: [0–5]
-  File:        ./.SC_API_SPEC/sitecore-api.json | Not written
+  File:        .SC_API_SPEC/sitecore-api.json | Not written
   Note:        [exact failure reason from the script's stderr, if applicable]
 
 SITECORE
   Status:    Fetched | Not Found in Story | Fetch Failed
   Endpoint:  [complete endpoint used, or: None found in story]
-  File:      ./.SC_API_SPEC/sitecore-api.json | Not written
+  File:      .SC_API_SPEC/sitecore-api.json | Not written
   Note:      [failure reason if applicable]
 
 BFF
   Status:    Fetched | API NOT FOUND | Fetch Failed
   Operation IDs found in story: [id1, id2, …] | None
   Files written:
-    - ./.BFF_API_SPEC/{operationId}.json
+    -.BFF_API_SPEC/{operationId}.json
   Not retrieved: [operationIds that could not be fetched, with reason]
 
 FIGMA
@@ -635,7 +633,7 @@ Report counts accurately — Phase 4 compares _endpoints found_ against _artefac
 - **Never use the generic http tool for the Sitecore endpoint** — use the script.
 - **Never construct an ad-hoc curl command for Sitecore** — the script owns the flags.
 - **Never pass `-k`, `-sS`, or any TLS/transport flag to the script** — they are internal to it.
-- **Never write `./.SC_API_SPEC/sitecore-api.json` by hand** or from a partial response.
+- **Never write `.SC_API_SPEC/sitecore-api.json` by hand** or from a partial response.
 - **Never treat a non-zero script exit as success**, and never fabricate the artefact it did not write.
 - For BFF API, Never use Yaml Spec file name as the operationId or Endpoint. Endpoint or operationId is different from name of Yaml spec file.
 - Never reconcile mobile and desktop here — that is Phase 5.
@@ -649,8 +647,8 @@ Report counts accurately — Phase 4 compares _endpoints found_ against _artefac
 ### Gate: Phase 2 Complete When
 
 - [ ] JIRA story read once; all Sitecore endpoints, BFF operationIds, and Figma URLs extracted.
-- [ ] Sitecore task completed — fetched to `./.SC_API_SPEC/sitecore-api.json`, or recorded as Not Found / Fetch Failed.
-- [ ] BFF task completed — each operationId written to `./.BFF_API_SPEC/{operationId}.json`, or recorded as API NOT FOUND / Fetch Failed.
+- [ ] Sitecore task completed — fetched to `.SC_API_SPEC/sitecore-api.json`, or recorded as Not Found / Fetch Failed.
+- [ ] BFF task completed — each operationId written to `.BFF_API_SPEC/{operationId}.json`, or recorded as API NOT FOUND / Fetch Failed.
 - [ ] Figma task completed — each URL written to `figma-output/figma_design_{Node_id}_-context.json`, or recorded as Fetch Failed.
 - [ ] Every Figma file has fully populated `screenMetadata` including Device Type and Frame Dimensions.
 - [ ] No invented endpoints, fields, nodes, or components anywhere.
