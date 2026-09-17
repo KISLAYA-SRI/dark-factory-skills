@@ -62,7 +62,7 @@ bash scripts/fetch-sitecore-api.sh "<complete-endpoint-url>"
 # Default output path (.SC_API_SPEC/sitecore-api.json)
 bash scripts/fetch-sitecore-api.sh "https://cm.dev.internal.example.net/sitecore/api/layout/render/jss?item=/path&sc_apikey=XXX"
 # Explicit output path (rarely needed)
-bash scripts/fetch-sitecore-api.sh "<endpoint>" "./src/.SC_API_SPEC/sitecore-api.json"
+bash scripts/fetch-sitecore-api.sh "<endpoint>" ".SC_API_SPEC/sitecore-api.json"
 ```
 
 Pass the **complete endpoint** exactly as derived from the JIRA story — full scheme, host, path, and query string. The script rejects anything that is not a complete `http://` or `https://` URL.
