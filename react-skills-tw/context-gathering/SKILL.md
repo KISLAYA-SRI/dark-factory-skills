@@ -35,6 +35,54 @@ These are the locations Phases 4, 5 and 6 read from. Do not vary them.
 
 ---
 
+## ⚠️ SITECORE FETCH — USE THE PROJECT SCRIPT, NOT THE HTTP TOOL
+
+The Sitecore endpoint **must** be fetched using the bundled script:
+
+```bash
+bash scripts/fetch-sitecore-api.sh "<complete-endpoint-url>"
+```
+
+**Do NOT use the generic http tool for Sitecore.** Do NOT construct an ad-hoc `curl` command.
+
+### Why a script
+
+| Concern                     | How the script handles it                                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Self-signed certificate** | `-k` is applied **inside** the script. Never pass TLS flags from the caller.                                             |
+| **Silent-but-loud errors**  | `-sS` is applied inside the script.                                                                                      |
+| **Timeouts**                | Connect 15s / total 60s — a hung endpoint cannot stall the phase.                                                        |
+| **Redirects**               | Followed, capped at 5.                                                                                                   |
+| **Partial writes**          | Response is staged to a temp file; the canonical path is written **only** after HTTP status and JSON validity both pass. |
+| **Consistency**             | Every run uses identical flags. No drift between invocations.                                                            |
+
+### Usage
+
+```bash
+# Default output path (./.SC_API_SPEC/sitecore-api.json)
+bash scripts/fetch-sitecore-api.sh "https://cm.dev.internal.example.net/sitecore/api/layout/render/jss?item=/path&sc_apikey=XXX"
+# Explicit output path (rarely needed)
+bash scripts/fetch-sitecore-api.sh "<endpoint>" "./.SC_API_SPEC/sitecore-api.json"
+```
+
+Pass the **complete endpoint** exactly as derived from the JIRA story — full scheme, host, path, and query string. The script rejects anything that is not a complete `http://` or `https://` URL.
+
+### Exit Codes — Map Directly to the Manifest
+
+| Exit  | Meaning                                                    | CONTEXT_MANIFEST status           |
+| ----- | ---------------------------------------------------------- | --------------------------------- |
+| **0** | Valid JSON written                                         | `Fetched`                         |
+| **1** | Usage error — missing/malformed endpoint                   | `Fetch Failed — invalid endpoint` |
+| **2** | Network/transport failure — unreachable, DNS, timeout, TLS | `Fetch Failed — transport`        |
+| **3** | HTTP error — non-2xx returned                              | `Fetch Failed — HTTP <status>`    |
+| **4** | Empty body or unparseable JSON                             | `Fetch Failed — invalid payload`  |
+| **5** | Filesystem error — could not write                         | `Fetch Failed — filesystem`       |
+
+⚠️ **On any non-zero exit the output file is not created.** This is deliberate: Phase 4 treats an empty or unreadable artefact as **not materialised**, so a junk file would produce a false pass. Record the failure and move on to the BFF and Figma tasks.
+Always capture the script's exit code and stderr text — the manifest note should carry the actual reason, not a generic "failed".
+
+---
+
 ### ⚠️ TASK-LEVEL FAIL-STOP RULE
 
 This skill runs **three independent tasks**: Sitecore, BFF, and Figma.
@@ -63,9 +111,9 @@ You are context Context synthesisor.
 
 Read the JIRA User story to extract out the -
 
-- Sitecore API Endpoints - Analyse the story to fetch the complete endpoint of Sitecore API. Always use the complete endpoint. use http Tool to fetch the json. This endpoint is insecure so add "-k -sS -H" in curl command
+- Sitecore API Endpoints - Analyse the story to fetch the complete endpoint of Sitecore API. Always use the complete endpoint.
   and then save the output in ./.SC_API_SPEC/sitecore-api.json
-- BFF Endpoints - use open-api-spec MCP Tool to get data for all the operation ids mentioned in the Jira story. Save the output inside ./.BFF_API_SPEC/.json. If NO Backend API details are provided, do not invent API fields or endpoints, THEN SKIP the whole task and output with just "API NOT FOUND".
+- BFF Endpoints - use open-api-spec MCP Tool to get data for all the operation ids mentioned in the Jira story. Save the output inside ./.BFF_API_SPEC/.json. If NO Backend API details are provided, do not invent API fields or endpoints, THEN SKIP the whole task and output with just "API NOT FOUND". Never use Yaml Spec file name as the operationId or Endpoint. Endpoint or operationId is different from name of Yaml spec file and is mentioned indvidually.
 
 FOLDER / FILE STRUCTURE VIOLATIONS (HARD RULES — Zero Exceptions):
 
@@ -513,6 +561,8 @@ These clarify the prompt's intent without altering its instructions:
 
 ⚠️ **Figma filenames do not carry a viewport marker.** The viewport is recorded **inside** each file, in `screenMetadata` (Device Type and Frame Dimensions). Phase 5 identifies mobile vs desktop from that content, not from the filename. Ensure `screenMetadata` is fully populated for every extracted file — it is the only viewport signal available downstream.
 
+### Required Output: CONTEXT_MANIFEST
+
 ---
 
 ### Required Output: CONTEXT_MANIFEST
@@ -521,6 +571,14 @@ After executing the prompt, report a manifest of what was acquired. **Phase 4 (C
 
 ```text
 CONTEXT MANIFEST — {{ticket_id}}
+
+SITECORE
+  Status:    Fetched | Not Found in Story | Fetch Failed
+  Endpoint:    [complete endpoint used, or: None found in story]
+  Fetched via: scripts/fetch-sitecore-api.sh
+  Script exit: [0–5]
+  File:        ./.SC_API_SPEC/sitecore-api.json | Not written
+  Note:        [exact failure reason from the script's stderr, if applicable]
 
 SITECORE
   Status:    Fetched | Not Found in Story | Fetch Failed
@@ -557,8 +615,9 @@ Report counts accurately — Phase 4 compares _endpoints found_ against _artefac
 #### Always Do
 
 - Read the JIRA story **once** and extract all Sitecore endpoints, BFF operationIds, and Figma URLs in that single pass.
-- Execute the Context Synthesisor prompt verbatim.
-- Write every artefact to its canonical path.
+- **Fetch Sitecore via `scripts/fetch-sitecore-api.sh`.**
+- Pass the **complete endpoint URL** to the script, exactly as derived from the story.
+- **Capture the script's exit code and stderr** and record the real reason in the manifest.- Write every artefact to its canonical path.
 - Name each BFF spec file after its `operationId`.
 - Populate `screenMetadata` fully for every Figma file — it carries the only viewport signal.
 - List every Figma URL, endpoint and operationId found, **including ones that failed**.
@@ -571,6 +630,12 @@ Report counts accurately — Phase 4 compares _endpoints found_ against _artefac
 - **Never abort the phase or the agent because one task failed** — the other two still run.
 - **Never treat "SKIP the whole task" as covering Sitecore or Figma** — it scopes to the BFF task only.
 - **Never judge whether a missing artefact is acceptable** — that is Phase 4's job.
+- **Never use the generic http tool for the Sitecore endpoint** — use the script.
+- **Never construct an ad-hoc curl command for Sitecore** — the script owns the flags.
+- **Never pass `-k`, `-sS`, or any TLS/transport flag to the script** — they are internal to it.
+- **Never write `./.SC_API_SPEC/sitecore-api.json` by hand** or from a partial response.
+- **Never treat a non-zero script exit as success**, and never fabricate the artefact it did not write.
+- For BFF API, Never use Yaml Spec file name as the operationId or Endpoint. Endpoint or operationId is different from name of Yaml spec file.
 - Never reconcile mobile and desktop here — that is Phase 5.
 - Never analyse contracts, plan components, or interpret the story here.
 - Never return raw MCP payloads, raw Figma node data, token definitions, SVG paths, or image binaries.
