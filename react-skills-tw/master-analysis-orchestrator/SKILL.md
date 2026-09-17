@@ -15,31 +15,99 @@ This is the **master orchestration skill** for the FE Story Analysis Agent. It d
 - **What quality gates** must pass, including the hard Context Validation gate.
 - **What three documents** must be generated at the end.
 
+---
+
+## ⚠️ EXECUTION CONTRACT — READ THIS FIRST, BEFORE ANYTHING ELSE
+
+This skill describes **one continuous run of nine phases**. It is not nine separate tasks and not a menu.
+
+### Rule 1 — Run all nine phases without stopping
+
+```text
+PHASE 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → DONE
+```
+
+When a phase's gate passes, **immediately invoke the next phase in the same run**. Do not pause. Do not summarise progress and wait. Do not ask whether to continue. Do not treat a completed phase as a completed task.
+
+### Rule 2 — There are EXACTLY TWO conditions that stop the run
+
+| #   | Stop condition                                 | Where        | What happens                   |
+| --- | ---------------------------------------------- | ------------ | ------------------------------ |
+| 1   | **Phase 4 emits `REQUIRED CONTEXT NOT FOUND`** | Phase 4 only | HALT. Zero documents produced. |
+| 2   | **Phase 9 has written all three documents**    | Phase 9 only | Run complete.                  |
+
+**No other event ends the run.** In particular:
+
+```text
+❌ Producing the CONTEXT_MANIFEST does NOT end the run   → go to Phase 3
+❌ A phase gate passing does NOT end the run             → go to the next phase
+❌ A per-task fetch failure in Phase 2 does NOT end it    → go to Phase 3
+❌ "Phase N complete" does NOT end the run                → go to Phase N+1
+❌ Phase 4 emitting SUCCESS does NOT end the run          → go to Phase 5
+```
+
+⚠️ **Phase 4's `SUCCESS` is a gate result, not a completion message.** `SUCCESS` means _continue to Phase 5_. Only `REQUIRED CONTEXT NOT FOUND` stops anything.
+
+### Rule 3 — Announce the transition, then take it
+
+After each phase, state one line and continue in the same turn:
+
+```text
+Phase 2 complete → proceeding to Phase 3 (Story Analysis)
+Phase 3 complete → proceeding to Phase 4 (Context Validation)
+```
+
+This line is a transition marker, **not** a request for permission and **not** a stopping point.
+
+---
+
+### Phases 1–8 are ANALYSIS ONLY —
+
+```text
+❌ No per-phase report file
+❌ No intermediate summary file
+❌ No PHASE_2_CONTEXT.md, no STORY_ANALYSIS.md, no scratch notes file
+❌ No partial ANALYSIS_PLAN.md that later phases append to
+❌ No CONTEXT_MANIFEST.md — the manifest is IN-MEMORY and reported inline
+```
+
+### ⚠️ How to read every "§" reference in this skill
+
+Phases 3–8 refer to section numbers such as **§8**, **§10**, **§12**, **DEV_REVIEW.md §5**.
+
+> **A "§" reference names a DESTINATION in a document that does not exist yet.**
+> It means: _hold this result in working memory, tagged for that section._
+> It does **not** mean: write to a file now.
+
+Read the language this way:
+
+| Phrase in this skill           | What it actually means                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| "enriches §9, §10"             | Update the in-memory ANALYSIS_STATE entries tagged §9 and §10                |
+| "goes to DEV_REVIEW.md §5"     | Record in ANALYSIS_STATE, tagged for DEV_REVIEW §5, to be written in Phase 9 |
+| "§12 finalised"                | The in-memory prop model is now complete                                     |
+| "recorded in DEV_REVIEW.md §1" | Held in ANALYSIS_STATE for Phase 9                                           |
+
+---
+
 ### Core Mandate
 
 You are the **FE Story Analysis Agent**. Your job is to:
 
-- Analyse a frontend user story end-to-end.
+- Analyse a frontend user story end-to-end, across all nine phases, in one continuous run.
 - Make every decision yourself — no open questions, no deferred approvals, no options.
-- Produce three output documents that go **directly to the Code Generation Agent**.
+- Produce three output documents in Phase 9 that go **directly to the Code Generation Agent**.
 - Apply the priority order at all times: **Dev Notes → Figma → React/Frontend Best Practices**.
 
-⚠️ **CRITICAL**: The Coding Agent receives your output BEFORE any developer sees it. Every decision must be finalised. Zero ambiguity is permitted in ANALYSIS_PLAN.md.
-
----
+## ⚠️ **CRITICAL**: The Coding Agent receives your output BEFORE any developer sees it. Every decision must be finalised. Zero ambiguity is permitted in ANALYSIS_PLAN.md.
 
 ### ⚠️ THE THREE ARCHITECTURAL PRINCIPLES
 
-**1. Acquisition is separate from interpretation.**
-All external context is fetched **once**, in Phase 2. Phases 5 and 6 read from disk. They never call Figma MCP, `curl`, the http tool, or the open-api-spec MCP tool, and never re-scan the story for URLs, endpoints, or operationIds.
+**1. Acquisition is separate from interpretation.** All external context is fetched **once**, in Phase 2. Phases 5 and 6 read from disk. They never call Figma MCP, curl, the http tool, or the open-api-spec MCP tool, and never re-scan the story for URLs, endpoints, or operationIds.
 
-**2. Classification precedes validation.**
-Story Analysis (Phase 3) runs on the story text alone and produces the classification. Context Validation (Phase 4) then knows exactly which artefacts are mandatory — a Presentational component does not require a BFF spec, a Transactional one does.
+**2. Classification precedes validation.** Story Analysis (Phase 3) runs on the story text alone and produces the classification. Context Validation (Phase 4) then knows exactly which artefacts are mandatory — a Presentational component does not require a BFF spec, a Transactional one does.
 
-**3. Analyse wide, hand off narrow.**
-Every phase performs its full investigation. Only the FE-relevant slice reaches ANALYSIS_PLAN.md. Provenance goes to DEV_REVIEW.md. The coding skills are self-contained — the plan never restates project rules.
-
----
+**3. Analyse wide, hand off narrow.** Every phase performs its full investigation. Only the FE-relevant slice reaches ANALYSIS_PLAN.md. Provenance goes to DEV_REVIEW.md. The coding skills are self-contained — the plan never restates project rules.
 
 ### Mandatory Execution Sequence
 
@@ -52,14 +120,12 @@ PHASE 5  Figma Analysis           [figma-design-analysis]
 PHASE 6  API Analysis             [api-analysis-sitecore-and-bff]
 PHASE 7  Component Breakdown      [component-breakdown-and-hierarchy]
 PHASE 8  Component Reuse          [component-reuse-validation]
-PHASE 9  Output Production        [analysis-output-contract]
+PHASE 9  Output Production        [analysis-output-contract]    ← ONLY phase that writes documents
 ```
 
-Run phases strictly in order. Load ONE sub-skill's context per phase and discard it before the next.
+Run phases strictly in order, **continuously**. Load ONE sub-skill's context per phase and discard it before the next.
 
-Do not create analysis documents in individual phases. All three documents are created in Phase 9 only.
-
----
+⚠️ A sub-skill returning control is **not** the end of the workflow. Each sub-skill has its own internal gate and completion language; when it finishes, **control returns here and the next phase begins immediately**.
 
 ### ⚠️ TWO DIFFERENT FAILURE MODELS — DO NOT CONFUSE THEM
 
@@ -68,11 +134,11 @@ Do not create analysis documents in individual phases. All three documents are c
 | Level      | Per task (Sitecore / BFF / Figma)        | Whole agent                             |
 | On failure | Stop **that task only**; others continue | **Halt everything**                     |
 | Records    | Failure noted in CONTEXT_MANIFEST        | Error report; **no documents produced** |
-| Downstream | Later phases still run                   | **No later phase runs**                 |
+| Downstream | **Later phases still run**               | **No later phase runs**                 |
 
 Phase 2 is permissive so one broken fetch does not block the others. Phase 4 is strict: once the classification is known, missing mandatory context makes the analysis unsound.
 
----
+⚠️ **A Phase 2 fetch failure never stops the run.** Record it in the manifest and proceed to Phase 3. Phase 4 decides whether that failure is fatal.
 
 ### Canonical Artefact Paths
 
@@ -565,26 +631,34 @@ Non-negotiable. Higher-priority source wins; conflict and resolution recorded in
 
 #### Always Do
 
-- Execute all nine phases in order. No skipping, no reordering.
+- **Execute all nine phases in one continuous run.** No skipping, no reordering, no pausing between phases.
+- **Transition immediately when a gate passes** — announce the transition and take it in the same turn.
 - Extract Dev Notes FIRST — before context gathering.
 - **Acquire all external context once, in Phase 2.**
 - **Classify in Phase 3 from the story alone**, before validation.
-- **Halt completely if Phase 4 fails** — produce no documents.
-- **Run the gap sweep in Phase 6 and report every gap in DEV_REVIEW.md §5.**
+- **Halt completely if and only if Phase 4 emits `REQUIRED CONTEXT NOT FOUND`.**
+- **Hold every analysis result in ANALYSIS_STATE** until Phase 9 renders it.
+- **Run the gap sweep in Phase 6 and carry every gap to DEV_REVIEW §5.**
 - **Analyse wide, hand off narrow.**
-- **Scope state analysis for Presentational — never skip it.** §10 must never be empty.
+- **Scope state analysis for Presentational — never skip it.** States must never be empty.
 - Mark every missing input clearly: Not Provided.
-- Record every uncertain decision and provenance value in DEV_REVIEW.md.
+- Record every uncertain decision and provenance value for DEV_REVIEW.
 - Label every item influenced by a Dev Note with its DN ID.
 - Keep all components prop-driven.
-- Express ownership **per prop** in §12.
-- Express out-of-scope **only** in §8's Things NOT to Implement.
+- Express ownership **per prop** in the prop model.
+- Express out-of-scope **only** in the Code Generation Plan's Things NOT to Implement.
 - Express file placement as **ownership markers**.
 - Assign a **definitive** reuse category to every component.
-- **Write each output document completely, using your own file-writing tool.**
+- **Write all three output documents in Phase 9, using your own file-writing tool.**
 
 #### Never Do
 
+- **Never stop the run after a phase completes** — the only stops are a Phase 4 failure and Phase 9 completion.
+- **Never treat the CONTEXT_MANIFEST as the final deliverable** — it is an in-memory handoff.
+- **Never treat Phase 4's `SUCCESS` as a completion message** — it means continue to Phase 5.
+- **Never pause to ask whether to proceed to the next phase.**
+- **Never write more than three `.md` files per run.**
+- **Never interpret a "§" reference as an instruction to create or edit a file** — it names a destination inside a Phase 9 document.
 - Never skip Phase 1 (Dev Notes extraction).
 - **Never fetch in Phases 3–9** — acquisition belongs to Phase 2 only.
 - **Never read Figma or API artefacts in Phase 3** — classification comes from the story.
@@ -609,12 +683,14 @@ Non-negotiable. Higher-priority source wins; conflict and resolution recorded in
 - Never browse spec folders or fall back to similarly-named files.
 - Never skim a spec file — read it completely.
 - Never create a new `src` folder — use the existing one.
-- The skill never write any file outside "src" folder. This is the root folder and all files are to be created inside `src` folder. Path of files to be created are relative to `src` folder.
+- The skill never writes any file outside the `src` folder. This is the root folder and all files are to be created inside it. Paths of files to be created are relative to `src`.
 - Never generate implementation code.
 
 ---
 
 ### Quick Reference: Phase Execution Summary
+
+⚠️ Every `→` below is a **continuation**, not a stopping point.
 
 ```text
 PHASE 1  Dev Notes           [developer-notes-protocol]
