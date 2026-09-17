@@ -119,6 +119,8 @@ FOLDER / FILE STRUCTURE VIOLATIONS (HARD RULES — Zero Exceptions):
 
 - Do NOT create a new src folder — it already exists at the repository root; use the existing one
 - The existing src folder is the code base; place all files and folder inside it
+Everything is written under the **existing** `src` folder. The skill never creates a new `src` or a `.src` folder. 
+The skill never write any file outside src folder. This is the root folder and all path of files to be created are relative to it.
 
 From the data of JIRA Story, find all the Figma URL endpoints which are mentioned in it.
 

@@ -609,6 +609,7 @@ Non-negotiable. Higher-priority source wins; conflict and resolution recorded in
 - Never browse spec folders or fall back to similarly-named files.
 - Never skim a spec file — read it completely.
 - Never create a new `src` folder — use the existing one.
+- The skill never write any file outside src folder. This is the root folder and all path of files to be created are relative to it.
 - Never generate implementation code.
 
 ---
