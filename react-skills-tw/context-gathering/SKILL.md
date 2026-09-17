@@ -31,7 +31,11 @@ It performs **acquisition only**:
 | BFF API spec (per operation)  | `.BFF_API_SPEC/{operationId}.json`                  |
 | Figma Design Intent (per URL) | `figma-output/figma_design_{Node_id}_-context.json` |
 
-These are the locations Phases 4, 5 and 6 read from. Do not vary them.
+Following folders are already created. This skill doesn't create these new folders but use existing ones to create files in them.
+Folders created already -
+./src/.SC_API_SPEC/
+./src/.BFF_API_SPEC/
+./src/figma-output/
 
 ---
 
