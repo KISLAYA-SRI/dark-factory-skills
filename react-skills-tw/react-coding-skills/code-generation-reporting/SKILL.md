@@ -1,6 +1,6 @@
 ---
 name: code-generation-reporting
-description: Use to produce the SINGLE consolidated code-generation summary document covering UI, Storybook, Logic, and Tests in one file. Replaces the four legacy per-agent documents. Triggers include code generation summary, consolidated report, final document, or write the summary.
+description: Use to produce the SINGLE consolidated code-generation summary document covering file inventory, UI, Sitecore, logic, data flow, state behaviour, tests, AC evidence, and deviations in one file. Written to serve both the reviewing developer and the defect triage workflow. Replaces the four legacy per-agent documents. Triggers include code generation summary, consolidated report, final document, or write the summary.
 disable-model-invocation: true
 ---
 
@@ -8,11 +8,42 @@ disable-model-invocation: true
 
 ### Purpose
 
-Generate **ONE** consolidated summary of everything the Coding Agent produced — UI, Storybook, Logic/Sitecore/State, and Tests. This replaces the legacy `CODE_GENERATION.md` + `TEST_GENERATION.md` + Storybook handoff with a single file.
+Generate **ONE** consolidated summary of everything the Coding Agent produced. This replaces the legacy `CODE_GENERATION.md` + `TEST_GENERATION.md` + Storybook handoff with a single file.
 
 **File path:** `.SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION_SUMMARY.md`
 
 ⚠️ This is the **only** document the Coding Agent produces. Source files, stories and tests are implementation artefacts, not reports.
+
+---
+
+## ⚠️ THE TWO CONSUMERS — WRITE FOR BOTH
+
+This document has exactly two audiences. Every section must earn its place against at least one of them.
+
+| Consumer                   | What they need                                                        | The question they ask              |
+| -------------------------- | --------------------------------------------------------------------- | ---------------------------------- |
+| **Reviewing Developer**    | Understand what was built and **why** a decision was made             | _"Why was it done this way?"_      |
+| **Defect Triage Workflow** | Locate the file, layer, and line responsible for a reported behaviour | _"Where do I look when X breaks?"_ |
+
+### The Governing Principle
+
+> **Document decisions and locations — not compliance.**
+>
+> If a rule is enforced by a coding skill and verified by the self-validation gate, restating it here adds length without adding diagnostic value.
+>
+> If something was **decided** — a token created, a gap worked around, a conflict resolved, a fallback chosen — that reasoning exists **nowhere else** and must be captured.
+
+```text
+❌ "Mobile-first approach applied"              → compliance, already enforced
+❌ "Logical properties used for RTL"            → compliance, already enforced
+❌ "Semantic HTML and ARIA labels applied"      → compliance, already enforced
+❌ 40-row table where every row says "Covered"  → noise
+
+✅ "Created --gap-18 (18px); no existing token matched Figma"
+✅ "Figma showed 3-col; plan said 2-col → implemented Figma (visual source of truth)"
+✅ "policyNumber null → mapper returns '—' (PolicyMapper.ts:34)"
+✅ "Expiry badge hidden — GAP-003, no expiry field in contract"
+```
 
 ---
 
@@ -25,21 +56,21 @@ Write the summary **completely, in a single write operation**, using the templat
 ### If a single write fails or is rejected for size
 
 1. Write the document with the leading sections first, creating the file.
-2. To add the remaining sections: **read the file's current content, concatenate the new sections onto it, and write the complete combined content back.** Repeat until all 13 sections are present.
+2. To add the remaining sections: **read the file's current content, concatenate the new sections onto it, and write the complete combined content back.** Repeat until all 12 sections are present.
 3. Choose your own split points. Keep sections whole — never split mid-section or mid-table.
-4. Always write sections in ascending order, so the final file reads 1 → 13.
+4. Always write sections in ascending order, so the final file reads 1 → 12.
 
 ⚠️ **Do not assume an append mode exists.** If your write tool only creates or overwrites files, the read-concatenate-rewrite sequence above is the correct way to grow a document.
 
 ### Non-negotiable outcomes
 
-| Outcome | Requirement |
-| --- | --- |
-| **Single file** | Exactly one document produced |
-| **Completeness** | All 13 sections present and populated with story-specific detail |
-| **Order** | Sections in ascending numerical order, 1 → 13 |
-| **Integrity** | No duplicated, truncated, or orphaned sections; no partial tables |
-| **No loss** | If rewriting to add sections, preserve all previously written content verbatim |
+| Outcome          | Requirement                                                                    |
+| ---------------- | ------------------------------------------------------------------------------ |
+| **Single file**  | Exactly one document produced                                                  |
+| **Completeness** | All 12 sections present and populated with story-specific detail               |
+| **Order**        | Sections in ascending numerical order, 1 → 12                                  |
+| **Integrity**    | No duplicated, truncated, or orphaned sections; no partial tables              |
+| **No loss**      | If rewriting to add sections, preserve all previously written content verbatim |
 
 ### Efficiency rules
 
@@ -47,24 +78,28 @@ Write the summary **completely, in a single write operation**, using the templat
 - **Do not re-read a file you just wrote** to confirm success — rely on the tool's result.
 - **Never restart the build** because of a write failure.
 - **Do not use shell commands** (`cat`, `cp`, `sed`, `head`, `tail`, temp-file merges) to assemble or repair the document.
-- **If content must be reduced to fit**, condense tables to their essential rows rather than dropping a section. Note the reduction inline as `[Condensed: Section X]`.
+- **If content must be reduced to fit**, condense the low-value sections first (§9 Design Notes, §10 test rows). **Never condense §3 File Inventory, §7 Data Flow Trace, §8 State Matrix, or §12 Deviations** — these are the defect workflow's primary lookups. Note any reduction inline as `[Condensed: Section X]`.
 
 ---
 
-## Consolidated Summary Template (13 Sections)
+## Consolidated Summary Template (12 Sections)
 
-```markdown
+````markdown
 # Code Generation Summary — {{ticket_id}}
+
+**Story:** {{story title}}
+**Classification:** Presentational | Transactional | Hybrid
+**Generated:** {{YYYY-MM-DD}}
 
 ---
 
 ## 1. Developer Notes Applied
 
-| DN ID | Instruction | Files Affected | How Applied | Status |
-| ----- | ----------- | -------------- | ----------- | ------ |
-| DN-001 |            |                |             | Implemented / Not Applicable / Blocked |
+| DN ID  | Instruction | Files Affected | How Applied | Status                                 |
+| ------ | ----------- | -------------- | ----------- | -------------------------------------- |
+| DN-001 |             |                |             | Implemented / Not Applicable / Blocked |
 
-> Every DN must resolve to Implemented (with file evidence), Not Applicable (with reason),
+> Every DN resolves to Implemented (with file evidence), Not Applicable (with reason),
 > or Blocked (by a named unavailable dependency). "Considered" is not evidence.
 > If none: "No Developer Notes. Normal priority order applied."
 
@@ -73,144 +108,352 @@ Write the summary **completely, in a single write operation**, using the templat
 ## 2. Story & Classification Summary
 
 - **Classification:** Presentational | Transactional | Hybrid
+- **Rationale:** [one line — why this classification]
+- **Execution path:** lean (0–5, 8–11) | full (all phases)
 - **Component(s) built:** [names]
-- **Execution path:** lean | full
-- **Scope explicitly NOT implemented:** [from plan §8 Things NOT to Implement]
+- **Entry point:** [Sitecore rendering name, or route]
+
+### Scope Explicitly NOT Implemented
+
+> From plan §8 Things NOT to Implement. **Defect workflow: check here first before raising a defect.**
+
+| Item | Reason |
+| ---- | ------ |
+|      |        |
 
 ---
 
-## 3. UI Components Generated
+## 3. File Inventory
 
-| Component | Owner | Reuse Decision | File Path |
-| --------- | ----- | -------------- | --------- |
-|           | DS / CMS / Feature / Shared | reuse / enhance / new | |
+> ⚠️ **Complete, flat, greppable list of every file touched.** Defect triage starts here.
+> Every file created or modified in this run appears exactly once.
 
----
+| #   | File Path                                                                    | Type      | Action   | Purpose                                      |
+| --- | ---------------------------------------------------------------------------- | --------- | -------- | -------------------------------------------- |
+| 1   | Packages/DesignSystem/Foundation/Src/Organisms/HeroCarousel/HeroCarousel.tsx | Component | Created  | Carousel organism — renders slides, autoplay |
+| 2   | Portals/Sme/Features/Motor/PolicyList/Hooks/usePolicyList.ts                 | Hook      | Created  | TanStack infinite query for policy list      |
+| 3   | src/component-catalogue.json                                                 | Catalogue | Modified | Added HeroCarousel entry                     |
 
-## 4. Responsive / RTL / Accessibility Implementation
+**Type values:** Component · Container · Hook · Service · Mapper · Types · Constants · Store · Validator · CMS Entry · Story · Test · Barrel · Catalogue · Config
 
-- **Breakpoint strategy:** [mobile-first approach applied]
-- **Grid usage:** [columns={12} responsive / columns={4} mobile-only]
-- **Token mapping:** [Figma values → project tokens]
-- **New tokens created:** [list, or: None] ⚠️ mandatory if any primitive was added
-- **RTL handling:** [logical properties, mirrored directional elements]
-- **Accessibility:** [roles, labels, keyboard support]
-- **NFR exceptions applied:** [from plan §13.2, or: None]
-- **Token/design discrepancies:** [recorded, or: None]
+**Action values:** Created · Modified
+
+**Totals:** N created · N modified · N total
 
 ---
 
-## 5. Media Integration
+## 4. UI Components Generated
 
-[Assets handled + optimisation applied, or: "Not Applicable — no media in this story"]
+| Component | Owner                       | Reuse Decision        | Exported Symbol | File Path |
+| --------- | --------------------------- | --------------------- | --------------- | --------- |
+|           | DS / CMS / Feature / Shared | reuse / enhance / new | `HeroCarousel`  |           |
 
----
+> `Exported Symbol` lets a defect triager grep the codebase directly for consumers.
 
-## 6. Sitecore Rendering Integration
+### Component Composition
 
-[Field contracts, rendering entry, registry key, placeholders, registry build commands run,
- or: "Not Applicable — no CMS-mapped components"]
+> Only where a component composes others — shows the render tree for tracing a visual defect.
 
----
-
-## 7. Logic & API Integration
-
-[Types, constants/query keys, mapper, service, hook, container.
- States orchestrated: loading / error / empty / partial / success.
- Data fetching config applied (staleTime/gcTime/retry).
- or: "Not Applicable — Presentational component"]
-
----
-
-## 8. State & Form Management
-
-[State homes (server / local / shared), stores created with justification,
- forms and validation utilities, or: "Not Applicable"]
+```text
+HeroBanner (CMS entry)
+└── HeroCarousel [design-system]
+    ├── CarouselSlide [design-system]
+    └── CarouselPager [design-system]
+```
+````
 
 ---
 
-## 9. Storybook & Catalogue Updates
+## 5. Sitecore Integration
 
-| Component | Story File | JSDoc Added | Catalogue Action |
-| --------- | ---------- | ----------- | ---------------- |
-|           |            | Yes / No    | new / enhanced / unchanged |
+> If not applicable: "Not Applicable — no CMS-mapped components."
 
-> Catalogue path: ./src/component-catalogue.json
+- **Rendering name / registry key:** [exact, case-sensitive]
+- **Entry component:** [file path]
+- **Placeholder(s):** [keys, or: None]
+- **Registry commands run:** `pnpm run build:cms-component-registry` · `pnpm run build:component-registry`
+
+### Sitecore Field → Prop Mapping
+
+| Sitecore Field | Type             | Helper Used  | Maps To Prop          | Fallback if Missing |
+| -------------- | ---------------- | ------------ | --------------------- | ------------------- |
+| `Title`        | Single-Line Text | —            | `title`               | empty string        |
+| `CtaLink`      | General Link     | `extractCTA` | `ctaHref`, `ctaLabel` | CTA hidden          |
+
+> **Defect workflow:** if authored content is not appearing, check this table first —
+> field name mismatch and missing helper are the two most common causes.
 
 ---
 
-## 10. Test Generation Summary
+## 6. Logic & API Integration
 
-| Source File | Classification | Test File | Strategy | Branch Coverage |
-| ----------- | -------------- | --------- | -------- | --------------- |
-|             | Presentational / Transactional / Hybrid | | | |
+> If not applicable: "Not Applicable — Presentational component."
+
+| Layer     | File                      | Responsibility           |
+| --------- | ------------------------- | ------------------------ |
+| Types     | `PolicyTypes.ts`          | API contract + ViewModel |
+| Constants | `POLICY_CONSTANTS.ts`     | Query keys + endpoints   |
+| Mapper    | `PolicyMapper.ts`         | Response → ViewModel     |
+| Service   | `PolicyListService.ts`    | fetch to BFF             |
+| Hook      | `usePolicyList.ts`        | useInfiniteQuery         |
+| Container | `PolicyListContainer.tsx` | State orchestration      |
+
+### Endpoint Configuration
+
+| Endpoint        | Method | Query Key                        | Hook            | staleTime | gcTime | retry |
+| --------------- | ------ | -------------------------------- | --------------- | --------- | ------ | ----- |
+| `/api/policies` | GET    | `POLICY_QUERY_KEYS.list(params)` | `usePolicyList` | 0         | 5min   | 1     |
+
+### Error Code → UI Mapping
+
+| Error Code | UI State     | Message Source             | Component           |
+| ---------- | ------------ | -------------------------- | ------------------- |
+| 404        | Empty state  | Sitecore `NoPoliciesFound` | PolicyListContainer |
+| 5xx (all)  | Error banner | Sitecore `GenericError`    | PolicyListContainer |
+
+---
+
+## 7. Data Flow Trace
+
+> ⚠️ **Transactional / Hybrid only.** For Presentational: "Not Applicable — all data is CMS-authored, see §5."
+>
+> **One trace per rendered data field.** This is the defect workflow's primary lookup for
+> _"where does this value come from and where could it break?"_
+
+```text
+FIELD: policyNumber
+  BFF getPolicyList → response.items[].policyNumber (string, nullable)
+    → PolicyListService.fetchPolicies()          Services/PolicyListService.ts
+    → usePolicyList()                            Hooks/usePolicyList.ts
+        queryKey: POLICY_QUERY_KEYS.list(params)
+    → PolicyMapper.mapPolicyResponse()           Mappers/PolicyMapper.ts:34
+        null / undefined → "—"
+    → PolicyListContainer                        Components/PolicyListContainer.tsx
+    → PolicyCard (prop: policyNumber)            Components/PolicyCard.tsx
+
+FIELD: expiryDate
+  ⚠️ NOT AVAILABLE — see GAP-003 (§12). Badge hidden.
+```
+
+**Trace every field that is rendered.** Include the transformation point and the null/missing default, because that is where display defects originate.
+
+---
+
+## 8. State → UI Behaviour Matrix
+
+> ⚠️ **Every state from plan §10.** When a defect reports _"wrong thing shows when X"_,
+> this table names the owning file immediately.
+
+| State    | Trigger Condition       | What Renders                     | Owning File               |
+| -------- | ----------------------- | -------------------------------- | ------------------------- |
+| default  | data loaded, length > 0 | `PolicyCard` list                | `PolicyListContainer.tsx` |
+| loading  | `isLoading === true`    | `PolicyCardSkeleton` ×3          | `PolicyListContainer.tsx` |
+| error    | `isError === true`      | `ErrorBanner` + retry CTA        | `PolicyListContainer.tsx` |
+| empty    | `data.length === 0`     | `EmptyState`                     | `PolicyListContainer.tsx` |
+| partial  | some fields null        | card renders, section hidden     | `PolicyCard.tsx`          |
+| hover    | pointer over card       | elevation token applied          | `PolicyCard.tsx`          |
+| disabled | `isDisabled` prop       | reduced opacity, `aria-disabled` | `PolicyCard.tsx`          |
+
+> Presentational components list UI interaction states only (default, active/selected,
+> hover/focus, transitioning/paused, disabled, hidden).
+
+---
+
+## 9. Design & NFR Notes
+
+> ⚠️ **Non-obvious decisions ONLY.** Do NOT restate compliance — mobile-first, logical
+> properties, semantic HTML and ARIA are enforced by the skills and verified by validation.
+
+### New Design Tokens Created
+
+| Token | Value | Why No Existing Token Matched | Where Used |
+| ----- | ----- | ----------------------------- | ---------- |
+|       |       |                               |            |
+
+> ⚠️ **Mandatory if any primitive or semantic token was added.** Run `pnpm build:css`.
+> If none: "No new tokens created."
+
+### Token / Design Discrepancies
+
+| Component | Figma Value | Token Used     | Delta | Reason               |
+| --------- | ----------- | -------------- | ----- | -------------------- |
+| ClaimCard | 18px gap    | `gap-m` (16px) | −2px  | No 18px token exists |
+
+### NFR Exceptions Applied
+
+> From plan §13.2 — story-specific exceptions only.
+
+| Category | Exception                      | Implementation                      |
+| -------- | ------------------------------ | ----------------------------------- |
+| RTL      | Carousel pager arrows mirrored | `rtl:rotate-180` on `CarouselPager` |
+
+### Media Handling
+
+> One line. If none: "Not Applicable — no media in this story."
+
+| Asset      | Source                       | Optimisation                     | Loading     |
+| ---------- | ---------------------------- | -------------------------------- | ----------- |
+| Hero image | Sitecore Media Library → CDN | `next/image`, responsive `sizes` | eager (LCP) |
+
+### Storybook & Catalogue
+
+| Component    | Story File                 | JSDoc      | Catalogue |
+| ------------ | -------------------------- | ---------- | --------- |
+| HeroCarousel | `HeroCarousel.stories.tsx` | ✅ 14 tags | Added     |
+
+> Catalogue path: `./src/component-catalogue.json`
+
+---
+
+## 10. Tests & Coverage
+
+| Source File               | Classification | Test File                      | Cases | Branch Coverage |
+| ------------------------- | -------------- | ------------------------------ | ----- | --------------- |
+| `PolicyCard.tsx`          | Presentational | `PolicyCard.test.tsx`          | 12    | 94% (targeted)  |
+| `PolicyListContainer.tsx` | Transactional  | `PolicyListContainer.test.tsx` | 9     | 91% (targeted)  |
 
 - **Overall coverage:** NN% — **targeted** | **measured**
-- ⚠️ State "measured" only if a coverage command was actually executed. Otherwise "targeted".
-- **Files excluded from testing:** [barrels, type-only, stories, configs, primitive constants]
+- ⚠️ State "measured" **only** if a coverage command was actually executed.
+- **Excluded from testing:** barrels, type-only files, stories, configs, primitive constants
+
+### AC → Test Mapping
+
+> **Defect workflow:** when a defect maps to an AC, this names the test that should have caught it.
+
+| AC ID  | Covering Test(s)                                                      |
+| ------ | --------------------------------------------------------------------- |
+| AC-001 | `PolicyCard.test.tsx` → "renders policy number from props"            |
+| AC-003 | `PolicyListContainer.test.tsx` → "shows empty state when no policies" |
+
+### Untested Behaviours
+
+> Anything deliberately not covered, with the reason. If none: "None."
+
+| Behaviour | Reason |
+| --------- | ------ |
+|           |        |
 
 ---
 
 ## 11. Acceptance Criteria Evidence
 
-| AC ID | Implemented In (files) | Verified By (tests) |
-| ----- | ---------------------- | ------------------- |
-| AC-001 |                       |                     |
+> ⚠️ **Every AC needs ✅ with a specific file path AND code reference.**
+> **Vague or assumed coverage is NOT acceptable.**
+> Any ❌ must also appear in §12 as a gap or limitation.
+
+| AC ID  | Status | Implemented In (file + symbol/line)           | Verified By (test)                |
+| ------ | ------ | --------------------------------------------- | --------------------------------- |
+| AC-001 | ✅     | `PolicyCard.tsx` → `policyNumber` prop render | `PolicyCard.test.tsx:24`          |
+| AC-002 | ✅     | `PolicyListContainer.tsx:41` → error branch   | `PolicyListContainer.test.tsx:56` |
+| AC-003 | ❌     | Not implemented — see LIM-001                 | —                                 |
+
+**Coverage:** N of M acceptance criteria fully implemented.
 
 ---
 
-## 12. Self-Validation Result
+## 12. Deviations, Gaps & Limitations
 
-| Checklist Item | Status | Evidence (file) |
-| -------------- | ------ | --------------- |
-| DN-001         | Covered / Not Applicable | |
-| AC-001         | Covered / Not Applicable | |
+> ⚠️ **The most valuable section for both consumers.** It is the ONLY place recording _why_.
+> Never condense or omit.
 
-> Every CODING_AGENT_CHECKLIST.md item must appear with concrete evidence.
+### 12.1 Decisions & Conflict Resolutions
 
----
+> Where two sources disagreed, and which won.
 
-## 13. Deviations & Assumptions Made
+| ID      | Area   | Conflict                  | Decision          | Priority Rule Applied          |
+| ------- | ------ | ------------------------- | ----------------- | ------------------------------ |
+| DEC-001 | Layout | Figma 3-col vs plan 2-col | Implemented Figma | Figma = visual source of truth |
 
-- **Conflicts resolved:** [with the priority order applied]
-- **Assumptions made:** [due to missing detail]
-- **Upstream contract gaps encountered:** [e.g. plan §10 empty, or a prop marked
-  "Unknown — source contract not provided" that remained prop-driven]
-- **New design tokens created:** [name + value + why no existing token matched]
-- **Token/design discrepancies:** [recorded during UI generation]
-- **Scope deviations:** [any departure from the ordered plan, with reason]
+### 12.2 Assumptions Made
 
-> Write "None" if there were no deviations.
-```
+| ID      | Assumption                   | Because                          | Impact if Wrong      |
+| ------- | ---------------------------- | -------------------------------- | -------------------- |
+| ASS-001 | Empty list shows CMS message | Plan did not specify copy source | Wrong copy displayed |
+
+### 12.3 Upstream Contract Gaps Encountered
+
+> Gaps inherited from the Analysis Plan (`Unknown — source contract not provided`) that
+> constrained implementation. These props remain **prop-driven** — never hardcoded.
+
+| Gap ID  | What Was Missing                | How Implementation Handled It            |
+| ------- | ------------------------------- | ---------------------------------------- |
+| GAP-003 | No `expiryDate` in BFF response | Prop modelled as `Unknown`; badge hidden |
+
+### 12.4 Known Limitations
+
+> ⚠️ **Defect workflow: check this table BEFORE raising a defect.**
+> A known limitation is not a defect — it is a tracked gap awaiting an upstream fix.
+
+| ID      | Limitation                 | Root Cause                           | User-Visible Impact     | Resolution Owner |
+| ------- | -------------------------- | ------------------------------------ | ----------------------- | ---------------- |
+| LIM-001 | Expiry badge never renders | GAP-003 — field absent from contract | Users cannot see expiry | Backend team     |
+
+### 12.5 Validation Exceptions
+
+> ONLY items marked Not Applicable, or checks that initially failed and were fixed.
+> Do NOT list passing checks.
+
+| Check    | Status         | Reason / Fix Applied                          |
+| -------- | -------------- | --------------------------------------------- |
+| API-001  | Not Applicable | Presentational component — no API integration |
+| FILE-002 | Failed → Fixed | Barrel export missing; added named re-export  |
+
+> If everything passed with no exceptions: "All validation checks passed. No exceptions."
+
+````
 
 ---
 
 ## Content Rules
 
-- Populate every section with **story-specific** detail — real file paths, real component names. No boilerplate.
-- **Presentational runs:** mark Sections 6, 7 and 8 as `Not Applicable` (and Section 5 if no media).
-- Pull all content from the in-memory manifest and each skill's outputs — do **not** re-open source files.
-- Keep it a summary — reference file paths, do not paste source code.
-- **Gapped props:** if a prop was marked `Unknown — source contract not provided` in the plan, confirm in Section 13 that it remained prop-driven with no hardcoded substitute.
-- **New tokens:** every primitive or semantic token created during UI generation must appear in Sections 4 and 13.
-- Preserve DN IDs exactly as numbered by the Analysis Agent — never renumber.
-- Record every conflict resolution with the priority order applied.
+### Always
+- Populate every section with **story-specific** detail — real paths, real symbols, real line references. No boilerplate.
+- **§3 File Inventory must be complete** — every created/modified file, exactly once, derived from the actual write operations.
+- **§7 Data Flow Trace: one trace per rendered field**, including the transformation point and the null/missing default.
+- **§8 State Matrix: every state from plan §10**, with the owning file.
+- **§11: every AC needs a specific file path and code reference.** Vague coverage is not acceptable.
+- Record every new design token in **both** §9 and §12.
+- Confirm gapped props remained prop-driven with no hardcoded substitute.
+- Preserve DN IDs, AC IDs, GAP IDs and STATE IDs exactly as numbered upstream — never renumber.
+- Pull content from the in-memory manifest and each skill's outputs — do **not** re-open source files.
+
+### Never
+- Never restate compliance that the skills enforce and validation verifies.
+- Never list passing validation checks — exceptions only.
+- Never paste full source code — reference paths and symbols.
+- Never leave a section empty — use "Not Applicable" or "None".
+- Never claim measured coverage without an actual run.
+
+### Presentational Runs
+
+| Section | Treatment |
+| --- | --- |
+| §5 Sitecore | Populate if CMS-mapped, else "Not Applicable" |
+| §6 Logic & API | "Not Applicable — Presentational component" |
+| §7 Data Flow Trace | "Not Applicable — all data is CMS-authored, see §5" |
+| §8 State Matrix | **Still required** — UI interaction states only |
+
+⚠️ §8 is **never** Not Applicable. A Presentational component still has default, active/selected, hover/focus, transitioning/paused, disabled and hidden states.
 
 ---
 
 ### Gate: Complete When
 
 ```text
-- [ ] Exactly one summary file written at .SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION_SUMMARY.md
-- [ ] All 13 sections present, in ascending order, populated with story-specific detail
-- [ ] No duplicated, truncated, or orphaned sections; no partial tables
-- [ ] Presentational runs mark Sections 6–8 (and 5 if no media) as Not Applicable
+- [ ] Exactly one summary file at .SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION_SUMMARY.md
+- [ ] All 12 sections present, ascending order, no duplication or truncation
+- [ ] §3 File Inventory complete — every written file listed exactly once, with totals
+- [ ] §7 Data Flow Trace present for every rendered field (Transactional/Hybrid)
+- [ ] §8 State Matrix covers every plan §10 state, with owning file — never empty
+- [ ] §11 every AC has a specific file path + code reference; ❌ items appear in §12
+- [ ] §12 populated across all five subsections (or explicitly "None")
 - [ ] Every DN resolved to Implemented / Not Applicable / Blocked with evidence
-- [ ] New design tokens recorded in Sections 4 and 13
-- [ ] Coverage labelled "targeted" or "measured" — never claimed without a run
-- [ ] AC Evidence and Self-Validation tables reference real files and tests
-- [ ] Section 13 records every deviation, or states "None"
-```
+- [ ] New design tokens recorded in §9 and §12
+- [ ] Known limitations separated from decisions and assumptions
+- [ ] Validation exceptions only — no passing-check noise
+- [ ] Coverage labelled "targeted" or "measured"
+- [ ] Presentational runs: §6 and §7 Not Applicable; §8 still populated
+````
 
 ### Never Do
 
@@ -220,10 +463,11 @@ Write the summary **completely, in a single write operation**, using the templat
 - **Never lose previously written content** when rewriting to add sections.
 - **Never split a section or table across two writes.**
 - **Never write sections out of ascending order.**
-- **Never restart the build** to regenerate the summary — reuse already-computed content.
+- **Never condense §3, §7, §8, or §12** — they are the defect workflow's primary lookups.
+- **Never restart the build** to regenerate the summary.
 - **Never use shell commands** to assemble or repair the document.
 - Never re-read a file you just wrote merely to confirm the write succeeded.
 - Never paste full source code into the summary.
 - Never leave a section empty — use "Not Applicable" or "None".
 - Never claim measured coverage without an actual test run.
-- Never renumber DN, AC, INT or STATE IDs.
+- Never renumber DN, AC, INT, STATE or GAP IDs.
