@@ -21,10 +21,10 @@ For each runtime source file (not excluded):
 
 ## Key Rules
 
-- Co-location policy: every runtime file gets a test unless excluded (Resolved Conflict 5).
-- Coverage target 90–100%; state intended coverage if execution is out of scope (Resolved Conflict 4).
+- Co-location policy: every runtime file gets a test unless excluded.
+- Coverage target 90–100%; state intended coverage if execution is out of scope.
 - Test behaviour, not implementation details; no snapshot tests.
 - Mock external boundaries; keep tests deterministic (fake timers).
-- Load only the TEST LEARNINGS namespace (Resolved Conflict 6).
+- Load only the TEST LEARNINGS namespace .
 
 See [SKILL.md](./SKILL.md) for the full instructions.

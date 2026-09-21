@@ -21,7 +21,7 @@ Read responsive_design_intent.json (authority) + raw Figma context (detail)
 
 ## Key Rules
 
-- Reconciliation JSON is authoritative for responsive strategy; raw Figma is detail-only (Resolved Conflict 3).
+- Reconciliation JSON is authoritative for responsive strategy; raw Figma is detail-only.
 - Never hardcode colours, spacing, or font sizes when a token exists.
 - Never re-reconcile if responsive_design_intent.json already exists.
 - One responsive component by default — split only when viewport content genuinely differs.

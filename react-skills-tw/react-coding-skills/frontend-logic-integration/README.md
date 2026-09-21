@@ -28,6 +28,6 @@ Generates the transactional/integration layer over already-built presentational 
 - Raw API models must be mapped to ViewModels before reaching display components.
 - No API calls in design-system or display components — only in services via hooks/containers.
 - Services are framework-agnostic; endpoints/keys come from constants.
-- Load only the LOGIC LEARNINGS namespace (Resolved Conflict 6).
+- Load only the LOGIC LEARNINGS namespace.
 
 See [SKILL.md](./SKILL.md) for the full instructions.

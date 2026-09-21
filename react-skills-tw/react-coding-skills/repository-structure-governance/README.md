@@ -24,8 +24,8 @@ For each planned file:
 
 ## Key Rules
 
-- All feature/component directories are PascalCase (Resolved Conflict 1).
-- component-catalogue.json lives only at the repository root (Resolved Conflict 2).
+- All feature/component directories are PascalCase .
+- component-catalogue.json lives only at the repository root .
 - CMS rendering components use default exports (registry requirement); DS/shared UI uses named exports.
 - Never create src, duplicate .storybook, or new .SS_WF roots.
 - No feature-to-feature imports; Design System never imports feature/CMS/API code.

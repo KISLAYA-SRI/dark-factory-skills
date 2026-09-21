@@ -21,9 +21,9 @@ For each eligible component:
 
 ## Key Rules
 
-- Eligibility: DS components, Sitecore-mapped reusable presentation components, reusable DS files only (Resolved Conflict 7).
+- Eligibility: DS components, Sitecore-mapped reusable presentation components, reusable DS files only .
 - Never write stories for containers, hooks, services, mappers, or one-off feature components.
-- component-catalogue.json lives at the repository root (Resolved Conflict 2).
+- component-catalogue.json lives at the repository root.
 - Upsert by name — never blind-append or delete unrelated entries.
 - Load only the STORYBOOK LEARNINGS namespace.
 

@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 Turn the reconciled responsive design intent and raw Figma context into one responsive, token-based, RTL-ready implementation. This skill is invoked nested from `presentational-ui-generation` and is also reusable for review/remediation.
 
-### Source Authority (Resolved Conflict 3)
+### Source Authority
 
 Apply topic-based precedence for visual/responsive decisions:
 

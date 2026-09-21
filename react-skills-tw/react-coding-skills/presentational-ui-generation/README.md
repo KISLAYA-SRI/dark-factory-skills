@@ -27,6 +27,6 @@ For each component in the manifest hierarchy:
 - Everything is prop-driven — no hardcoded labels, values, or colours.
 - Do NOT over-engineer Presentational components — no container/hook/service/store.
 - Visual states are driven by props, not by data fetching.
-- Load only the UI LEARNINGS namespace (Resolved Conflict 6).
+- Load only the UI LEARNINGS namespace .
 
 See [SKILL.md](./SKILL.md) for the full instructions.
