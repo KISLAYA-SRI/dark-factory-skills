@@ -1,6 +1,6 @@
 ---
 name: code-generation-reporting
-description: Use to produce the SINGLE consolidated code-generation summary document covering file inventory, UI, Sitecore, logic, data flow, state behaviour, tests, AC evidence, and deviations in one file. Written to serve both the reviewing developer and the defect triage workflow. Replaces the four legacy per-agent documents. Triggers include code generation summary, consolidated report, final document, or write the summary.
+description: Use to produce the SINGLE consolidated code-generation summary document covering file inventory, UI, Sitecore, logic, data flow, state behaviour, tests, AC evidence, deviations, and an append-only change log in one file. Written to serve both the reviewing developer and the defect fix workflow. Replaces the four legacy per-agent documents. Triggers include code generation summary, consolidated report, final document, or write the summary.
 disable-model-invocation: true
 ---
 
@@ -16,14 +16,38 @@ Generate **ONE** consolidated summary of everything the Coding Agent produced. T
 
 ---
 
+## ⚠️ THIS DOCUMENT IS A LIVING RECORD
+
+The summary does not stop being true when code generation ends. **Every later defect fix updates it in place** so that sections 1–12 always describe the code as it currently is.
+
+```text
+Generation          → §1–§12 written · §13 seeded empty
+Defect fix DEF-123  → state sections updated + tagged [DEF-123]
+                       §13 entry appended
+Defect fix DEF-456  → state sections updated + tagged [DEF-456]
+                       §13 entry appended
+```
+
+### State vs Historical Sections
+
+Downstream workflows rely on this split. Record it accurately at generation time.
+
+| Nature                                  | Sections                       | Later behaviour                         |
+| --------------------------------------- | ------------------------------ | --------------------------------------- |
+| **State** — what the code IS            | §3 §4 §5 §6 §7 §8 §9 §10 §12.4 | Updated in place by every defect fix    |
+| **Historical** — what happened at build | §1 §2 §11 §12.1 §12.2 §12.5    | Never changed after generation          |
+| **Append-only**                         | §13                            | One entry per defect fix or enhancement |
+
+---
+
 ## ⚠️ THE TWO CONSUMERS — WRITE FOR BOTH
 
 This document has exactly two audiences. Every section must earn its place against at least one of them.
 
-| Consumer                   | What they need                                                        | The question they ask              |
-| -------------------------- | --------------------------------------------------------------------- | ---------------------------------- |
-| **Reviewing Developer**    | Understand what was built and **why** a decision was made             | _"Why was it done this way?"_      |
-| **Defect Triage Workflow** | Locate the file, layer, and line responsible for a reported behaviour | _"Where do I look when X breaks?"_ |
+| Consumer                | What they need                                                        | The question they ask              |
+| ----------------------- | --------------------------------------------------------------------- | ---------------------------------- |
+| **Reviewing Developer** | Understand what was built and **why** a decision was made             | _"Why was it done this way?"_      |
+| **Defect Fix Workflow** | Locate the file, layer, and line responsible for a reported behaviour | _"Where do I look when X breaks?"_ |
 
 ### The Governing Principle
 
@@ -56,9 +80,9 @@ Write the summary **completely, in a single write operation**, using the templat
 ### If a single write fails or is rejected for size
 
 1. Write the document with the leading sections first, creating the file.
-2. To add the remaining sections: **read the file's current content, concatenate the new sections onto it, and write the complete combined content back.** Repeat until all 12 sections are present.
+2. To add the remaining sections: **read the file's current content, concatenate the new sections onto it, and write the complete combined content back.** Repeat until all 13 sections are present.
 3. Choose your own split points. Keep sections whole — never split mid-section or mid-table.
-4. Always write sections in ascending order, so the final file reads 1 → 12.
+4. Always write sections in ascending order, so the final file reads 1 → 13.
 
 ⚠️ **Do not assume an append mode exists.** If your write tool only creates or overwrites files, the read-concatenate-rewrite sequence above is the correct way to grow a document.
 
@@ -67,10 +91,11 @@ Write the summary **completely, in a single write operation**, using the templat
 | Outcome          | Requirement                                                                    |
 | ---------------- | ------------------------------------------------------------------------------ |
 | **Single file**  | Exactly one document produced                                                  |
-| **Completeness** | All 12 sections present and populated with story-specific detail               |
-| **Order**        | Sections in ascending numerical order, 1 → 12                                  |
+| **Completeness** | All 13 sections present and populated with story-specific detail               |
+| **Order**        | Sections in ascending numerical order, 1 → 13                                  |
 | **Integrity**    | No duplicated, truncated, or orphaned sections; no partial tables              |
 | **No loss**      | If rewriting to add sections, preserve all previously written content verbatim |
+| **§13 seeded**   | Change Log section present, even on the first run                              |
 
 ### Efficiency rules
 
@@ -78,11 +103,11 @@ Write the summary **completely, in a single write operation**, using the templat
 - **Do not re-read a file you just wrote** to confirm success — rely on the tool's result.
 - **Never restart the build** because of a write failure.
 - **Do not use shell commands** (`cat`, `cp`, `sed`, `head`, `tail`, temp-file merges) to assemble or repair the document.
-- **If content must be reduced to fit**, condense the low-value sections first (§9 Design Notes, §10 test rows). **Never condense §3 File Inventory, §7 Data Flow Trace, §8 State Matrix, or §12 Deviations** — these are the defect workflow's primary lookups. Note any reduction inline as `[Condensed: Section X]`.
+- **If content must be reduced to fit**, condense the low-value sections first (§9 Design Notes, §10 test rows). **Never condense §3 File Inventory, §7 Data Flow Trace, §8 State Matrix, §12 Deviations, or §13 Change Log** — these are the defect workflow's primary lookups. Note any reduction inline as `[Condensed: Section X]`.
 
 ---
 
-## Consolidated Summary Template (12 Sections)
+## Consolidated Summary Template (13 Sections)
 
 ````markdown
 # Code Generation Summary — {{ticket_id}}
@@ -90,6 +115,9 @@ Write the summary **completely, in a single write operation**, using the templat
 **Story:** {{story title}}
 **Classification:** Presentational | Transactional | Hybrid
 **Generated:** {{YYYY-MM-DD}}
+
+> Sections 1–12 describe the CURRENT state of the code.
+> Section 13 records every change made after original generation.
 
 ---
 
@@ -139,6 +167,8 @@ Write the summary **completely, in a single write operation**, using the templat
 **Action values:** Created · Modified
 
 **Totals:** N created · N modified · N total
+
+> Later defect fixes add rows and tag changed rows with `[DEF-xxx]`.
 
 ---
 
@@ -236,6 +266,8 @@ FIELD: expiryDate
 ```
 
 **Trace every field that is rendered.** Include the transformation point and the null/missing default, because that is where display defects originate.
+
+> Later defect fixes update line numbers and defaults here, tagged `[DEF-xxx]`.
 
 ---
 
@@ -375,18 +407,21 @@ FIELD: expiryDate
 > Gaps inherited from the Analysis Plan (`Unknown — source contract not provided`) that
 > constrained implementation. These props remain **prop-driven** — never hardcoded.
 
-| Gap ID  | What Was Missing                | How Implementation Handled It            |
-| ------- | ------------------------------- | ---------------------------------------- |
-| GAP-003 | No `expiryDate` in BFF response | Prop modelled as `Unknown`; badge hidden |
+| Gap ID  | What Was Missing                | How Implementation Handled It          |
+| ------- | ------------------------------- | -------------------------------------- |
+| GAP-003 | No `expiryDate` in BFF response | Prop modelled as Unknown; badge hidden |
 
 ### 12.4 Known Limitations
 
 > ⚠️ **Defect workflow: check this table BEFORE raising a defect.**
 > A known limitation is not a defect — it is a tracked gap awaiting an upstream fix.
 
-| ID      | Limitation                 | Root Cause                           | User-Visible Impact     | Resolution Owner |
-| ------- | -------------------------- | ------------------------------------ | ----------------------- | ---------------- |
-| LIM-001 | Expiry badge never renders | GAP-003 — field absent from contract | Users cannot see expiry | Backend team     |
+| ID      | Limitation                 | Root Cause                           | User-Visible Impact     | Resolution Owner | Status |
+| ------- | -------------------------- | ------------------------------------ | ----------------------- | ---------------- | ------ |
+| LIM-001 | Expiry badge never renders | GAP-003 — field absent from contract | Users cannot see expiry | Backend team     | Open   |
+
+> A later defect fix that closes a limitation marks it `✅ Resolved [DEF-xxx]` —
+> the row is never deleted.
 
 ### 12.5 Validation Exceptions
 
@@ -400,6 +435,19 @@ FIELD: expiryDate
 
 > If everything passed with no exceptions: "All validation checks passed. No exceptions."
 
+---
+
+## 13. Change Log
+
+> Append-only record of every defect fix and enhancement that modified this component
+> after original generation.
+>
+> ⚠️ **Sections 1–12 always describe the CURRENT state of the code.** This log records
+> how it got there. When a defect fix updates a state section, it tags the changed row
+> with the defect ID and appends an entry here.
+
+_No changes since original generation._
+
 ````
 
 ---
@@ -407,22 +455,27 @@ FIELD: expiryDate
 ## Content Rules
 
 ### Always
+
 - Populate every section with **story-specific** detail — real paths, real symbols, real line references. No boilerplate.
 - **§3 File Inventory must be complete** — every created/modified file, exactly once, derived from the actual write operations.
 - **§7 Data Flow Trace: one trace per rendered field**, including the transformation point and the null/missing default.
 - **§8 State Matrix: every state from plan §10**, with the owning file.
 - **§11: every AC needs a specific file path and code reference.** Vague coverage is not acceptable.
+- **§12.4: include a `Status` column** (Open / Resolved) so later fixes can mark a limitation closed without deleting the row.
+- **§13: seed with the placeholder line**, even though nothing has changed yet.
 - Record every new design token in **both** §9 and §12.
 - Confirm gapped props remained prop-driven with no hardcoded substitute.
 - Preserve DN IDs, AC IDs, GAP IDs and STATE IDs exactly as numbered upstream — never renumber.
 - Pull content from the in-memory manifest and each skill's outputs — do **not** re-open source files.
 
 ### Never
+
 - Never restate compliance that the skills enforce and validation verifies.
 - Never list passing validation checks — exceptions only.
 - Never paste full source code — reference paths and symbols.
 - Never leave a section empty — use "Not Applicable" or "None".
 - Never claim measured coverage without an actual run.
+- **Never omit §13** — the defect workflow expects it to exist.
 
 ### Presentational Runs
 
@@ -432,8 +485,11 @@ FIELD: expiryDate
 | §6 Logic & API | "Not Applicable — Presentational component" |
 | §7 Data Flow Trace | "Not Applicable — all data is CMS-authored, see §5" |
 | §8 State Matrix | **Still required** — UI interaction states only |
+| §13 Change Log | **Still required** — seeded with the placeholder |
 
 ⚠️ §8 is **never** Not Applicable. A Presentational component still has default, active/selected, hover/focus, transitioning/paused, disabled and hidden states.
+
+⚠️ §13 is **never** omitted. A Presentational component can receive defect fixes like any other.
 
 ---
 
@@ -441,29 +497,33 @@ FIELD: expiryDate
 
 ```text
 - [ ] Exactly one summary file at .SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION_SUMMARY.md
-- [ ] All 12 sections present, ascending order, no duplication or truncation
+- [ ] All 13 sections present, ascending order, no duplication or truncation
+- [ ] Header note present: "Sections 1–12 describe the CURRENT state… §13 records changes"
 - [ ] §3 File Inventory complete — every written file listed exactly once, with totals
 - [ ] §7 Data Flow Trace present for every rendered field (Transactional/Hybrid)
 - [ ] §8 State Matrix covers every plan §10 state, with owning file — never empty
 - [ ] §11 every AC has a specific file path + code reference; ❌ items appear in §12
 - [ ] §12 populated across all five subsections (or explicitly "None")
+- [ ] §12.4 includes a Status column, defaulting to Open
+- [ ] §13 Change Log seeded with "No changes since original generation."
 - [ ] Every DN resolved to Implemented / Not Applicable / Blocked with evidence
 - [ ] New design tokens recorded in §9 and §12
 - [ ] Known limitations separated from decisions and assumptions
 - [ ] Validation exceptions only — no passing-check noise
 - [ ] Coverage labelled "targeted" or "measured"
-- [ ] Presentational runs: §6 and §7 Not Applicable; §8 still populated
+- [ ] Presentational runs: §6 and §7 Not Applicable; §8 and §13 still populated
 ````
 
 ### Never Do
 
 - Never produce more than one document.
 - Never emit `CODE_GENERATION.md`, `TEST_GENERATION.md`, or a separate Storybook doc.
+- **Never omit or rename §13** — the defect workflow appends to it by name.
 - **Never assume an append mode exists** — read, concatenate, write the complete content back.
 - **Never lose previously written content** when rewriting to add sections.
 - **Never split a section or table across two writes.**
 - **Never write sections out of ascending order.**
-- **Never condense §3, §7, §8, or §12** — they are the defect workflow's primary lookups.
+- **Never condense §3, §7, §8, §12, or §13** — they are the defect workflow's primary lookups.
 - **Never restart the build** to regenerate the summary.
 - **Never use shell commands** to assemble or repair the document.
 - Never re-read a file you just wrote merely to confirm the write succeeded.
