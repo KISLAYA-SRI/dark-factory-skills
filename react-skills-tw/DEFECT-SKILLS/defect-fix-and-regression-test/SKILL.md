@@ -1,6 +1,6 @@
 ---
 name: defect-fix-and-regression-test
-description: Use as Phase 4 of the FE Defect Fix workflow to write a failing regression test, apply the minimal fix, and prove the test now passes. Enforces the minimal-change contract, scope-to-diff for refetched artefacts, and delegates to coding skills by issue category for standards. Runs once per issue. Triggers include apply fix, fix defect, regression test, or failing-first test.
+description: Use as Phase 4 of the FE Defect Fix workflow to write a regression test, execute it and prove it fails, apply the minimal fix on top of the current code, then execute the regression, edge-case guard and blast-radius tests and prove they pass. Enforces the minimal-change contract, preserves developer changes, and uses run-test-cases for every test claim. Runs once per issue. Triggers include apply fix, fix defect, regression test, guard tests, or failing-first test.
 disable-model-invocation: true
 ---
 
@@ -8,269 +8,206 @@ disable-model-invocation: true
 
 ### Purpose
 
-This skill is **Phase 4** of the FE Defect Fix Agent, run **once per issue**. Fix and test are a **single atomic unit** — never separate phases — because the failing-first protocol is what proves the root cause was correct.
+This skill is **Phase 4** of the FE Defect Fix Agent, run **once per issue**. Fix and tests are a **single atomic unit** — and every test claim is backed by an **executed run** of `run-test-cases`.
 
 ```text
-write failing test → apply minimal fix → prove it passes → verify no regressions
+write regression test → RUN (must fail) → minimal fix → RUN (must pass)
+→ write guard tests → RUN guards → RUN blast radius → record evidence
 ```
 
 ---
 
-## ⚠️ THE FAILING-FIRST PROTOCOL (MANDATORY)
+## ⚠️ ALL TESTS ARE EXECUTED — VIA `run-test-cases`
 
-```text
-STEP 1  Write a regression test expressing the EXPECTED behaviour
-STEP 2  Run it → it MUST FAIL against current code       ← proves the RCA
-STEP 3  Apply the minimal fix
-STEP 4  Run it → it MUST PASS
-STEP 5  Run existing tests for every touched file → no regressions
+```bash
+python3 scripts/run-tests.py --files <test files> [--name "<pattern>"] [--expect pass|fail] --label <label>
 ```
 
-### ⚠️ If the test does NOT fail at Step 2
+⚠️ **Never build a vitest, turbo or pnpm test command by hand.** The script resolves the owning package, runs from its context, and distinguishes a real assertion failure from a load error or a file that never ran.
 
-**Stop. The root cause is wrong.** Return to Phase 3.
+⚠️ **A reasoned result is not a result.** If you did not run it, you cannot say it passed.
 
-A test that passes before the fix proves nothing. Common causes:
+### Labels — Make Every Run Traceable
 
 ```text
-- The test asserts the wrong thing
-- The test exercises a different code path than the defect
-- The root cause was located in the wrong file or branch
-- The defect only reproduces under a condition the test does not set up
-  (locale, persona, viewport, specific data shape)
+{{ticket_id}}-ISSUE-002-failing-first
+{{ticket_id}}-ISSUE-002-after-fix
+{{ticket_id}}-ISSUE-002-guards
+{{ticket_id}}-ISSUE-002-blast-radius
 ```
 
-⚠️ Do **not** proceed on an unproven root cause. Do **not** adjust the test until it fails — that inverts the logic and produces a test shaped around an assumption.
+Record each run's output folder — it is the evidence in the §13 entry.
 
 ---
 
-## ⚠️ THE MINIMAL-CHANGE CONTRACT (NON-NEGOTIABLE)
+## ⚠️ BUILD ON THE CURRENT CODE
+
+Phase 3 read the file as it is now. The fix is applied **to that**, not to the version the summary describes.
 
 ```text
-CHANGE ONLY what Root Cause Analysis explicitly named.
-
-❌ No refactoring of surrounding code
-❌ No "while I'm here" improvements
-❌ No renaming, reordering, or reformatting
-❌ No extracting helpers or tidying imports
-❌ No dependency changes
-❌ No unrelated file touches
-❌ No adding features the defect did not ask for
-❌ No "fixing" other problems you notice
+❌ Never revert a developer's change to match the summary
+❌ Never restore the generated version of a function
+❌ Never "tidy" a developer's code while fixing next to it
+✅ Make the minimal change on top of what is there
+✅ Preserve developer-introduced behaviour unless the requirement contradicts it
+✅ If a DDN tells you to undo a developer change, follow it and record why
 ```
 
-### The Test
-
-```text
-For every line you are about to change, ask:
-
-  "Did RCA name this line as part of the root cause?"
-
-  YES → change it
-  NO  → do not touch it. Record as an observation for a separate ticket.
-```
-
-⚠️ A defect fix that also refactors is **not a defect fix** — it is an untested change set masquerading as one. Every extra changed line is regression surface the developer did not ask for and will not review carefully.
-
-### Unrelated Problems
-
-```text
-OBSERVATION (not fixed — separate ticket recommended)
-  File:     Portals/Sme/Features/Motor/PolicyList/Hooks/usePolicyList.ts:22
-  Issue:    staleTime hardcoded rather than sourced from constants
-  Why not fixed: outside ISSUE-002 root cause; would expand regression surface
-```
-
-Record it in the FIX_RESULT. **Do not fix it.** Phase 6 carries it into the §13 Change Log entry.
+The edge-case matrix contains **preserve-rows** for developer-introduced behaviour. Those guard tests prove the fix did not undo it.
 
 ---
 
-## ⚠️ SCOPE-TO-DIFF — REFETCHED ARTEFACTS
+## THE SEQUENCE
 
-When Phase 2 refetched an artefact, the diff may contain **many** changes — only one of which the defect reports.
+### Step 1 — Write the Regression Test
 
-```text
-Figma diff shows:
-  ✅ gap 16px → 24px         ← defect reports this  → FIX
-  ⛔ new CTA button added     ← not reported → OBSERVATION, separate ticket
-  ⛔ heading token changed    ← not reported → OBSERVATION, separate ticket
-  ⛔ divider removed          ← not reported → OBSERVATION, separate ticket
-```
-
-⚠️ **A refreshed artefact is NOT licence to re-implement the component against the latest version.** The minimal-change contract still governs.
+Expresses the **expected** behaviour for the reported condition.
 
 ```text
-❌ "The design was updated, so I brought the component fully up to date"
-✅ "The design changed the gap token; the defect reported spacing;
-    I changed the gap token only. Three other design changes recorded
-    as observations."
+✅ Co-located with the source file; added to the existing test file if one exists
+✅ .test.* naming — never .spec.*, never a __tests__ folder
+✅ Defect reference in the name:
+     it("handles null policyNumber [DEF-123 / ISSUE-002]", ...)
+✅ Reproduces the exact reported condition:
+     RTL → dir="rtl" · locale → the reported locale · state → hook mocked into it
+     null data → the field null/absent · persona → the reported role · viewport → the size
 ```
 
-### Structural Change — Escalate, Do Not Attempt
+Conventions (explicit Vitest imports, `userEvent`, accessible queries, package include patterns) come from **`frontend-test-generation`**. The failing-first protocol is owned here.
 
-If Phase 3 flagged the issue as `BLOCKED — structural`:
+### Step 2 — RUN It: It MUST Fail
 
-```text
-Do NOT attempt the fix.
-Record: "EXCEEDS DEFECT SCOPE — requires re-analysis via the Analysis Agent."
-Continue with the remaining issues.
+```bash
+python3 scripts/run-tests.py \
+  --files Portals/Sme/Features/Motor/PolicyList/Mappers/PolicyMapper.test.ts \
+  --name "DEF-123 / ISSUE-002" --expect fail \
+  --label DEF-123-ISSUE-002-failing-first
 ```
 
----
-
-## Skill Delegation by Category
-
-Load coding skills for their **standards, guidelines and conventions** — tokens, RTL rules, layering, naming, test conventions.
-
-| Category | Skills loaded |
-| --- | --- |
-| UI / Visual | `presentational-ui-generation` |
-| RTL | `presentational-ui-generation` |
-| Responsive | `presentational-ui-generation` |
-| Accessibility | `presentational-ui-generation` |
-| Media | `presentational-ui-generation` + `frontend-media-integration` |
-| Sitecore | `sitecore-rendering-integration` |
-| BFF / API / mapper | `frontend-logic-integration` |
-| State / forms | `frontend-logic-integration` + `frontend-state-and-form-management` |
-| Any file move or rename | `+ repository-structure-governance` |
-| DS component public API changed | `+ storybook-and-component-catalogue` |
-| **Always** | `developer-notes-protocol` · `frontend-test-generation` |
-
-⚠️ **Load per issue; discard before the next.** An RTL issue followed by a BFF issue should not carry `presentational-ui-generation` into the second — dead context increases the chance of drift.
-
-### ⚠️ Coding Skills Are NOT Licence to Regenerate
-
-Those skills are written for *generation* and carry completeness instincts — "generate all states", "cover every variant", "implement every §10 state". **In defect mode the minimal-change contract overrides all of it.**
-
-```text
-Use coding skills for:   HOW to write the fix correctly
-                         (which token, which property, which layer, which convention)
-
-Never use them for:      Regenerating the file
-                         Adding states/variants the defect did not mention
-                         Restructuring to match the ideal shape
-                         "Completing" what looks partially implemented
-```
-
-### If a DS Component Changed
-
-If the fix modifies a design-system component's public API — a new prop, a new variant — `storybook-and-component-catalogue` is loaded to update the story and the catalogue entry.
-
-⚠️ Update **only** the entry for the changed component, reflecting **only** the change made. Do not regenerate the story file or rewrite unrelated catalogue entries.
-
----
-
-## Applying the Fix
-
-### Order of Operations
-
-```text
-1. Confirm the RCA finding by opening the file at the named line
-2. Confirm which DDN / DN apply to this issue
-3. Confirm the scope boundary if an artefact was refetched
-4. Write the failing test → verify it fails
-5. Apply the minimal change
-6. Verify the test passes
-7. Run existing tests for all touched files
-8. Record what changed — including which summary sections Phase 6 must update
-```
-
-### Dev Notes Precedence
-
-```text
-DDN-xxx  Defect Dev Notes   ← TOP priority; if it dictates the approach, follow it exactly
-DN-xxx   Story Dev Notes    ← still binding unless a DDN supersedes
-```
-
-⚠️ If a **DDN specifies how to fix**, that instruction overrides your own judgement — even if you would have chosen differently. Apply it literally. If it contradicts a DN, follow the DDN and record the supersession.
-
-### Fix Quality Standards
-
-The fix must conform to the same standards as generated code:
-
-```text
-✅ Design tokens — never hardcoded colour/spacing/typography values
-✅ Logical properties for RTL (ms-/me-/ps-/pe-/text-start/text-end)
-✅ cn() for class composition
-✅ Typed — no `any`, no @ts-ignore without explanation
-✅ Prop-driven — no hardcoded labels, copy, routes, or URLs
-✅ Constants for endpoints, query keys, magic values
-✅ Service layer stays framework-agnostic
-✅ Correct layer — mapper defaults in the mapper, not the component
-```
-
-⚠️ A fix that introduces a hardcoded value to resolve a defect creates a new defect. If the correct value has no source, that is a **contract gap** — record it rather than hardcoding.
-
-⚠️ If a design-change fix requires a token that does not exist, **create the primitive and record it** — same rule as generation. Never hardcode the raw value.
-
----
-
-## Writing the Regression Test
-
-### ⚠️ This Is a Different Mode From Test Generation
-
-| | `frontend-test-generation` | Here |
+| Verdict | Meaning | Action |
 | --- | --- | --- |
-| Written from | Generated source (ground truth) | **Expected behaviour** |
-| Source state | Correct | **Broken** |
-| First run | Passes | **MUST FAIL** |
-| Purpose | Coverage | **Prove the root cause + prevent recurrence** |
+| `EXPECTED_FAIL` | Root cause proven | → Step 3 |
+| `PASSED_UNEXPECTEDLY` | Test passes against current code — **root cause is wrong** | Return to Phase 3 |
+| `FAILED_FOR_WRONG_REASON` | Load/import/setup error, or a different test failed | Fix the test **setup** (imports, mocks, rendering) — **never the assertion** — and re-run |
+| `NOT_COLLECTED` | File never ran — outside the vitest include pattern | Fix placement/path; re-run |
+| exit 4 / 5 | Environment or runner error | See *If Tests Cannot Run* |
 
-Delegate to `frontend-test-generation` for **conventions** — co-location, explicit Vitest imports, `userEvent`, accessible queries, package include patterns. The **failing-first protocol is owned here**.
+⚠️ **Never adjust the assertion until the test fails.** That shapes the test around an assumption and proves nothing.
 
-### Test Placement
-
-```text
-✅ Co-located with the source file being fixed
-✅ Added to the EXISTING test file where one exists
-✅ New test file only if none exists for that source
-❌ Never a separate __tests__ folder
-❌ Never .spec.* — only .test.*
-```
-
-### Test Naming — Reference the Defect
+### Step 3 — Apply the Minimal Fix
 
 ```text
-it("renders em-dash when policyNumber is null [DEF-4521 / ISSUE-002]", async () => {
+CHANGE ONLY what Root Cause Analysis named.
+For every line you are about to change: "Did RCA name this line?"
+  YES → change it      NO → do not touch it; record an observation if relevant
 ```
 
-The defect reference makes the test's origin obvious when it fails in future — and signals it must not be casually deleted.
+The fix conforms to project standards — load the coding skill for the category:
 
-### Test Must Reproduce the Exact Condition
+| Category | Skills |
+| --- | --- |
+| UI · RTL · Responsive · A11y | `presentational-ui-generation` |
+| Media | `+ frontend-media-integration` |
+| Sitecore | `sitecore-rendering-integration` |
+| BFF · API · mapper | `frontend-logic-integration` |
+| State · forms | `+ frontend-state-and-form-management` |
+| File move/rename | `+ repository-structure-governance` |
+| DS component public API changed | `+ storybook-and-component-catalogue` |
+| **Always** | `developer-notes-protocol` · `frontend-test-generation` · `run-test-cases` |
+
+⚠️ Coding skills supply **how** to write the fix correctly — tokens, logical properties, layering, typing. They are **not** licence to regenerate the component, add unmentioned states, or restructure. The minimal-change contract overrides their completeness instincts.
 
 ```text
-⚠️ The test must set up the SAME condition that triggers the defect:
-
-  RTL issue        → render with dir="rtl"
-  Locale issue     → set the locale the defect reports
-  State issue      → mock the hook into that exact state
-  Null-data issue  → mock the response with that field null/absent
-  Persona issue    → set the persona from the defect evidence
-  Viewport issue   → set the viewport from the defect evidence
-  Design change    → assert the NEW expected token/value
+✅ Tokens, never raw hex/px          ✅ Logical properties for RTL
+✅ cn() for classes                  ✅ Typed — no `any`
+✅ Prop-driven — no hardcoded copy   ✅ Constants for endpoints / keys
+✅ Correct layer (mapper defaults in the mapper)
 ```
 
-A test that does not reproduce the reported condition cannot fail first — and cannot prevent recurrence.
+⚠️ A hardcoded value used to fix a defect creates a new defect. No source for the value → record a contract gap. Missing token → create it and record it.
+
+⚠️ **Scope-to-diff:** if an artefact was refetched, apply only the reported delta. Other diff changes are observations.
+
+⚠️ **Structural change** flagged in Phase 3 → do not attempt; record the escalation.
+
+### Step 4 — RUN the Regression Test: It MUST Pass
+
+```bash
+python3 scripts/run-tests.py --files <same test file> --name "DEF-123 / ISSUE-002" \
+  --label DEF-123-ISSUE-002-after-fix
+```
+
+`PASS` required. Anything else → the fix is incomplete or wrong; revise the fix (within the RCA lines) and re-run.
+
+### Step 5 — Write and RUN the Guard Tests
+
+One test per **GUARD** row in the Phase 3 edge-case matrix — including preserve-rows for developer-introduced behaviour.
+
+```bash
+python3 scripts/run-tests.py --files <test files holding the guard tests> \
+  --label DEF-123-ISSUE-002-guards
+```
+
+⚠️ **Guard tests do not need to fail first.** They protect behaviour that is already correct, so they typically pass before and after the fix. Only the regression test carries the failing-first requirement.
+
+A guard test that **fails after the fix** means the fix broke a neighbour → revise the fix, re-run all of Steps 4–5.
+
+### Step 6 — RUN the Blast Radius
+
+```bash
+# Co-located tests of every changed file + consumer test files from RCA
+python3 scripts/run-tests.py --files <co-located tests> <consumer tests> \
+  --label DEF-123-ISSUE-002-blast-radius
+
+# Plus anything the module graph finds that RCA's search missed
+python3 scripts/run-tests.py --related <changed source files> \
+  [--related-scope all]   # for design-system / common code
+  --label DEF-123-ISSUE-002-related
+```
+
+⚠️ Use `--related-scope all` whenever the changed file is in `Packages/DesignSystem` or `Packages/Common` — its consumers live in other packages.
+
+| Result | Action |
+| --- | --- |
+| `PASS` | Done |
+| `FAIL` in a consumer test | Did the fix break it, or does the test encode the old (wrong) behaviour? Investigate — see below |
+| `NOT_COLLECTED` | A consumer test was never run — resolve before claiming the blast radius is clean |
+| `FAILED_FOR_WRONG_REASON` on an **untouched** file | Pre-existing breakage — record as an observation; do not fix |
 
 ---
 
 ## ⚠️ Never Weaken an Existing Test
 
 ```text
-❌ Never delete an existing test to make a fix pass
-❌ Never skip (.skip) or comment out an existing test
+❌ Never delete, .skip, or comment out an existing test to make a fix pass
 ❌ Never loosen an assertion to accommodate the fix
-❌ Never change expected values to match new (wrong) behaviour
+❌ Never change expected values to match new, wrong behaviour
 ```
 
-If an existing test now fails, **one of two things is true**:
+If an existing test fails after the fix, exactly one of these is true:
 
 | Situation | Action |
 | --- | --- |
-| The fix is wrong | Return to Phase 3 — the RCA or the fix approach is incorrect |
-| The test encoded the old design/contract | Update it, and **record the change and reasoning** |
+| The fix is wrong | Revise the fix, or return to Phase 3 |
+| The test encoded the defect / old contract / old design | Update it **and record the change and reasoning** for the §13 entry |
 
-⚠️ The second case is common after a **design change** or **contract change** — an existing test may assert the old token or field name. Updating it is legitimate, but it must be **explicit in the §13 Change Log entry**. A silently-updated test is how defects get re-introduced.
+⚠️ A silently-updated test is how defects get reintroduced.
+
+---
+
+## If Tests Cannot Run
+
+If `run-test-cases` exits **4** or **5** and it cannot be resolved:
+
+```text
+Verification level:  STATIC ONLY — tests were not executed
+Reason:              [exit code + script message]
+Failing-first:       reasoned, not proven
+Blast radius:        reviewed by reading, not run
+Developer action:    [the exact run-tests.py commands, and the pnpm run test:<package> equivalent]
+```
+
+⚠️ Continue the workflow, but **never** write "passed" or "failed first ✅" for a test that did not run. This label travels into the §13 entry and the final report.
 
 ---
 
@@ -278,91 +215,72 @@ If an existing test now fails, **one of two things is true**:
 
 ```text
 FIX APPLIED — ISSUE-00N
-  Status:          FIXED | BLOCKED (not fixed — see RCA) | NOT A DEFECT
-
-  ── Regression Test ─────────────────────────────────────────
-  Test file:       [path]
-  Test name:       [name with defect reference]
-  Condition set:   [locale / state / data shape reproduced]
-  Failed first:    ✅ YES — [assertion that failed and why]
-  Passes now:      ✅ YES
+  Status:              FIXED | BLOCKED (see RCA) | NOT A DEFECT
+  Verification level:  EXECUTED | STATIC ONLY (reason)
 
   ── Fix ─────────────────────────────────────────────────────
-  File:            [path]
-  Lines changed:   [line numbers / range]
-  Change:          [precise description of the minimal edit]
-  Skills used:     [which coding skills provided the standards]
-  DDN applied:     [DDN-xxx, or: None]
-  New token:       [if created — name, value, why — else: None]
+  File / symbol:       [path] → [symbol]
+  Change:              [precise minimal edit, against the current code]
+  Developer changes:   preserved | overridden per DDN-xxx (why)
+  Skills used:         [coding skills that supplied the standards]
+  DDN applied:         [DDN-xxx, or: None]
+  New token:           [name · value · why — or: None]
 
-  ── Summary Sections To Update (Phase 6) ────────────────────
-  §3   → [file rows to update/add]
-  §7   → [field trace — new line number / changed default]
-  §8   → [state row — changed renderer or owning file]
-  §10  → [test row — case count increase]
-  §5   → [field mapping, if changed]
-  §9   → [token/exception, if changed]
-  §12.4 → [limitation to mark Resolved, if applicable]
+  ── Test Execution ──────────────────────────────────────────
+  Regression (fail-first):  EXPECTED_FAIL   .SS_WF/Agent/TEST_RUNS/DEF-123-ISSUE-002-failing-first-…/
+  Regression (after fix):   PASS            …/DEF-123-ISSUE-002-after-fix-…/
+  Guards (N tests):         PASS            …/DEF-123-ISSUE-002-guards-…/
+  Blast radius (N files):   PASS            …/DEF-123-ISSUE-002-blast-radius-…/
+  Related sweep:            PASS | NO_RELATED_TESTS
 
-  ── Scope Boundary (if artefact refetched) ──────────────────
-  Diff changes in scope:     [the reported delta]
-  Diff changes NOT applied:  [list → observations]
+  ── Edge Cases Verified ─────────────────────────────────────
+  [matrix rows → test name → result]
 
-  ── Regression Check ────────────────────────────────────────
-  Existing tests for touched files: PASS | [failures + resolution]
-  Blast-radius consumers verified:  [list, or: N/A]
-  Existing test modified:           NO | YES → [which + why]
+  ── Scope ───────────────────────────────────────────────────
+  Files touched:            [count] — matches RCA ✅
+  Diff changes not applied: [list → observations]
+  Existing tests modified:  NO | YES → [which · why]
+  Observations (not fixed): [list, or: None]
+  Untested consumers:       [list, or: None]
 
-  ── Scope Discipline ────────────────────────────────────────
-  Files touched:   [count] — matches RCA finding: ✅
-  Observations recorded (not fixed): [list, or: None]
+  ── Summary Rows For Phase 6 ────────────────────────────────
+  Update for fix:  §3 · §7 · §8 · §10 … [rows]
+  Reconcile drift: [rows from RCA]
 ```
-
-⚠️ The **Summary Sections To Update** block is what keeps the parent summary accurate. Capture it here, while the change is fresh — Phase 6 applies it.
 
 ---
 
 ### Gate: Phase 4 Complete (Per Issue) When
 
 ```text
-- [ ] Regression test written and PROVEN TO FAIL against current code
-- [ ] Test reproduces the exact reported condition (locale/state/data/persona/viewport)
-- [ ] Test references the defect ID in its name
-- [ ] Test co-located; added to existing file where one exists; .test.* naming
-- [ ] Minimal fix applied to disk at the RCA-named location
-- [ ] ONLY RCA-named code changed — no refactoring, renaming, or tidying
-- [ ] Scope-to-diff honoured where an artefact was refetched
-- [ ] Unapplied diff changes recorded as observations
-- [ ] Structural-change issues escalated, NOT attempted
-- [ ] Test now passes
-- [ ] Existing tests for all touched files still pass
-- [ ] Blast-radius consumers verified for design-system changes
-- [ ] Storybook/catalogue updated ONLY if a DS public API changed
-- [ ] No existing test weakened, skipped, or deleted
-- [ ] Any existing-test modification recorded with reasoning
+- [ ] Regression test written, co-located, defect-referenced, reproducing the exact condition
+- [ ] Regression test RUN → EXPECTED_FAIL (or STATIC ONLY recorded)
+- [ ] Minimal fix applied on top of the CURRENT code
+- [ ] Only RCA-named lines changed; no developer change reverted (unless a DDN says so)
+- [ ] Regression test RUN → PASS
+- [ ] Guard test for every GUARD row, including developer preserve-rows
+- [ ] Guard tests RUN → PASS
+- [ ] Blast-radius tests RUN → PASS; --related sweep run (scope all for DS/Common code)
+- [ ] No NOT_COLLECTED left unresolved
+- [ ] No existing test weakened, skipped, or deleted; any modification recorded with reason
 - [ ] Fix conforms to token / RTL / typing / prop-driven standards
-- [ ] New tokens recorded, never hardcoded values
-- [ ] Applicable DDN applied literally; supersession recorded
-- [ ] Summary sections to update captured for Phase 6
-- [ ] Unrelated problems recorded as observations, NOT fixed
+- [ ] Output folder recorded for every run
+- [ ] Observations and untested consumers recorded
 ```
 
 ### Never Do
 
-- **Never apply a fix without a test that failed first.**
-- **Never adjust the test until it fails** — that inverts the logic.
-- **Never proceed on an unproven root cause** — return to Phase 3.
-- **Never change code RCA did not name.**
-- **Never refactor, rename, reformat, or tidy while fixing.**
-- **Never fix an unrelated problem you notice** — record it as an observation.
-- **Never re-implement a component against a refreshed design** — fix the reported delta only.
-- **Never attempt a structural change** — escalate to the Analysis Agent.
-- **Never regenerate a component** because a coding skill was loaded.
-- **Never add states, variants, or features the defect did not mention.**
-- **Never weaken, skip, or delete an existing test** to make a fix pass.
-- **Never silently update an existing test** — record the change and reasoning.
-- **Never hardcode a value** to resolve a defect — create a token or record a contract gap.
-- **Never introduce `any`, physical RTL properties, or raw hex/px values.**
-- **Never override a DDN** with your own preferred approach.
-- **Never regenerate a story file or rewrite unrelated catalogue entries.**
+- **Never claim a test result without a `run-test-cases` run.**
+- **Never build test commands by hand.**
+- **Never accept `PASSED_UNEXPECTEDLY`, `FAILED_FOR_WRONG_REASON` or `NOT_COLLECTED` as proof.**
+- **Never change an assertion to make a failing-first run succeed.**
+- **Never revert or tidy a developer's change** while fixing.
+- **Never skip guard or blast-radius runs** because the regression test passed.
+- Never change code RCA did not name; never refactor while fixing.
+- Never fix unrelated problems — record them.
+- Never re-implement against a refreshed design; never attempt a structural change.
+- Never regenerate a component because a coding skill was loaded.
+- Never weaken, skip, or delete an existing test.
+- Never hardcode a value to resolve a defect.
+- Never override a DDN with your own approach.
 - Never close or transition the defect ticket.

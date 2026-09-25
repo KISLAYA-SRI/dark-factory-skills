@@ -1,6 +1,6 @@
 ---
 name: master-defect-fix-orchestrator
-description: Use when orchestrating the end-to-end FE Defect Fix workflow that turns a JIRA defect ticket into surgical code fixes with regression tests. Defines the mandatory phase sequence, per-issue loop, selective context refetch, skill selection by issue category, minimal-change contract, failing-first test protocol, in-place summary update, and the learning feedback loop. Triggers include defect fix, bug fix, fix defect, defect workflow, or regression fix. Invoked when the user says something like "Fix defect <TICKET_ID>" or "Resolve DEF-1234".
+description: Use when orchestrating the end-to-end FE Defect Fix workflow that turns a JIRA defect ticket into surgical code fixes proven by executed tests. Defines the mandatory phase sequence, per-issue loop, current-code-first diagnosis, selective context refetch, skill selection by issue category, minimal-change contract, fix impact analysis, executed failing-first and blast-radius tests, in-place summary update, and the learning feedback loop. Triggers include defect fix, bug fix, fix defect, defect workflow, or regression fix. Invoked when the user says something like "Fix defect <TICKET_ID>" or "Resolve DEF-1234".
 disable-model-invocation: true
 ---
 
@@ -11,9 +11,10 @@ disable-model-invocation: true
 This is the **master orchestration skill** for the FE Defect Fix Agent. It defines:
 - **What** the agent must do — locate, fix, prove, and record.
 - **In what order** — the mandatory phase sequence with a per-issue loop.
+- **What counts as truth** — the current code for what exists; the plan and Dev Notes for what is required.
 - **Which skills load** — selected per issue category, never speculatively.
 - **When external sources may be refetched** — selectively, via `context-gathering`.
-- **What guardrails apply** — minimal-change contract and failing-first tests.
+- **How fixes are proven** — tests are **executed** via `run-test-cases`, never predicted.
 - **What is updated** — the parent summary stays current; the learnings loop closes.
 
 ---
@@ -24,15 +25,55 @@ This is the **master orchestration skill** for the FE Defect Fix Agent. It defin
 | --- | --- | --- |
 | Input | Finalised plan | Ambiguous symptom |
 | First task | Build | **Locate** |
-| Scope | Whole story | **Minimal surgical change** |
+| Scope of change | Whole story | **Minimal surgical change** |
+| Scope of checking | Generated files | **Everything the change can affect** |
 | Biggest risk | Missing a requirement | **Regression + scope creep** |
-| Prior context | None | Analysis Plan + Code Gen Summary |
+| Tests | Written, not run | **Written and executed** |
 
-You are **repairing existing code**, not generating new features. Every instinct toward completeness, refactoring, or improvement must be suppressed.
+You are **repairing existing code**, not generating new features.
 
 ---
 
-## ⚠️ EXECUTION CONTRACT — READ FIRST
+## ⚠️ THREE GOVERNING PRINCIPLES
+
+### 1. The current code is the territory. The documents are the map.
+
+After generation, developers routinely change the code — the generated version did not always work, or the logic needed adjusting. **The Analysis Plan and Code Generation Summary describe what the workflow produced, not necessarily what is on disk today.**
+
+```text
+WHAT EXISTS NOW        → the CURRENT CODE is the authority
+                         (summary is a map to find it — verify every claim against the file)
+
+WHAT IS REQUIRED       → DDN → DN → Analysis Plan ACs/states
+                         (the code does not define correctness)
+```
+
+```text
+❌ Never assume the code matches the summary
+❌ Never revert a developer's change because it differs from the summary
+❌ Never treat a difference from the summary as a defect by itself
+✅ Read the current code for every file in scope before diagnosing
+✅ Record every divergence as DRIFT and reconcile the summary rows you touch
+```
+
+⚠️ A divergence from the summary is **information, not a bug**. It may be a deliberate developer fix. Only a divergence from the **requirement** is a defect.
+
+### 2. Change narrowly. Verify widely.
+
+```text
+CHANGE  → only what Root Cause Analysis named          (minimal-change contract)
+VERIFY  → everything the change can affect              (fix impact analysis)
+```
+
+The minimal-change contract limits what you **edit**. It never limits what you **check**. Every fix must be tested against the edge cases, branches, locales, states and consumers that pass through the changed lines.
+
+### 3. Tests are executed, not predicted.
+
+Every test claim is backed by a run of `run-test-cases`. A test you *reason* would pass is a prediction; a run that passes is evidence. If tests cannot be executed, the record says **STATIC ONLY** — it never claims a result.
+
+---
+
+## ⚠️ EXECUTION CONTRACT
 
 ### Rule 1 — Run all phases without stopping
 
@@ -43,10 +84,10 @@ When a phase gate passes, **immediately invoke the next phase in the same run**.
 | # | Stop condition | Where | What happens |
 | --- | --- | --- | --- |
 | 1 | Defect ticket missing/unreadable | Phase 1 | HALT |
-| 2 | ANALYSIS_PLAN.md missing | Phase 2 | HALT — cannot locate without context |
-| 3 | **Phase 6 has updated CODE_GENERATION_SUMMARY.md** | Phase 6 | Run complete |
+| 2 | ANALYSIS_PLAN.md missing | Phase 2 | HALT — no correctness oracle |
+| 3 | Phase 6 has updated CODE_GENERATION_SUMMARY.md | Phase 6 | Run complete |
 
-**No other event ends the run.** An issue classified as blocked does **not** stop the run — record it and continue with the remaining issues.
+**No other event ends the run.** A blocked issue does not stop the run — record it and continue.
 
 ### Rule 3 — Announce transitions
 
@@ -58,23 +99,20 @@ Phase 3 complete (ISSUE-002) → proceeding to Phase 4 (Fix + Regression Test)
 
 ## ⚠️ WRITE FILES, NOT DESCRIPTIONS
 
-**The PRIMARY deliverable is modified source code and new regression tests written to disk.**
-
 ```text
 ✅ Every fix applied to the actual file at the exact path
-✅ Every regression test written and proven to fail-then-pass
-✅ The parent summary updated so it still describes the code accurately
+✅ Every regression and guard test written AND executed
+✅ The parent summary updated so it describes the code accurately
 ❌ Describing what the fix would be
 ❌ Producing only an RCA or a plan
+❌ Claiming a test passed without a run
 ```
 
-**The order is: locate → write failing test → fix → prove pass → update the record.**
+**Order: read current code → locate → write failing test → RUN (must fail) → fix → RUN (must pass) → run guards + blast radius → update the record.**
 
 ---
 
 ## ⚠️ THE MINIMAL-CHANGE CONTRACT (NON-NEGOTIABLE)
-
-This is the single most important rule in the workflow.
 
 ```text
 CHANGE ONLY what Root Cause Analysis explicitly named.
@@ -85,40 +123,12 @@ CHANGE ONLY what Root Cause Analysis explicitly named.
 ❌ No dependency upgrades
 ❌ No unrelated file touches
 ❌ No adding features the defect did not ask for
+❌ No reverting developer changes to match the summary
 
-If you notice an unrelated problem → record it as an observation in the
-§13 Change Log entry for a SEPARATE ticket. Do NOT fix it.
+Unrelated problem noticed → record as an observation in the §13 entry. Do NOT fix it.
 ```
 
-⚠️ A defect fix that also refactors is **not** a defect fix — it is an untested change set masquerading as one.
-
-⚠️ **This contract extends to the summary update.** Update only the rows the fix touched. Never regenerate, reformat, or reword untouched content.
-
----
-
-## ⚠️ SINGLE LIVING RECORD — NO SEPARATE DEFECT DOCUMENT
-
-```text
-.SS_WF/Agent/CODE/{{parent_story_id}}_CODE_GENERATION_SUMMARY.md
-   §1–§12   ALWAYS describe the code as it is NOW
-   §13      Change Log — append-only record of every defect fix
-```
-
-There is **no** `DEFECT_FIX_SUMMARY.md`. A separate document would restate the same facts and immediately diverge from the code.
-
-### Why the summary must stay current
-
-The summary is the **location index** every future defect run depends on:
-
-```text
-DEF-123 moves PolicyMapper's null default from line 34 to 41
-        → §7 still says line 34
-DEF-789 "policy number blank" → reads §7 → opens line 34 → wrong code
-```
-
-Worse, a stale §8 corrupts **fault-origin classification** — RCA sees code ≠ summary, calls it an agent miss, and writes a learning for a defect that was already fixed.
-
-⚠️ **State sections are updated. Historical sections are not.** See Phase 6 for the split.
+⚠️ This contract also governs the **summary update** — only the rows the fix touched, plus drift reconciliation for rows RCA inspected.
 
 ---
 
@@ -128,50 +138,45 @@ Worse, a stale §8 corrupts **fault-origin classification** — RCA sees code �
 | --- | --- | --- |
 | Defect ticket | `.SS_WF/{{ticket_id}}_JIRA_OUTPUT_.json` | **Mandatory** |
 | Defect Dev Notes (DDN) | Section inside the defect ticket | If present — **TOP priority** |
-| Analysis Plan | `.SS_WF/Agent/Analysis/{{parent_story_id}}_ANALYSIS_PLAN.md` | **Mandatory** |
-| Code Gen Summary | `.SS_WF/Agent/CODE/{{parent_story_id}}_CODE_GENERATION_SUMMARY.md` | **Mandatory*** |
+| **Current source code** | The repository, as it is now | **Mandatory — authority for what exists** |
+| Analysis Plan | `.SS_WF/Agent/Analysis/{{parent_story_id}}_ANALYSIS_PLAN.md` | **Mandatory — authority for what is required** |
+| Code Gen Summary | `.SS_WF/Agent/CODE/{{parent_story_id}}_CODE_GENERATION_SUMMARY.md` | **Mandatory*** — the map |
 | Coding Agent Learnings | `./src/.project/learnings/CODING_AGENT_LEARNINGS.md` | **Mandatory** |
-| Component Catalogue | `./src/component-catalogue.json` | For blast-radius checks |
+| Component Catalogue | `./src/component-catalogue.json` | For blast radius |
+| Git history | `git log` / `git blame` | If available — drift evidence |
 | Existing artefacts | `.SC_API_SPEC/` · `.BFF_API_SPEC/` · `figma-output/` | On-disk copies |
 
 *If missing, fallback discovery applies — see Phase 2.
 
-⚠️ **The parent story is whichever story the defect was raised against.** All documents come from that story ID.
-
-⚠️ **The story JIRA output is NOT an input.** Everything needed is in the Analysis Plan.
-
-⚠️ **`DEV_REVIEW.md` is NOT an input** — provenance for human reviewers only.
+⚠️ **The parent story** is the story the defect was raised against. All documents come from that story ID.
+⚠️ **The parent story JIRA output is NOT an input** — the Analysis Plan carries it.
+⚠️ **`DEV_REVIEW.md` is NOT an input.**
 
 ---
 
-## ⚠️ DEV NOTES PRECEDENCE
+## ⚠️ DEV NOTES AND AUTHORITY
 
 ```text
 DDN-001…   Defect Dev Notes   ← TOP PRIORITY, from the defect ticket
 DN-001…    Story Dev Notes    ← from Analysis Plan §1, still binding
 ```
 
-Separate ID chains keep both traceable. If a DDN **contradicts** a DN, follow the DDN and **record the supersession explicitly** in the §13 Change Log entry.
+If a DDN contradicts a DN, follow the DDN and record the supersession in the §13 entry.
 
-### Full Priority Order
+### Two Questions, Two Authorities
 
-```text
-Defect Dev Notes (DDN)
-  → Story Dev Notes (DN)
-    → Refetched artefact (if a source genuinely changed)
-      → Analysis Plan
-        → Code Gen Summary
-          → Project Guidelines (embedded in coding skills)
-            → React/Frontend Best Practices
-```
+| Question | Authority, highest first |
+| --- | --- |
+| **What should the behaviour be?** | DDN → DN → refetched artefact (if a source changed) → Analysis Plan (§4 ACs, §10 states, §11 contracts) → project guidelines |
+| **What does the code do now?** | **Current code** → git history → Code Gen Summary (map only) |
+
+⚠️ Never answer the first question from the code, and never answer the second from the summary.
 
 ---
 
 ## ⚠️ SELECTIVE CONTEXT REFETCH — VIA `context-gathering`
 
-External sources can change after generation. When they do, the code is not necessarily wrong — the **source moved**. The defect agent reuses the **same acquisition skill as the coding workflow** so paths, scripts and formats never drift.
-
-### Refetch is SELECTIVE — never wholesale
+External sources can change after generation. When they do, the code is not necessarily wrong — **the source moved**.
 
 | Issue category | Refetch |
 | --- | --- |
@@ -180,43 +185,25 @@ External sources can change after generation. When they do, the code is not nece
 | BFF · API · mapper | **BFF only** |
 | State · A11y · Missing AC · Regression | **None** |
 
-⚠️ **Never invoke all three tasks.** A blank-value BFF defect has no business refetching Figma.
+**Both gate conditions required:** (1) category matches the artefact; (2) evidence the source actually changed. Otherwise use the on-disk artefact.
 
-### Two Gate Conditions — BOTH required
+⚠️ Never invoke all three tasks. ⚠️ **Snapshot before refetching** — the diff is the diagnostic value. ⚠️ Never re-run Figma reconciliation; work from raw viewport JSONs.
 
-```text
-1. Issue category matches the artefact type (table above)
-2. Evidence suggests the source actually changed:
-     Sitecore → field missing/renamed; §5 mapping no longer matches behaviour
-     Figma    → ticket references a design change, new Figma URL, "per latest design"
-     BFF      → field absent/renamed; §7 Data Flow Trace no longer matches contract
+---
 
-If EITHER fails → use the existing on-disk artefact. Do NOT refetch.
-```
+## ⚠️ FAULT ORIGINS — SEVEN, TWO WRITE LEARNINGS
 
-### ⚠️ Snapshot Before Refetching
-
-`context-gathering` writes to canonical paths and **will overwrite** what is there. The diff is the entire diagnostic value.
-
-```text
-1. Snapshot the current artefact (or the summary's §5 / §7 / §9 record of it)
-2. Invoke context-gathering for THAT ARTEFACT ONLY
-3. DIFF old vs new
-4. Root cause from the diff
-```
-
-### Fault Origins From Refetch — Neither Writes a Learning
-
-| Source changed | Fault origin | Learning? |
+| Origin | Meaning | Learning? |
 | --- | --- | --- |
-| Sitecore / BFF contract | **Contract change** | ❌ No — external |
-| Figma design | **Design change** | ❌ No — code was correct for the old design |
+| **Agent miss** | Coding agent had what it needed and got it wrong | ✅ Yes |
+| **Regression from prior fix** | An earlier defect fix (see §13) broke this | ✅ Yes |
+| Upstream gap | Analysis Plan omitted or mis-specified it | ❌ |
+| Contract change | Sitecore/BFF contract changed after generation | ❌ |
+| Design change | Figma updated after generation | ❌ |
+| **Post-generation manual change** | A developer modified the code after generation and the defect lives in that change | ❌ |
+| Ambiguous requirement | AC open to interpretation | ❌ |
 
-⚠️ A Figma change means the code is **correct for the design it was built against**. Labelling it an agent miss would pollute the learnings file.
-
-### Reconciliation Is NOT Re-Run
-
-If Figma is refetched, `responsive_design_intent.json` becomes stale. **Do not re-reconcile** — that is an Analysis Agent responsibility. Work from raw viewport context JSONs and note the staleness in the §13 entry.
+⚠️ **Post-generation manual change** exists because the agent is not the only author. If the failing line was written by a developer after generation (evidence: git history, drift from the summary with no `[DEF-xxx]` tag), the coding agent did not produce the fault and must not be "taught" a rule for it.
 
 ---
 
@@ -227,15 +214,15 @@ PHASE 1  Intake + Decomposition     [defect-intake-and-decomposition]
 PHASE 2  Context Load               [defect-context-loader]
           └─ selective refetch      [context-gathering]  ← reused, gated, per-artefact
 ──────────────── PER-ISSUE LOOP ────────────────
-PHASE 3  Root Cause Analysis        [defect-root-cause-analysis]
-PHASE 4  Fix + Regression Test      [defect-fix-and-regression-test]
-          └─ delegates to coding skills by category
+PHASE 3  Root Cause + Impact        [defect-root-cause-analysis]
+          └─ current code read first · drift detected · edge-case matrix built
+PHASE 4  Fix + Tests (EXECUTED)     [defect-fix-and-regression-test]
+          ├─ coding skills by category
+          └─ test execution         [run-test-cases]
 ──────────────── CONVERGE ────────────────
-PHASE 5  Validation                 [generated-code-self-validation]   (reused)
+PHASE 5  Validation                 [generated-code-self-validation] + [run-test-cases]
 PHASE 6  Summary Update + Learning  [defect-reporting-and-learning]
 ```
-
-Phases 3–4 run **per issue**. Phases 5–6 run once, across all issues.
 
 ---
 
@@ -243,17 +230,9 @@ Phases 3–4 run **per issue**. Phases 5–6 run once, across all issues.
 
 **Invoke: defect-intake-and-decomposition**
 
-Parse the defect ticket and split it into discrete, independently-fixable issues.
+Split the ticket into independently-fixable issues (`ISSUE-001…`), extract Defect Dev Notes (`DDN-001…`), categorise each issue, flag source-change signals, capture reproduction evidence. The split is **semantic** — one paragraph can hold three issues.
 
-- Ticket content varies — one defect, several enumerated, or prose describing multiple problems
-- The split is **semantic**, not list-parsing: a single paragraph can contain three issues
-- Assign stable `ISSUE-001`, `ISSUE-002` … IDs threading through RCA → fix → test → record
-- Extract **Defect Dev Notes** as `DDN-001`, `DDN-002` …
-- Categorise each issue
-- **Detect source-change signals** — phrases indicating design or contract change, and any Figma URL
-- Capture reproduction evidence: steps, expected vs actual, environment, locale
-
-**Gate:** ticket parsed · every distinct problem is its own ISSUE-xxx · DDN extracted and numbered · every issue categorised · source-change signals flagged · evidence captured.
+**Gate:** every distinct problem is its own ISSUE · DDN extracted · categorised · source-change signals flagged · evidence captured.
 
 > **➡️ Gate passed → IMMEDIATELY invoke PHASE 2.**
 
@@ -263,128 +242,61 @@ Parse the defect ticket and split it into discrete, independently-fixable issues
 
 **Invoke: defect-context-loader**
 
-Load everything needed to locate the fault, **once**. Delegates all external acquisition to `context-gathering`.
+Load the Analysis Plan (all 13 sections), the Code Gen Summary (all 13 sections, including the **§13 Change Log**), the learnings, the catalogue, and the on-disk artefacts. Record the summary's generation date and the dates of §13 entries — Phase 3 uses them for drift evidence. Refetch selectively only where both gate conditions hold.
 
-**Always loaded:**
-- Analysis Plan — all 13 sections
-- Code Gen Summary — especially **§3 File Inventory**, **§5 field→prop**, **§7 Data Flow Trace**, **§8 State Matrix**, **§9 Design Notes**, **§12 Deviations/Limitations**, **§13 Change Log**
-- Coding Agent Learnings from `./src/.project/learnings/CODING_AGENT_LEARNINGS.md`
-- Component catalogue for blast-radius checks
-- Existing on-disk artefacts
+⚠️ **The summary is loaded as a map.** Phase 3 verifies every location against the current code.
 
-⚠️ **§13 Change Log is diagnostically valuable.** It shows which prior defects already touched this component — critical for spotting a regression from an earlier fix, and for knowing which rows carry defect tags.
-
-**Conditionally refetched** — per the selective gate above, one artefact at a time, with snapshot-and-diff.
-
-#### Fallback Discovery
-
-If the Code Gen Summary is missing (legacy code, or a story predating this pipeline), record `NO PRIOR SUMMARY — fallback discovery` and locate by searching the repository. Flag **reduced confidence** in every RCA produced this way.
-
-**Gate:** plan, summary (incl. §13) and learnings loaded · issues pre-matched against §12.4 Known Limitations and §2 Scope NOT Implemented · refetch performed only where both gate conditions met · snapshot and diff for every refetch · no re-analysis · reconciliation not re-run.
+**Gate:** plan, summary and learnings loaded · generation and §13 dates recorded · issues cross-checked against §12.4 and §2 · refetch only where gated, with snapshot and diff · no re-analysis.
 
 > **➡️ Gate passed → IMMEDIATELY invoke PHASE 3 for ISSUE-001.**
 
 ---
 
-### PHASE 3 — Root Cause Analysis (Per Issue)
+### PHASE 3 — Root Cause and Impact Analysis (Per Issue)
 
 **Invoke: defect-root-cause-analysis**
 
-Locate the exact cause. **Naming a file is not enough — name the line and the mechanism.**
+1. **Read the current code first** for every file the summary points to. Establish what the code actually does.
+2. **Detect drift** — where current code differs from the summary, record it; use git history to tell a developer change from a prior defect fix.
+3. **Locate** the root cause to file + line + mechanism.
+4. **Classify fault origin** (seven origins).
+5. **Blast radius** — who consumes the changed code, and **which test files cover them**.
+6. **Fix Impact Analysis** — the edge-case matrix for everything that flows through the lines about to change.
+7. **Test plan** — regression test, guard tests, blast-radius test files, for Phase 4 to execute.
 
-#### Summary Lookup Map
-
-| Symptom | Look in | Finds |
-| --- | --- | --- |
-| Value blank / wrong | **§7 Data Flow Trace** | Mapper + null default + file:line |
-| Wrong UI on a state | **§8 State Matrix** | Owning file for that state |
-| CMS text not appearing | **§5 field→prop** | Field name mismatch or missing helper |
-| Visual differs from design | **§9 Design Notes** | Tokens used, discrepancies recorded |
-| Which files could cause this | **§3 File Inventory** | Complete scoped surface |
-| Was this touched before? | **§13 Change Log** | Prior defect fixes on this component |
-| Should this even work? | **§12.4 + §2** | Known limitation or out of scope |
-| Why built this way? | **§12.1 Decisions** | Original reasoning |
-
-⚠️ **Check §13 for regressions.** If a prior defect touched the same file or state, the current issue may be a regression from that fix — a distinct fault origin that **does** write a learning.
-
-#### ⚠️ Fault Origin Classification (Gates the Learning Update)
-
-| Origin | Example | Learning? |
-| --- | --- | --- |
-| **Agent miss** | Used `ml-4` instead of `ms-4`; forgot empty state | ✅ **Yes** |
-| **Regression from prior fix** | Earlier fix (see §13) broke this | ✅ **Yes** |
-| Upstream gap | Analysis Plan omitted the state | ❌ Flag to developer |
-| **Contract change** | Sitecore/BFF field renamed post-generation | ❌ External |
-| **Design change** | Figma updated after generation | ❌ Code was correct for the old design |
-| Ambiguous requirement | AC open to interpretation | ❌ Story issue |
-
-Only the first two write a learning.
-
-#### Blast Radius
-
-Before proposing any fix, determine what else consumes the code being changed. **Critical for design-system components.** Use §3 and the catalogue.
-
-**Gate (per issue):** root cause named to file + line + mechanism · fault origin classified · §13 checked for prior fixes on the same code · blast radius determined · blocked issues recorded (run continues).
+**Gate (per issue):** current code read · drift recorded · root cause named to file + line + mechanism · origin classified · §13 checked for regressions · blast radius with concrete test files · edge-case matrix built · test plan written.
 
 > **➡️ Gate passed → IMMEDIATELY invoke PHASE 4 for this issue.**
 
 ---
 
-### PHASE 4 — Fix and Regression Test (Per Issue)
+### PHASE 4 — Fix and Tests, Executed (Per Issue)
 
-**Invoke: defect-fix-and-regression-test**
-
-#### ⚠️ Failing-First Protocol (MANDATORY)
+**Invoke: defect-fix-and-regression-test** — which runs tests via **run-test-cases**.
 
 ```text
-1. Write a regression test expressing the EXPECTED behaviour
-2. Run it → it MUST FAIL against current code          ← proves the RCA
-3. Apply the minimal fix
-4. Run it → it MUST PASS
-5. Run the existing suite for touched files → no regressions
+1. Write the regression test
+2. RUN  --expect fail --name "<DEF / ISSUE>"   → verdict EXPECTED_FAIL      ← proves the RCA
+3. Apply the minimal fix on top of the CURRENT code
+4. RUN  the regression test                     → verdict PASS
+5. Write guard tests for the edge-case matrix
+6. RUN  guard tests                             → verdict PASS
+7. RUN  blast radius: co-located tests of every changed file
+        + consumer test files from RCA + --related on changed sources → PASS
 ```
 
-⚠️ **If the test does not fail at step 2, the root cause is wrong.** Return to Phase 3.
+| Verdict at step 2 | Meaning | Action |
+| --- | --- | --- |
+| `EXPECTED_FAIL` | Root cause proven | Continue |
+| `PASSED_UNEXPECTEDLY` | Root cause is wrong | Return to Phase 3 |
+| `FAILED_FOR_WRONG_REASON` | Load error or a different test failed | Fix the test **setup**, re-run |
+| `NOT_COLLECTED` | File never ran | Fix placement/path, re-run |
 
-#### ⚠️ Scope-to-Diff (Refetched Sources)
+⚠️ Guard tests **may pass before the fix** — they protect neighbouring behaviour. Only the regression test must fail first.
 
-When an artefact was refetched, the diff may contain **many** changes — only one of which the defect reports.
+⚠️ If tests cannot run (script exit 4 or 5), record **STATIC ONLY** with the exact command for the developer. Never claim a result.
 
-```text
-Figma diff shows:
-  ✅ gap 16px → 24px        ← defect mentions this → FIX
-  ⛔ new CTA button added    ← not mentioned → OBSERVATION, separate ticket
-  ⛔ heading token changed   ← not mentioned → OBSERVATION, separate ticket
-```
-
-⚠️ **A refreshed artefact is NOT licence to re-implement against the latest version.**
-
-#### ⚠️ Structural-Change Escape Hatch
-
-If a diff shows **structural** change — new components, removed sections, changed hierarchy, new endpoints:
-
-```text
-Record: "EXCEEDS DEFECT SCOPE — structural change detected.
-         Requires re-analysis via the Analysis Agent."
-Do NOT attempt it. Continue with the remaining issues.
-```
-
-#### Skill Selection by Category
-
-| Category | Skills loaded |
-| --- | --- |
-| UI / RTL / Responsive / A11y | `presentational-ui-generation` |
-| Media | `+ frontend-media-integration` |
-| Sitecore | `sitecore-rendering-integration` |
-| BFF / API / mapper | `frontend-logic-integration` |
-| State / forms | `frontend-state-and-form-management` |
-| Any file move or rename | `+ repository-structure-governance` |
-| DS component changed | `+ storybook-and-component-catalogue` |
-| **Always** | `developer-notes-protocol` · `frontend-test-generation` |
-
-⚠️ Coding skills are loaded for their **standards, guidelines and conventions** — not as licence to regenerate the component. The minimal-change contract overrides any completeness instinct those skills carry.
-
-**Gate (per issue):** regression test written and **proven to fail first** · minimal fix applied to disk · test now passes · existing tests still pass · only RCA-named code changed · scope-to-diff honoured · structural change escalated · observations recorded.
+**Gate (per issue):** regression test EXPECTED_FAIL then PASS · guard tests PASS · blast-radius tests PASS · minimal fix on current code · no developer change reverted · no test weakened · run output folders recorded.
 
 > **➡️ More issues → loop to PHASE 3. All done → IMMEDIATELY invoke PHASE 5.**
 
@@ -392,25 +304,30 @@ Do NOT attempt it. Continue with the remaining issues.
 
 ### PHASE 5 — Validation
 
-**Invoke: generated-code-self-validation** *(reused from the coding workflow)*
-
-Run the structural gate across all changed files, **scoped to what was touched** — there is no manifest in a defect run.
-
-**Additional defect-specific checks:**
+**Invoke: generated-code-self-validation** (scoped to changed files) **and run-test-cases** (final consolidated run).
 
 ```text
-- [ ] ONLY files named in RCA were modified — no collateral changes
-- [ ] Every issue has a regression test that failed first
-- [ ] No existing test was weakened, skipped, or deleted to make a fix pass
-- [ ] Every DDN resolved to Implemented / Not Applicable / Blocked with evidence
-- [ ] Blast radius consumers still behave correctly (DS component changes)
-- [ ] No new hardcoded values, tokens bypassed, or guardrails broken
+Final run: every test file touched in this defect + every blast-radius test file,
+           in ONE run-test-cases invocation, label "{{ticket_id}}-final" → must PASS
+```
+
+A per-issue pass does not prove the combined set passes — two fixes can interact.
+
+**Defect-specific checks:**
+
+```text
+- [ ] ONLY RCA-named files modified — no collateral changes
+- [ ] No developer change reverted to match the summary
+- [ ] Every issue: regression test EXPECTED_FAIL then PASS (executed)
+- [ ] Every issue: guard tests and blast-radius tests PASS (executed)
+- [ ] Final consolidated run PASS
+- [ ] No existing test weakened, skipped, or deleted
+- [ ] Every DDN resolved with evidence
+- [ ] No hardcoded values, tokens bypassed, or guardrails broken
 - [ ] Refetched-artefact fixes stayed scoped to the reported delta
 ```
 
-⚠️ **Never weaken or delete an existing test to make a fix pass.** If an existing test now fails, either the fix is wrong or the test encoded the defect — investigate and record which.
-
-**Gate:** all structural checks pass · no collateral modifications · every DDN resolved with evidence · no test weakened.
+**Gate:** structural checks pass · final consolidated run PASS (or STATIC ONLY recorded) · no collateral changes.
 
 > **➡️ Gate passed → IMMEDIATELY invoke PHASE 6.**
 
@@ -420,187 +337,102 @@ Run the structural gate across all changed files, **scoped to what was touched**
 
 **Invoke: defect-reporting-and-learning**
 
-#### 6a — Update the Parent CODE_GENERATION_SUMMARY.md
+**6a — Update the parent CODE_GENERATION_SUMMARY.md in place.** State sections (§3 §4 §5 §6 §7 §8 §9 §10 §12.4, §11 status only) updated for what the fix changed **and** reconciled for drift in the rows RCA inspected. Historical sections (§1 §2 §12.1 §12.2 §12.5) untouched. Rows tagged `[DEF-xxx]` or `[DEF-xxx · drift]`.
 
-**Path:** `.SS_WF/Agent/CODE/{{parent_story_id}}_CODE_GENERATION_SUMMARY.md`
+**6a-2 — Append the §13 Change Log entry**: DDN · refetch · per-issue table · **drift reconciled** · **edge cases verified** · **test execution evidence** · sections updated · tests modified · observations · learnings · developer notes.
 
-⚠️ **Updated in place. There is no separate defect document.**
+**6b — Learning update**, gated: **only** agent miss or regression from prior fix. Deduplicate; recurrence ≥ 3 flags a skill gap.
 
-**State sections — UPDATE (they must describe the code as it is now):**
+⚠️ No separate defect document. Both files via read → merge → write back.
 
-```text
-§3   File Inventory        → changed files + new test files
-§4   UI Components         → if a component changed
-§5   Sitecore field → prop → if a mapping changed
-§6   Logic & API           → if a layer changed
-§7   Data Flow Trace       → per affected field (line numbers, defaults)
-§8   State → UI Matrix     → per affected state
-§9   Design & NFR Notes    → if tokens or exceptions changed
-§10  Tests & Coverage      → add regression tests
-§12.4 Known Limitations    → mark Resolved if a fix closed one
-§11  AC Evidence           → status only, if an AC now passes
-```
+**Gate:** state sections current and tagged · drift reconciled for inspected rows · §13 entry complete with execution evidence · learning only for the two origins · no separate document.
 
-**Historical sections — LEAVE UNTOUCHED:**
-
-```text
-§1   Developer Notes Applied   — records the original build
-§2   Story & Classification
-§12.1 Decisions & Conflicts
-§12.2 Assumptions
-§12.5 Validation Exceptions
-```
-
-**Tag every changed row** with the defect ID: `[DEF-123]`
-
-#### 6a-2 — Append the §13 Change Log Entry
-
-This carries the **defect-specific record** that a separate document would otherwise hold:
-
-```text
-DDN applied · context refetch + diff · per-issue table (category, status,
-root cause, fault origin, fix, regression test, failed-first) · sections
-updated · existing tests modified · observations not fixed · learnings
-written · notes for the developer
-```
-
-⚠️ **Append below existing entries, newest last.** Never edit or remove a prior entry — this log is the audit trail. If the summary predates §13, create it.
-
-#### 6b — Learning Update (Gated)
-
-**Path:** `./src/.project/learnings/CODING_AGENT_LEARNINGS.md`
-
-```text
-IF fault origin is "Agent miss" OR "Regression from prior fix":
-   1. Determine the namespace (UI / LOGIC / TEST / STORYBOOK LEARNINGS)
-   2. Search for a semantically equivalent existing rule
-   3. Found     → increment recurrence, append this defect ID
-   4. Not found → append a new entry as a RULE, not a war story
-   5. Recurrence ≥ 3 → flag "SKILL GAP: this rule keeps firing"
-ELSE:
-   Do NOT write a learning. Record the origin in the §13 entry instead.
-```
-
-⚠️ Both files updated via **read → merge → write back**. Do not assume an append mode exists.
-
-**Gate:** every state section the fix touched is updated and tagged · historical sections untouched · §13 entry appended with all blocks · prior entries intact · untouched content preserved byte for byte · learning appended only for agent-miss/regression · deduplication performed · skill gap flagged at recurrence ≥ 3 · **no separate defect document produced**.
-
-> **➡️ Gate passed → RUN COMPLETE.** Report the updated summary path and any skill-gap flags.
+> **➡️ Gate passed → RUN COMPLETE.** Report the summary path, verification level, and any skill-gap flags.
 
 ---
 
 ## Skill Invocation Map
 
-| Phase | Skill | New / Reused | Writes files? |
+| Phase | Skill | Source | Writes files? |
 | --- | --- | --- | --- |
-| 1 | defect-intake-and-decomposition | 🆕 New | ❌ |
-| 2 | defect-context-loader | 🆕 New | ❌ |
-| 2r | **context-gathering** | ♻️ **Reused** | ✅ artefacts only, selective |
-| 3 | defect-root-cause-analysis | 🆕 New | ❌ |
-| 4 | defect-fix-and-regression-test | 🆕 New | ✅ fixes + tests |
-| 4d | *(coding skills by category)* | ♻️ Reused | ✅ via the fix skill |
-| 5 | generated-code-self-validation | ♻️ Reused | ❌ |
-| 6 | defect-reporting-and-learning | 🆕 New | ✅ summary update + learnings |
-| all | developer-notes-protocol | ♻️ Reused | ❌ |
+| 1 | defect-intake-and-decomposition | 🆕 Defect | ❌ |
+| 2 | defect-context-loader | 🆕 Defect | ❌ |
+| 2r | context-gathering | ♻️ Analysis | ✅ artefacts, selective |
+| 3 | defect-root-cause-analysis | 🆕 Defect | ❌ |
+| 4 | defect-fix-and-regression-test | 🆕 Defect | ✅ fixes + tests |
+| 4d | *(coding skills by category)* | ♻️ Coding | ✅ via the fix skill |
+| 4t / 5 | **run-test-cases** | 🆕 **Shared** | ✅ `TEST_RUNS/` evidence only |
+| 5 | generated-code-self-validation | ♻️ Coding | ❌ |
+| 6 | defect-reporting-and-learning | 🆕 Defect | ✅ summary + learnings |
+| all | developer-notes-protocol | ♻️ Analysis | ❌ |
 
-**6 new skills. Eleven coding skills reusable** — which keeps fixes conforming to the same standards as generated code.
-
-### Coding Skills NOT Reusable
-
-| Skill | Why |
-| --- | --- |
-| `implementation-contract-loader` | Loads the plan *to build from*; `defect-context-loader` loads plan **+ summary** *to locate from* |
-| `master-react-coding-orchestrator` | The defect orchestrator owns the sequence |
+⚠️ `run-test-cases` is a **shared** skill — the static code quality workflow will use it for package-level runs.
 
 ---
 
 ## Global Guardrails
 
 ### Always Do
-- **Execute all phases in one continuous run**; loop 3–4 per issue.
-- **Apply the minimal-change contract** to code AND to the summary update.
-- **Write a failing test before every fix** and prove it fails first.
-- **Classify fault origin** for every issue — it gates the learning update.
-- **Check §13 Change Log** for prior fixes that may have caused a regression.
-- **Refetch selectively** via `context-gathering` — one artefact, both gate conditions met.
-- **Snapshot before refetching**; the diff is the diagnostic value.
-- **Scope fixes to the reported delta** when an artefact was refetched.
-- **Update every state section the fix changed** so the summary stays accurate.
-- **Tag every changed summary row** with the defect ID.
-- Determine blast radius before changing shared or design-system code.
-- Apply DDN above DN; record any supersession.
-- Load coding skills **by category only** — never speculatively.
-- Record unrelated problems as observations in the §13 entry.
-- Preserve ISSUE, DDN, DN, AC and GAP IDs exactly.
-- Deduplicate learnings before appending.
+- **Read the current code before diagnosing** — the summary is a map, not the territory.
+- **Record drift** between the code and the summary; use git history to explain it.
+- **Change narrowly, verify widely.**
+- **Execute every test claim** via `run-test-cases`; record the output folder.
+- **Prove the root cause** with an `EXPECTED_FAIL` verdict before fixing.
+- **Build the edge-case matrix** and cover it with guard tests.
+- **Run blast-radius tests** — co-located, consumer, and `--related`.
+- **Run a final consolidated test run** across all issues.
+- Classify fault origin for every issue — seven origins, two write learnings.
+- Check §13 for regressions from prior fixes.
+- Refetch selectively via `context-gathering`; snapshot first; scope fixes to the reported delta.
+- Apply DDN above DN; record supersession.
+- Load coding skills by category only.
+- Record unrelated problems as observations.
+- Update state sections the fix touched; reconcile drift in rows RCA inspected.
 
 ### Never Do
-- **Never produce a separate `DEFECT_FIX_SUMMARY.md`** — the §13 Change Log replaced it.
-- **Never leave a state section stale** after changing the code it describes.
-- **Never modify historical sections** (§1, §2, §12.1, §12.2, §12.5).
-- **Never edit or remove a prior §13 Change Log entry.**
-- **Never regenerate the summary** — targeted, tagged row updates only.
-- **Never re-read or re-analyse the story JIRA ticket** — the Analysis Plan has it.
-- **Never re-run story analysis.**
-- **Never invoke all three `context-gathering` tasks** — selective only.
-- **Never refetch** unless both gate conditions are met.
-- **Never overwrite an artefact without snapshotting it first.**
-- **Never re-run Figma reconciliation** — work from raw viewport JSONs.
-- **Never re-implement a component against a refreshed design** — fix the reported delta only.
-- **Never attempt a structural change** — escalate to the Analysis Agent.
-- **Never read `DEV_REVIEW.md`.**
-- **Never refactor, rename, reformat, or improve code outside the RCA finding.**
-- **Never fix an unrelated problem you happen to notice.**
-- **Never weaken, skip, or delete an existing test to make a fix pass.**
-- **Never apply a fix without a test that failed first.**
-- **Never write a learning for upstream gaps, contract changes, design changes, or ambiguous requirements.**
-- **Never assume an append mode exists** — read, merge, write back.
-- **Never close, transition, or comment on the defect ticket** — lifecycle is the developer's.
+- **Never assume the code matches the summary.**
+- **Never revert a developer's change to match the summary.**
+- **Never treat drift from the summary as a defect by itself.**
+- **Never claim a test result without executing it** — label STATIC ONLY instead.
+- **Never accept `PASSED_UNEXPECTEDLY`, `FAILED_FOR_WRONG_REASON` or `NOT_COLLECTED` as proof.**
+- **Never build test commands by hand** — use `run-test-cases`.
+- **Never write a learning for a post-generation manual change**, upstream gap, contract change, design change, or ambiguity.
+- Never produce a separate `DEFECT_FIX_SUMMARY.md`.
+- Never modify historical summary sections or prior §13 entries.
+- Never re-read the parent story ticket or re-run analysis.
+- Never invoke all three `context-gathering` tasks; never refetch without both gate conditions.
+- Never re-run Figma reconciliation.
+- Never re-implement a component against a refreshed design.
+- Never attempt a structural change — escalate to the Analysis Agent.
+- Never read `DEV_REVIEW.md`.
+- Never refactor, rename, reformat, or improve code outside the RCA finding.
+- Never weaken, skip, or delete an existing test to make a fix pass.
+- Never assume an append mode exists — read, merge, write back.
+- Never close, transition, or comment on the defect ticket.
 
 ---
 
 ## Quick Reference
 
 ```text
-PHASE 1  Intake            [defect-intake-and-decomposition]
-          → split into ISSUE-001… · extract DDN-001… · categorise
-          → flag source-change signals (design / contract)
+PHASE 1  Intake            → ISSUE-001… · DDN-001… · category · source-change signals
 
-PHASE 2  Context Load      [defect-context-loader]
-          → Analysis Plan · Code Gen Summary (§3 §5 §7 §8 §9 §12 §13) · Learnings
-          → §13 Change Log shows prior fixes on this component
-          → SELECTIVE refetch via [context-gathering]:
-               UI/RTL/Responsive/Media → Figma only
-               Sitecore                → Sitecore only
-               BFF/API/mapper          → BFF only
-               State/A11y/Missing AC   → none
-            both gate conditions required · SNAPSHOT first · DIFF after
-          → NO reconciliation re-run · NO story re-read · NO re-analysis
+PHASE 2  Context Load      → Plan (what is required) · Summary + §13 (the map) · Learnings
+                           → selective refetch via context-gathering (gated, snapshot, diff)
 
 ┌──────────────── PER ISSUE ────────────────┐
-PHASE 3  RCA               [defect-root-cause-analysis]
-          → locate via §7/§8/§5/§9/§3 → file:line + mechanism
-          → check §13 for a regression from a prior fix
-          → classify FAULT ORIGIN (6 origins; 2 write learnings)
-          → blast radius
+PHASE 3  RCA + Impact      → READ CURRENT CODE FIRST · drift vs summary (git evidence)
+                           → file:line + mechanism · 7 fault origins · §13 regression check
+                           → blast radius WITH test files · EDGE-CASE MATRIX · test plan
 
-PHASE 4  Fix + Test        [defect-fix-and-regression-test]
-          → test FAILS first ← proves RCA
-          → minimal fix (coding skills by category)
-          → SCOPE TO DIFF if artefact refetched
-          → structural change → ESCALATE, do not attempt
-          → test PASSES · existing tests still pass
+PHASE 4  Fix + Tests       → regression test → run-test-cases --expect fail → EXPECTED_FAIL
+                           → minimal fix on current code
+                           → regression PASS · guard tests PASS · blast radius PASS
 └───────────────────────────────────────────┘
 
-PHASE 5  Validation        [generated-code-self-validation]  ← reused, scoped
-          → structural + no collateral changes + no weakened tests
+PHASE 5  Validation        → scoped structural gate · FINAL consolidated run → PASS
 
-PHASE 6  Summary + Learning [defect-reporting-and-learning]
-          → UPDATE parent CODE_GENERATION_SUMMARY.md IN PLACE:
-               state sections (§3 §4 §5 §6 §7 §8 §9 §10 §11 §12.4) — tagged [DEF-xxx]
-               historical sections (§1 §2 §12.1 §12.2 §12.5) — untouched
-               §13 Change Log — append the defect entry
-          → learnings ONLY if agent-miss/regression
-          → dedupe · recurrence ≥3 = SKILL GAP flag
-          → NO separate defect document
+PHASE 6  Record            → summary state sections updated + drift reconciled, tagged
+                           → §13 entry incl. drift · edge cases · execution evidence
+                           → learnings ONLY for agent miss / regression
 ```

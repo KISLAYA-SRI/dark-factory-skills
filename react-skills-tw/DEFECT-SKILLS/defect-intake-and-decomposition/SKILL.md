@@ -26,7 +26,7 @@ If the ticket is missing or unreadable → **HALT**. Report clearly. Do not proc
 
 ---
 
-## ⚠️ TICKET CONTENT VARIES — PARSE BOTH SHAPES
+## ⚠️ TICKET CONTENT VARIES — PARSE EVERY SHAPE
 
 A defect ticket may contain **one** defect or **several**. The developer may have enumerated them, or described them in prose. Both must be handled.
 
@@ -38,7 +38,7 @@ A defect ticket may contain **one** defect or **several**. The developer may hav
 3. Empty state message is hardcoded English
 ```
 
-Straightforward: each numbered item is a candidate issue. **Still verify** each is genuinely single — a numbered item can itself contain two problems.
+Each numbered item is a candidate issue. **Still verify** each is genuinely single — a numbered item can contain two problems.
 
 ### Shape B — Unstructured Prose
 
@@ -48,7 +48,7 @@ the policy number is blank for some records. Also when there are no
 policies the message appears in English even on the Arabic site.
 ```
 
-⚠️ **The split is semantic, not list-parsing.** This paragraph contains **three** distinct issues with three different root causes in three different files. Read for *distinct failing behaviours*, not punctuation.
+⚠️ **The split is semantic, not list-parsing.** This paragraph contains **three** issues with three root causes in three files. Read for *distinct failing behaviours*, not punctuation.
 
 ### Shape C — Mixed
 
@@ -74,15 +74,13 @@ They are **one issue** if:
    e.g. "title and subtitle both blank" caused by one missing mapper field
 ```
 
-⚠️ **When uncertain, split.** Two issues that turn out to share a root cause merge naturally at RCA. One issue hiding two root causes produces a partial fix that reopens.
+⚠️ **When uncertain, split.** Two issues that share a root cause merge naturally at RCA. One issue hiding two root causes produces a partial fix that reopens.
 
 ---
 
 ## Issue ID Assignment
 
-Assign stable, sequential IDs: `ISSUE-001`, `ISSUE-002`, `ISSUE-003` …
-
-These thread through **RCA → fix → test → §13 Change Log entry**. **Never renumber** them, even if an issue is later found to be blocked or a duplicate.
+Stable, sequential IDs: `ISSUE-001`, `ISSUE-002` … These thread through **RCA → fix → test runs → §13 Change Log entry**. **Never renumber**, even if an issue is later blocked or found to be a duplicate.
 
 ---
 
@@ -98,17 +96,15 @@ Scan the ticket for developer instructions on **how** to fix:
 
 Extract **verbatim** and number as `DDN-001`, `DDN-002` …
 
-⚠️ **Use the `DDN-` prefix, never `DN-`.** Story Dev Notes from the Analysis Plan keep the `DN-` chain. Two separate chains keep both traceable.
+⚠️ **Use the `DDN-` prefix, never `DN-`.** Story Dev Notes keep the `DN-` chain.
 
-**Defect Dev Notes are TOP priority** — above story Dev Notes, the Analysis Plan, and every guideline. Apply the full `developer-notes-protocol` sacred-law rules.
-
-Where a DDN clearly applies to a specific issue, associate it. Where it applies globally, mark it as applying to all issues.
+**Defect Dev Notes are TOP priority** — above story Dev Notes, the Analysis Plan, and every guideline. Apply the full `developer-notes-protocol` sacred-law rules. Associate each DDN with specific issues, or mark it global.
 
 ---
 
 ## Issue Categorisation
 
-Each issue gets exactly **one primary category**. This determines which coding skills load in Phase 4 **and** which artefact may be refetched in Phase 2.
+Each issue gets exactly **one primary category**. It determines which coding skills load in Phase 4 **and** which artefact may be refetched in Phase 2.
 
 | Category | Symptom pattern | Skills (Phase 4) | Refetch (Phase 2) |
 | --- | --- | --- | --- |
@@ -126,72 +122,58 @@ Each issue gets exactly **one primary category**. This determines which coding s
 ### Categorisation Hints
 
 ```text
-"blank" / "wrong value" / "not updating"     → BFF/API  (check §7 Data Flow Trace)
-"authored text not showing"                   → Sitecore (check §5 field→prop)
-"wrong thing shows when [state]"              → State    (check §8 State Matrix)
+"blank" / "wrong value" / "not updating"     → BFF/API  (§7 Data Flow Trace)
+"authored text not showing"                   → Sitecore (§5 field→prop)
+"wrong thing shows when [state]"              → State    (§8 State Matrix)
 "looks wrong in Arabic"                       → RTL
 "broken on mobile" / "at 390px"               → Responsive
-"used to work"                                → Regression  (check §13 Change Log)
+"used to work"                                → Regression  (§13 Change Log)
 "doesn't match the design"                    → UI  (+ check for design-change signal)
 ```
 
-⚠️ If an issue genuinely spans two categories, **assign the primary one** and note the secondary. A genuinely two-layer problem is usually **two issues** — re-check the splitting test.
+⚠️ A genuinely two-layer problem is usually **two issues** — re-check the splitting test.
 
 ---
 
 ## ⚠️ SOURCE-CHANGE SIGNAL DETECTION
 
-An external source may have changed **after** code generation. When it has, the code is not necessarily wrong — the source moved. Phase 2 uses these flags as **Gate Condition 2** for a selective refetch.
+An external source may have changed **after** code generation. Phase 2 uses these flags as **Gate Condition 2** for a selective refetch.
 
 ⚠️ **Flag the signal; do not judge it.** Phase 2 decides whether to refetch. Phase 3 decides the fault origin.
 
 ### Design-Change Signals (→ Figma)
 
 ```text
-Explicit phrases:
-  "design updated" · "new Figma" · "per latest design" · "design changed"
-  "as per updated design" · "matches new mockup" · "redesign"
-
-Structural signals:
-  A Figma URL present in the DEFECT ticket
-  A design modification date referenced as later than generation
-  "should now be…" phrasing implying a new target state
+Phrases:  "design updated" · "new Figma" · "per latest design" · "design changed"
+          "as per updated design" · "matches new mockup" · "redesign"
+Signals:  A Figma URL in the DEFECT ticket · "should now be…" phrasing
 ```
 
 ### Contract-Change Signals (→ Sitecore / BFF)
 
 ```text
-Sitecore:
-  "field renamed" · "new field added" · "rendering updated"
-  "content type changed" · "placeholder changed"
-  Authored content that exists in CMS but does not render at all
-
-BFF:
-  "API changed" · "response updated" · "new field in response"
-  "endpoint updated" · "contract changed"
-  A value that previously rendered and now does not
+Sitecore: "field renamed" · "new field added" · "rendering updated"
+          "placeholder changed" · authored content that does not render at all
+BFF:      "API changed" · "response updated" · "new field in response"
+          "contract changed" · a value that previously rendered and now does not
 ```
 
-### Recording the Signal
+### Developer-Change Signals (→ recorded for RCA)
 
 ```text
-ISSUE-001
-  Source-change signal:  FIGMA — ticket states "per updated design v2"
-                         Figma URL present: yes
-  → Phase 2 Gate Condition 2: SATISFIED
-
-ISSUE-002
-  Source-change signal:  NONE detected
-  → Phase 2 Gate Condition 2: NOT satisfied — use existing on-disk artefact
+"after the dev fix" · "since the last change" · "worked in the generated version"
+"we modified" · a reference to a PR or commit
 ```
 
-⚠️ **Absence of a signal is a meaningful result.** A UI defect with no design-change signal is a genuine visual defect — the code does not match the design it was built against. That is an **agent miss**, and it must not trigger a Figma refetch.
+⚠️ These do not trigger a refetch. They tell RCA to look closely at **post-generation manual changes** — a distinct fault origin.
+
+⚠️ **Absence of a signal is meaningful.** A UI defect with no design-change signal is a genuine visual defect and must not trigger a Figma refetch.
 
 ---
 
 ## Reproduction Evidence Capture
 
-For each issue, capture whatever the ticket provides. Missing evidence is recorded as missing — **never invented**.
+Missing evidence is recorded as missing — **never invented**.
 
 ```text
 ISSUE-00N
@@ -201,15 +183,16 @@ ISSUE-00N
   Expected:        [what should happen — from the ticket or the AC]
   Actual:          [what happens instead]
   Environment:     [browser / device / viewport, or: Not provided]
-  Locale:          [en / ar, or: Not specified]   ← critical for RTL issues
+  Locale:          [en / ar, or: Not specified]   ← critical for RTL
   Persona/Role:    [if relevant, or: Not specified]
-  Attachments:     [screenshots, recordings, logs referenced in the ticket]
-  Related AC:      [AC-xxx if the ticket names one, else: To be determined in RCA]
+  Attachments:     [screenshots, recordings, logs referenced]
+  Related AC:      [AC-xxx if named, else: To be determined in RCA]
   Applicable DDN:  [DDN-xxx, or: None]
-  Source-change:   [FIGMA | SITECORE | BFF | NONE]  ← drives Phase 2 refetch gate
+  Source-change:   [FIGMA | SITECORE | BFF | NONE]
+  Developer-change signal: [quoted text, or: None]
 ```
 
-⚠️ **Locale matters disproportionately.** An RTL issue with no stated locale is ambiguous — record `Not specified` so RCA can flag it rather than assuming `ar`.
+⚠️ **Reproduction conditions become test conditions.** Locale, persona, viewport and data shape recorded here are what the Phase 4 regression test must set up. Record them precisely.
 
 ---
 
@@ -219,66 +202,49 @@ Hold in memory and report inline. **This skill writes no files.**
 
 ```text
 DEFECT INTAKE — {{ticket_id}}
-
 Parent story: {{parent_story_id}}
 
 Defect Dev Notes:
   DDN-001  [verbatim text]  → applies to: ISSUE-002 | all issues
-  (or: No Defect Dev Notes found)
 
 Issues identified: N
-
-ISSUE-001  [RTL]       [one-line summary]   source-change: NONE
-ISSUE-002  [Sitecore]  [one-line summary]   source-change: SITECORE
-ISSUE-003  [UI]        [one-line summary]   source-change: FIGMA
+ISSUE-001  [RTL]       [summary]   source-change: NONE
+ISSUE-002  [Sitecore]  [summary]   source-change: SITECORE
+ISSUE-003  [UI]        [summary]   source-change: FIGMA
 
 [full evidence block per issue]
 
-Split rationale (where prose was decomposed):
-  "[original sentence]" → ISSUE-001 + ISSUE-003
-    different root cause and layer
+Split rationale:
+  "[original sentence]" → ISSUE-001 + ISSUE-003 — different root cause and layer
 
 Refetch candidates for Phase 2:
-  ISSUE-002 → Sitecore   (contract-change signal present)
-  ISSUE-003 → Figma      (design-change signal present)
+  ISSUE-002 → Sitecore · ISSUE-003 → Figma
 ```
-
-The split rationale matters — it lets the reviewing developer confirm the decomposition was correct.
 
 ---
 
 ### Gate: Phase 1 Complete When
 
 ```text
-- [ ] Defect ticket read from .SS_WF/{{ticket_id}}_JIRA_OUTPUT_.json
-- [ ] Parent story ID identified
+- [ ] Defect ticket read; parent story ID identified
 - [ ] Every distinct failing behaviour is its own ISSUE-xxx
-- [ ] Splitting test applied — prose decomposed semantically, not by punctuation
-- [ ] Split rationale recorded where decomposition was non-obvious
-- [ ] Stable sequential IDs assigned; none will be renumbered
-- [ ] Defect Dev Notes extracted verbatim as DDN-xxx (never DN-xxx)
-- [ ] DDN associated with specific issues or marked global
-- [ ] Every issue has exactly one primary category
-- [ ] Source-change signal recorded per issue (FIGMA / SITECORE / BFF / NONE)
-- [ ] Refetch candidates listed for Phase 2
+- [ ] Splitting test applied semantically; rationale recorded where non-obvious
+- [ ] Stable IDs assigned; none will be renumbered
+- [ ] DDN extracted verbatim (never DN-); associated or marked global
+- [ ] Every issue has one primary category
+- [ ] Source-change and developer-change signals recorded per issue
 - [ ] Reproduction evidence captured; missing items marked "Not provided"
-- [ ] Locale recorded (critical for RTL issues)
-- [ ] ISSUE_REGISTER reported inline
-- [ ] No files written
+- [ ] ISSUE_REGISTER reported inline; no files written
 ```
 
 ### Never Do
 
-- **Never read or re-analyse the parent story JIRA ticket** — the Analysis Plan carries it.
-- **Never re-triage** — the developer already decided this is a defect to fix.
-- **Never merge distinct root causes into one issue** to reduce the count.
-- **Never split a single root cause into multiple issues** because it has several visible symptoms.
-- **Never invent reproduction steps, environment, or locale** — mark them "Not provided".
-- **Never use the `DN-` prefix for defect notes** — always `DDN-`.
-- **Never renumber issue IDs** once assigned.
-- **Never assume a source changed** without an explicit signal in the ticket.
-- **Never decide the fault origin here** — that is Phase 3.
-- **Never trigger a refetch here** — flag the signal; Phase 2 decides.
-- **Never begin root cause analysis here** — that is Phase 3.
-- **Never load coding skills here** — categorisation only determines what Phase 4 will load.
+- Never read or re-analyse the parent story JIRA ticket.
+- Never re-triage — the developer already decided this is a defect to fix.
+- Never merge distinct root causes, or split one root cause into several issues.
+- Never invent reproduction steps, environment, or locale.
+- Never use the `DN-` prefix for defect notes.
+- Never renumber issue IDs.
+- Never assume a source changed without an explicit signal.
+- Never decide fault origin, trigger a refetch, begin RCA, or load coding skills here.
 - Never write any file.
