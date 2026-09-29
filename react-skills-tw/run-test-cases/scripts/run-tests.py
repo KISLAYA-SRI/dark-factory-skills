@@ -2,46 +2,33 @@
 """
 run-tests.py — run the monorepo's tests and return a machine-readable verdict.
 
+ROBUST BY DESIGN
+  You do not need to know where the repo root is, or how a path should be
+  written. Run the script from anywhere, pass any path form, and it resolves
+  the rest — or tells you exactly what it tried and why it failed.
+
+    # All of these work, from any working directory:
+    python3 run-tests.py --files Portals/Sme/Features/.../X.test.tsx
+    python3 run-tests.py --files src/Portals/Sme/Features/.../X.test.tsx
+    python3 run-tests.py --files ./Features/Shared/.../X.test.tsx
+    python3 run-tests.py --files /abs/path/.../X.test.tsx
+
 TWO ENGINES
-  SUITE     --all       Runs a root package.json script exactly as developers do
-                        (default: test:parallel  =  turbo run test --parallel).
-                        Parses turbo + Vitest console output per package. If any
-                        package fails, drills down into it with a direct Vitest run
-                        to get per-test failure detail.
-                        → Static code quality workflow.
-
-  TARGETED  --files     Direct Vitest run inside each owning package, with a JSON
-            --related   reporter, so every test has a precise status and a load
-            --package   error can be told apart from an assertion failure.
-                        → Defect fix workflow.
-
-USAGE
-  python3 scripts/run-tests.py --all
-  python3 scripts/run-tests.py --all --force
-  python3 scripts/run-tests.py --all --script test:coverage
-  python3 scripts/run-tests.py --files Portals/Sme/features/Shared/OtpVerification/Components/OtpVerificationContainer.test.tsx
-  python3 scripts/run-tests.py --files <test file> --name "DEF-123 / ISSUE-002" --expect fail
-  python3 scripts/run-tests.py --related Packages/DesignSystem/Foundation/Src/Atoms/Button/Button.tsx
-  python3 scripts/run-tests.py --package sme foundation
-
-PATH RESOLUTION (targeted runs)
-  Vitest matches a file filter against paths relative to its scan directory
-  (`test.dir`, else `root`). For @dxp/sme-portal that is `features/`:
-
-    ✗  Portals/Sme/features/Shared/X.test.tsx   repo-relative — no match
-    ✓  ./Shared/X.test.tsx                      relative to the scan directory
-
-  The script finds the scan directory from the package's test script and vitest
-  config, writes the filter in that form, and if a file is still not collected
-  retries as an absolute path, then package-relative. No form → NOT_COLLECTED.
+  SUITE     --all       Runs a root package.json script as developers do
+                        (default: test:parallel = turbo run test --parallel).
+                        → static code quality workflow
+  TARGETED  --files     Direct Vitest in the owning package, JSON reporter, so
+            --related   every test has a precise status and a load error is told
+            --package   apart from an assertion failure.
+                        → defect fix workflow
 
 EXIT CODES
-  0  Expectation met             PASS · EXPECTED_FAIL
-  1  Expectation NOT met         FAIL · PASSED_UNEXPECTEDLY · FAILED_FOR_WRONG_REASON
-  2  Usage error
-  3  Nothing ran                 NOT_COLLECTED · NO_TASKS
-  4  Environment error           pnpm missing, repo root / package / script not found
-  5  Runner error                turbo/Vitest crashed, timed out, or produced no result
+  0  Expectation met      PASS · EXPECTED_FAIL
+  1  Expectation NOT met  FAIL · PASSED_UNEXPECTEDLY · FAILED_FOR_WRONG_REASON
+  2  Usage error          (message lists what was tried)
+  3  Nothing ran          NOT_COLLECTED · NO_TASKS
+  4  Environment error    pnpm missing, repo root / package / script not found
+  5  Runner error         turbo/Vitest crashed, timed out, or produced no result
 """
 
 from __future__ import annotations
@@ -67,7 +54,6 @@ PACKAGE_ALIASES = {
     "cms-components": "@dxp/cms-components",
     "sme": "@dxp/sme-portal",
 }
-
 DEV_SCRIPT = {
     "@dxp/foundation": "pnpm run test:foundation",
     "@dxp/theme": "pnpm run test:theme",
@@ -75,18 +61,21 @@ DEV_SCRIPT = {
     "@dxp/cms-components": "pnpm run test:cms-components",
     "@dxp/sme-portal": "pnpm run test:sme",
 }
-
 DEFAULT_SUITE_SCRIPT = "test:parallel"
 DEFAULT_COVERAGE_SCRIPT = "test:coverage"
 
-CONFIG_NAMES = [f"{base}.{ext}" for base in ("vitest.config", "vite.config")
-                for ext in ("ts", "mts", "cts", "js", "mjs", "cjs")]
+# Sub-folders commonly holding the workspace when the script is run from above it.
+NESTED_ROOT_CANDIDATES = ("src", "Src", "repo", "app")
+ROOT_MARKERS = ("pnpm-workspace.yaml", "turbo.json")
+
+CONFIG_NAMES = [f"{b}.{e}" for b in ("vitest.config", "vite.config")
+                for e in ("ts", "mts", "cts", "js", "mjs", "cjs")]
 SKIP_DIRS = {"node_modules", ".git", "dist", "build", ".next", ".turbo", "coverage", ".SS_WF"}
 ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 MAX_MESSAGE = 800
 
 
-# ═══════════════════════════════════════════════════════════════ helpers
+# ═══════════════════════════════════════════════════════════ helpers
 
 def fail(code: int, message: str) -> None:
     print(f"ERROR: {message}", file=sys.stderr)
@@ -105,11 +94,86 @@ def read_json(path: Path) -> dict | None:
         return None
 
 
-def find_repo_root(start: Path) -> Path | None:
-    for candidate in [start, *start.parents]:
-        if (candidate / "pnpm-workspace.yaml").exists() or (candidate / "turbo.json").exists():
-            return candidate
-    return None
+def is_root(path: Path) -> bool:
+    return any((path / marker).exists() for marker in ROOT_MARKERS)
+
+
+def find_repo_root(start: Path, script_dir: Path) -> tuple[Path | None, list[str]]:
+    """
+    Locate the workspace root without being told.
+
+      1. `start` and its parents          — the usual case
+      2. known sub-folders of those       — script run one level above the repo
+      3. `start`/its parents relative to the script's own location
+    Returns (root, tried) so a failure can explain itself.
+    """
+    tried: list[str] = []
+
+    def probe(candidate: Path) -> Path | None:
+        tried.append(str(candidate))
+        return candidate if is_root(candidate) else None
+
+    for base in [start, *start.parents]:
+        if (found := probe(base)):
+            return found, tried
+        for nested in NESTED_ROOT_CANDIDATES:
+            if (found := probe(base / nested)):
+                return found, tried
+
+    for base in [script_dir, *script_dir.parents]:
+        if (found := probe(base)):
+            return found, tried
+        for nested in NESTED_ROOT_CANDIDATES:
+            if (found := probe(base / nested)):
+                return found, tried
+
+    return None, tried
+
+
+def resolve_input_path(value: str, repo_root: Path, cwd: Path) -> tuple[Path | None, list[str]]:
+    """
+    Resolve a user-supplied path without caring which form it is in.
+
+    Tries, in order: absolute · relative to cwd · relative to repo root ·
+    repo root with a leading duplicate segment stripped (e.g. `src/...` passed
+    when the repo root already IS `.../src`).
+    """
+    candidate = Path(value)
+    attempts: list[Path] = []
+    if candidate.is_absolute():
+        attempts.append(candidate)
+    else:
+        attempts += [cwd / candidate, repo_root / candidate]
+        parts = candidate.parts
+        if parts and parts[0] == repo_root.name:
+            attempts.append(repo_root / Path(*parts[1:]))
+        attempts.append(repo_root.parent / candidate)
+
+    tried = []
+    for attempt in attempts:
+        resolved = attempt.resolve()
+        text = str(resolved)
+        if text not in tried:
+            tried.append(text)
+        if resolved.exists():
+            return resolved, tried
+    return None, tried
+
+
+def suggest_similar(value: str, repo_root: Path, limit: int = 5) -> list[str]:
+    """Find files sharing the basename — catches casing and prefix mistakes."""
+    name = Path(value).name
+    if not name:
+        return []
+    matches = []
+    for dirpath, dirnames, filenames in os.walk(repo_root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
+        for filename in filenames:
+            if filename.lower() == name.lower():
+                matches.append(rel(Path(dirpath) / filename, repo_root))
+                if len(matches) >= limit:
+                    return matches
+    return matches
 
 
 def owning_package(path: Path, repo_root: Path) -> tuple[str, Path] | None:
@@ -134,15 +198,6 @@ def discover_packages(repo_root: Path) -> dict[str, Path]:
             if manifest and manifest.get("name"):
                 found[manifest["name"]] = Path(dirpath)
     return found
-
-
-def resolve_package_name(value: str) -> str:
-    return PACKAGE_ALIASES.get(value, value)
-
-
-def to_repo_path(value: str, repo_root: Path) -> Path:
-    candidate = Path(value)
-    return (candidate if candidate.is_absolute() else repo_root / candidate).resolve()
 
 
 def rel(path: Path | str, base: Path) -> str:
@@ -173,7 +228,7 @@ def execute(repo_root: Path, cmd: list[str], log_path: Path, timeout: int,
     return code, output, timed_out
 
 
-# ═══════════════════════════════════════════════════════════════ vitest config
+# ═══════════════════════════════════════════════════════════ vitest config
 
 def _strip_comments(text: str) -> str:
     text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
@@ -237,18 +292,14 @@ def detect_scan_dir(pkg_dir: Path, flags: list[str], explicit_config: Path | Non
             text = _strip_comments(config.read_text(encoding="utf-8"))
         except OSError:
             text = ""
-        found_root = _config_value(text, "root")
-        if found_root:
-            candidate = resolve_literal(pkg_dir, *found_root)
+        if (found := _config_value(text, "root")):
+            candidate = resolve_literal(pkg_dir, *found)
             if candidate.is_dir():
-                root = candidate
-                notes.append(f"root: {found_root[1]}")
-        found_dir = _config_value(text, "dir")
-        if found_dir:
-            candidate = resolve_literal(root, *found_dir)
+                root, _ = candidate, notes.append(f"root: {found[1]}")
+        if (found := _config_value(text, "dir")):
+            candidate = resolve_literal(root, *found)
             if candidate.is_dir():
-                scan_dir = candidate
-                notes.append(f"dir: {found_dir[1]}")
+                scan_dir, _ = candidate, notes.append(f"dir: {found[1]}")
         notes.insert(0, config.name)
     else:
         notes.append("no vitest config found")
@@ -272,7 +323,10 @@ def path_forms(files: list[Path], scan_dir: Path, pkg_dir: Path) -> list[tuple[s
     except ValueError:
         pass
     forms.append(("absolute", [str(f) for f in files]))
-    forms.append(("package-relative", [str(f.relative_to(pkg_dir)) for f in files]))
+    try:
+        forms.append(("package-relative", [str(f.relative_to(pkg_dir)) for f in files]))
+    except ValueError:
+        pass
     seen, unique = set(), []
     for label, targets in forms:
         if tuple(targets) not in seen:
@@ -281,7 +335,7 @@ def path_forms(files: list[Path], scan_dir: Path, pkg_dir: Path) -> list[tuple[s
     return unique
 
 
-# ═══════════════════════════════════════════════════════════════ targeted engine
+# ═══════════════════════════════════════════════════════════ targeted engine
 
 def build_vitest_command(mode: str, package: str, targets: list[str], forwarded: list[str],
                          json_path: Path, name: str | None, coverage: bool) -> list[str]:
@@ -302,10 +356,10 @@ def parse_json_report(json_path: Path, repo_root: Path) -> dict | None:
         return None
     files, failed, suite_errors = [], [], []
     passed = failed_count = skipped = 0
-    for suite in data.get("testResults", []):
-        file_rel = rel(suite.get("name", ""), repo_root)
+    for suite_result in data.get("testResults", []):
+        file_rel = rel(suite_result.get("name", ""), repo_root)
         counts = {"passed": 0, "failed": 0, "skipped": 0}
-        for test in suite.get("assertionResults", []) or []:
+        for test in suite_result.get("assertionResults", []) or []:
             status = test.get("status", "")
             if status == "passed":
                 counts["passed"] += 1
@@ -316,12 +370,12 @@ def parse_json_report(json_path: Path, repo_root: Path) -> dict | None:
                                "message": clean("\n".join(test.get("failureMessages", []) or []))})
             else:
                 counts["skipped"] += 1
-        if suite.get("status") == "failed" and counts["failed"] == 0:
-            suite_errors.append({"file": file_rel, "message": clean(suite.get("message", ""))})
+        if suite_result.get("status") == "failed" and counts["failed"] == 0:
+            suite_errors.append({"file": file_rel, "message": clean(suite_result.get("message", ""))})
         passed += counts["passed"]
         failed_count += counts["failed"]
         skipped += counts["skipped"]
-        files.append({"file": file_rel, **counts, "suite_status": suite.get("status", "")})
+        files.append({"file": file_rel, **counts, "suite_status": suite_result.get("status", "")})
     return {"files": files, "failed": failed, "suite_errors": suite_errors,
             "passed": passed, "failed_count": failed_count, "skipped": skipped}
 
@@ -356,16 +410,19 @@ def run_targeted_package(repo_root: Path, pkg_name: str, pkg_dir: Path, mode: st
     if chosen is None:
         chosen = min(attempts, key=lambda a: (len(a["missing"]), a["report"] is None))
 
-    return {"pkg_name": pkg_name, "mode": mode, "scan_dir": scan_dir, "scan_source": scan_source,
-            "test_script": test_script, "forwarded": forwarded, "requested": requested,
+    return {"pkg_name": pkg_name, "scan_dir": scan_dir, "scan_source": scan_source,
+            "test_script": test_script, "requested": requested,
             "chosen": chosen, "attempts": attempts}
 
 
-def dev_reproduce(pkg_name: str, targets: list[str]) -> str:
+def dev_reproduce(pkg_name: str, targets: list[str], name: str | None) -> str:
     script = DEV_SCRIPT.get(pkg_name)
     if not script:
         return ""
-    return f"{script} -- {' '.join(targets)}" if targets else script
+    parts = [script, "--", "--run", *targets]
+    if name:
+        parts += ["-t", f'"{name}"']
+    return " ".join(parts) if targets else script
 
 
 def decide_targeted(expect: str, name: str | None, totals: dict, not_collected: list,
@@ -375,7 +432,7 @@ def decide_targeted(expect: str, name: str | None, totals: dict, not_collected: 
     if not_collected:
         return ("NOT_COLLECTED", EXIT_NOTHING_RAN,
                 "Requested test files were never run under any path form. NEVER a pass — check "
-                "the file exists and sits inside the package's vitest include pattern.")
+                "the file sits inside the package's vitest include pattern.")
     ran = totals["passed"] + totals["failed_count"]
     suite_errors = totals["suite_errors"]
     if expect == "pass":
@@ -400,25 +457,32 @@ def decide_targeted(expect: str, name: str | None, totals: dict, not_collected: 
     return "EXPECTED_FAIL", EXIT_OK, "Target test failed on an assertion, as required."
 
 
-def targeted(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tuple[dict, int]:
+def targeted(args, repo_root: Path, cwd: Path, packages: dict[str, Path],
+             out_dir: Path) -> tuple[dict, int]:
     plan: dict[str, dict] = {}
+
+    def resolve_or_fail(value: str, kind: str) -> Path:
+        path, tried = resolve_input_path(value, repo_root, cwd)
+        if path:
+            return path
+        lines = [f"{kind} not found: {value}",
+                 f"  repo root: {repo_root}",
+                 "  tried:"] + [f"    {t}" for t in tried]
+        if (similar := suggest_similar(value, repo_root)):
+            lines += ["  files with the same name in the repo:"] + [f"    {s}" for s in similar]
+            lines.append("  → check the folder casing and the leading path segments")
+        fail(EXIT_USAGE, "\n".join(lines))
+
     if args.files:
         for value in args.files:
-            path = to_repo_path(value, repo_root)
-            if not path.exists():
-                fail(EXIT_USAGE, f"Test file does not exist: {value}")
+            path = resolve_or_fail(value, "Test file")
             owner = owning_package(path, repo_root)
             if not owner:
-                fail(EXIT_ENV, f"No owning package.json found for: {value}")
+                fail(EXIT_ENV, f"No owning package.json between {repo_root} and {path}")
             plan.setdefault(owner[0], {"mode": "run", "dir": owner[1], "files": [], "targets": []})
             plan[owner[0]]["files"].append(path)
     elif args.related:
-        sources = []
-        for value in args.related:
-            path = to_repo_path(value, repo_root)
-            if not path.exists():
-                fail(EXIT_USAGE, f"Source file does not exist: {value}")
-            sources.append(path)
+        sources = [resolve_or_fail(v, "Source file") for v in args.related]
         if args.related_scope == "all":
             names = list(packages)
         else:
@@ -426,7 +490,7 @@ def targeted(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) ->
             for src in sources:
                 owner = owning_package(src, repo_root)
                 if not owner:
-                    fail(EXIT_ENV, f"No owning package.json found for: {src}")
+                    fail(EXIT_ENV, f"No owning package.json for: {src}")
                 if owner[0] not in names:
                     names.append(owner[0])
         for pkg in names:
@@ -434,9 +498,10 @@ def targeted(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) ->
                          "targets": [str(s) for s in sources]}
     else:
         for value in args.package:
-            pkg = resolve_package_name(value)
+            pkg = PACKAGE_ALIASES.get(value, value)
             if pkg not in packages:
-                fail(EXIT_ENV, f"Package not found in workspace: {pkg}")
+                known = ", ".join(sorted(packages)) or "none discovered"
+                fail(EXIT_ENV, f"Package not found: {pkg}\n  known packages: {known}")
             plan[pkg] = {"mode": "run", "dir": packages[pkg], "files": [], "targets": []}
 
     if args.dry_run:
@@ -446,6 +511,7 @@ def targeted(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) ->
             forms = path_forms(entry["files"], scan_dir, entry["dir"]) if entry["files"] \
                 else [("targets", entry["targets"])]
             form, form_targets = forms[0]
+            print(f"# repo root: {repo_root}")
             print(f"# {pkg} · scan dir: {rel(scan_dir, repo_root)} ({source}) · form: {form}")
             print(" ".join(build_vitest_command(entry["mode"], pkg, form_targets, forwarded,
                                                 out_dir / "report.json", args.name, args.coverage)))
@@ -463,10 +529,11 @@ def targeted(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) ->
         record = {
             "package": pkg, "mode": entry["mode"],
             "scan_dir": rel(run["scan_dir"], repo_root), "scan_dir_source": run["scan_source"],
-            "test_script": run["test_script"], "path_form": chosen["form"],
-            "command": chosen["command"],
-            "developer_equivalent": dev_reproduce(pkg, chosen["targets"] if entry["files"] else []),
-            "exit_code": chosen["exit_code"], "duration_s": chosen["duration_s"], "log": chosen["log"],
+            "path_form": chosen["form"], "command": chosen["command"],
+            "developer_equivalent": dev_reproduce(pkg, chosen["targets"] if entry["files"] else [],
+                                                  args.name),
+            "exit_code": chosen["exit_code"], "duration_s": chosen["duration_s"],
+            "log": chosen["log"],
             "attempts": [{"form": a["form"], "exit_code": a["exit_code"],
                           "collected_all": not a["missing"] and a["report"] is not None}
                          for a in run["attempts"]],
@@ -499,11 +566,12 @@ def targeted(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) ->
         totals["failed"].extend(report["failed"])
         totals["suite_errors"].extend(report["suite_errors"])
 
-    verdict, exit_code, reason = decide_targeted(args.expect, args.name, totals, not_collected,
-                                                 runner_errors)
+    verdict, exit_code, reason = decide_targeted(args.expect, args.name, totals,
+                                                 not_collected, runner_errors)
     summary = {
         "engine": "targeted", "label": args.label, "expect": args.expect, "name_filter": args.name,
         "verdict": verdict, "expectation_met": exit_code == EXIT_OK, "reason": reason,
+        "repo_root": str(repo_root),
         "totals": {"passed": totals["passed"], "failed": totals["failed_count"],
                    "skipped": totals["skipped"], "suite_errors": len(totals["suite_errors"]),
                    "not_collected": len(not_collected)},
@@ -520,7 +588,7 @@ def targeted(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) ->
     for r in results:
         tried = " → ".join(f"{a['form']}{'✓' if a['collected_all'] else '✗'}" for a in r["attempts"])
         print(f"  Package:   {r['package']:<22} {r['status']:<16} exit={r['exit_code']}  {r['duration_s']}s")
-        print(f"             scan dir: {r['scan_dir']}  ·  path form: {r['path_form']}  ·  tried: {tried}")
+        print(f"             scan dir: {r['scan_dir']}  ·  form: {r['path_form']}  ·  tried: {tried}")
         if r["developer_equivalent"]:
             print(f"             reproduce: {r['developer_equivalent']}")
         for extra in r.get("also_ran", []):
@@ -531,14 +599,12 @@ def targeted(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) ->
             print("      " + f["message"].replace("\n", "\n      ")[:400])
     for e in totals["suite_errors"]:
         print(f"  ⚠ SUITE ERROR  {e['file']}")
-        if e["message"]:
-            print("      " + e["message"].replace("\n", "\n      ")[:400])
     for n in not_collected:
         print(f"  ⚠ NOT COLLECTED  {n}")
     return summary, exit_code
 
 
-# ═══════════════════════════════════════════════════════════════ suite engine
+# ═══════════════════════════════════════════════════════════ suite engine
 
 def turbo_task(script_command: str) -> str | None:
     match = re.search(r"\bturbo\s+(?:run\s+)?(?!-)([\w:.-]+)", script_command)
@@ -578,21 +644,20 @@ def summarise_package_log(lines: list[str]) -> dict:
             if key not in seen:
                 seen.add(key)
                 failures.append({"file": key[0], "test": key[1]})
-    return {
-        "cache": cache, "test_files": test_files, "tests": tests,
-        "failures_from_log": failures,
-        "no_test_files": any("No test files found" in l for l in lines),
-        "errored": any(re.search(r"ELIFECYCLE|ERR_PNPM|command finished with error|exited \(\d+\)", l)
-                       for l in lines),
-    }
+    return {"cache": cache, "test_files": test_files, "tests": tests,
+            "failures_from_log": failures,
+            "no_test_files": any("No test files found" in l for l in lines),
+            "errored": any(re.search(r"ELIFECYCLE|ERR_PNPM|exited \(\d+\)", l) for l in lines)}
 
 
-def suite(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tuple[dict, int]:
+def suite(args, repo_root: Path, cwd: Path, packages: dict[str, Path],
+          out_dir: Path) -> tuple[dict, int]:
     scripts = (read_json(repo_root / "package.json") or {}).get("scripts", {}) or {}
     script = args.script or (DEFAULT_COVERAGE_SCRIPT if args.coverage else DEFAULT_SUITE_SCRIPT)
     if script not in scripts:
         available = ", ".join(sorted(s for s in scripts if s.startswith("test"))) or "none"
-        fail(EXIT_ENV, f"Root package.json has no '{script}' script. Test scripts available: {available}")
+        fail(EXIT_ENV, f"Root package.json ({repo_root}) has no '{script}' script.\n"
+                       f"  test scripts available: {available}")
 
     script_command = scripts[script]
     task = turbo_task(script_command)
@@ -601,8 +666,9 @@ def suite(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tu
     timeout = args.timeout or 1800
 
     if args.dry_run:
-        env_note = " (TURBO_FORCE=true)" if args.force else ""
-        print(f"# suite · {script} = {script_command} · turbo task: {task or 'n/a'}{env_note}")
+        print(f"# repo root: {repo_root}")
+        print(f"# {script} = {script_command} · turbo task: {task or 'n/a'}"
+              + (" (TURBO_FORCE=true)" if args.force else ""))
         print(" ".join(cmd))
         sys.exit(EXIT_OK)
 
@@ -631,7 +697,8 @@ def suite(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tu
         if (m := re.search(r"^\s*Time:\s+(.+?)\s*$", line)):
             turbo["time"] = m.group(1)
         if "Failed:" in line:
-            turbo["failed"] += [p for p in re.findall(r"([@\w./-]+)#", line) if p not in turbo["failed"]]
+            turbo["failed"] += [p for p in re.findall(r"([@\w./-]+)#", line)
+                                if p not in turbo["failed"]]
     for pkg in turbo["failed"]:
         per_package.setdefault(pkg, [])
 
@@ -640,7 +707,8 @@ def suite(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tu
               "files_passed": 0, "files_failed": 0}
     for pkg, lines in sorted(per_package.items()):
         info = summarise_package_log(lines)
-        counts_failed = (info["tests"] or {}).get("failed", 0) or (info["test_files"] or {}).get("failed", 0)
+        counts_failed = (info["tests"] or {}).get("failed", 0) or \
+                        (info["test_files"] or {}).get("failed", 0)
         if pkg in turbo["failed"] or info["errored"] or counts_failed:
             status = "NO_TEST_FILES" if info["no_test_files"] else "FAILED"
         elif info["tests"] or info["test_files"]:
@@ -671,25 +739,24 @@ def suite(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tu
             run = run_targeted_package(repo_root, r["package"], packages[r["package"]], "run",
                                        [], [], drill_dir, safe, None, False, args.timeout or 600)
             report = run["chosen"]["report"]
-            entry = {"package": r["package"], "log": run["chosen"]["log"],
-                     "command": run["chosen"]["command"]}
+            entry = {"package": r["package"], "log": run["chosen"]["log"]}
             if report is None:
                 entry["status"] = "NO_REPORT"
             elif report["failed_count"] == 0 and not report["suite_errors"]:
                 entry["status"] = "PASSED_ON_RERUN"
-                entry["note"] = ("Failed under turbo but passed when re-run alone — possible flaky, "
-                                 "order-dependent, or parallelism-sensitive test.")
+                entry["note"] = ("Failed under turbo but passed alone — possible flaky, "
+                                 "order-dependent or parallelism-sensitive test.")
             else:
                 entry["status"] = "FAILED"
             if report:
-                entry.update({"failed_tests": report["failed"], "suite_errors": report["suite_errors"],
-                              "passed": report["passed"], "failed": report["failed_count"]})
+                entry.update({"failed_tests": report["failed"],
+                              "suite_errors": report["suite_errors"]})
             drill.append(entry)
 
     if timed_out:
         verdict, exit_code, reason = "RUNNER_ERROR", EXIT_RUNNER, f"Suite timed out after {timeout}s."
     elif code == 0:
-        if turbo["total"] == 0 or (turbo["total"] is None and not per_package and prefix):
+        if turbo["total"] == 0:
             verdict, exit_code, reason = "NO_TASKS", EXIT_NOTHING_RAN, "Turbo executed no test tasks."
         elif failed_packages:
             verdict, exit_code, reason = ("FAIL", EXIT_EXPECTATION_NOT_MET,
@@ -703,7 +770,7 @@ def suite(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tu
     else:
         verdict, exit_code, reason = ("RUNNER_ERROR", EXIT_RUNNER,
                                       f"Command exited {code} with no failing package identified — "
-                                      "turbo or pnpm error; see suite.log.")
+                                      "see suite.log.")
 
     failed_tests = [dict(t, package=d["package"]) for d in drill for t in d.get("failed_tests", [])]
     if not failed_tests:
@@ -712,21 +779,23 @@ def suite(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tu
 
     summary = {
         "engine": "suite", "label": args.label, "script": script, "script_command": script_command,
-        "command": " ".join(cmd), "turbo_task": task, "force": bool(args.force),
+        "command": " ".join(cmd), "force": bool(args.force), "repo_root": str(repo_root),
         "verdict": verdict, "expectation_met": exit_code == EXIT_OK, "reason": reason,
-        "exit_code": code, "duration_s": duration, "turbo": turbo,
-        "totals": totals, "packages": results, "failed_tests": failed_tests,
-        "drill_down": drill, "log": rel(out_dir / "suite.log", repo_root),
-        "developer_equivalent": " ".join(cmd) + ("   (with TURBO_FORCE=true)" if args.force else ""),
+        "exit_code": code, "duration_s": duration, "turbo": turbo, "totals": totals,
+        "packages": results, "failed_tests": failed_tests, "drill_down": drill,
+        "log": rel(out_dir / "suite.log", repo_root),
+        "developer_equivalent": " ".join(cmd) + ("   (TURBO_FORCE=true)" if args.force else ""),
     }
 
     print(f"TEST SUITE — {args.label}")
-    print(f"  Command:   {' '.join(cmd)}   →  {script_command}" + ("   [TURBO_FORCE]" if args.force else ""))
+    print(f"  Command:   {' '.join(cmd)}   →  {script_command}"
+          + ("   [TURBO_FORCE]" if args.force else ""))
     print(f"  Verdict:   {verdict}")
     print(f"  Reason:    {reason}")
     if turbo["total"] is not None:
         print(f"  Turbo:     {turbo['successful']} successful · {turbo['total']} total · "
-              f"{turbo['cached'] if turbo['cached'] is not None else '?'} cached · {turbo['time'] or f'{duration}s'}")
+              f"{turbo['cached'] if turbo['cached'] is not None else '?'} cached · "
+              f"{turbo['time'] or f'{duration}s'}")
     print(f"  Tests:     {totals['tests_passed']} passed · {totals['tests_failed']} failed · "
           f"{totals['tests_skipped']} skipped   ·   files {totals['files_passed']} passed · "
           f"{totals['files_failed']} failed")
@@ -738,35 +807,33 @@ def suite(args, repo_root: Path, packages: dict[str, Path], out_dir: Path) -> tu
         print(f"  {r['package']:<24}{r['status']:<16}{tests_col:<16}{files_col:<12}{r['cache'] or '—'}")
     for t in failed_tests:
         print(f"  ✗ FAILED  [{t['package']}] {t['file']} › {t.get('test', '')}")
-        if t.get("message"):
-            print("      " + t["message"].replace("\n", "\n      ")[:400])
     for d in drill:
         if d["status"] == "PASSED_ON_RERUN":
             print(f"  ⚠ PASSED ON RE-RUN  {d['package']} — {d['note']}")
-        for e in d.get("suite_errors", []):
-            print(f"  ⚠ SUITE ERROR  [{d['package']}] {e['file']}")
     return summary, exit_code
 
 
-# ═══════════════════════════════════════════════════════════════ main
+# ═══════════════════════════════════════════════════════════ main
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run monorepo tests and return a verdict.")
     scope = parser.add_mutually_exclusive_group(required=True)
-    scope.add_argument("--all", action="store_true", help="Run the full suite via a root script")
+    scope.add_argument("--all", action="store_true")
     scope.add_argument("--files", nargs="+")
     scope.add_argument("--related", nargs="+")
     scope.add_argument("--package", nargs="+")
-    parser.add_argument("--script", help=f"Root script for --all (default: {DEFAULT_SUITE_SCRIPT})")
-    parser.add_argument("--force", action="store_true", help="--all: bypass the turbo cache")
-    parser.add_argument("--no-drill-down", action="store_true", help="--all: skip per-test drill-down")
+    scope.add_argument("--where", action="store_true",
+                       help="Print the detected repo root and packages, then exit")
+    parser.add_argument("--script")
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--no-drill-down", action="store_true")
     parser.add_argument("--related-scope", choices=["owner", "all"], default="owner")
     parser.add_argument("--name")
     parser.add_argument("--expect", choices=["pass", "fail"], default="pass")
     parser.add_argument("--coverage", action="store_true")
     parser.add_argument("--label", default="run")
     parser.add_argument("--out-dir")
-    parser.add_argument("--timeout", type=int, help="Seconds (default: 1800 suite, 600 targeted)")
+    parser.add_argument("--timeout", type=int)
     parser.add_argument("--repo-root")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -774,14 +841,39 @@ def main() -> None:
     if args.expect == "fail" and not args.files:
         fail(EXIT_USAGE, "--expect fail is only valid with --files (a specific regression test).")
     if args.all and args.name:
-        fail(EXIT_USAGE, "--name is not supported with --all. Use --files or --package to target tests.")
-    if not args.all and (args.script or args.force or args.no_drill_down):
-        fail(EXIT_USAGE, "--script, --force and --no-drill-down apply only to --all.")
+        fail(EXIT_USAGE, "--name is not supported with --all. Use --files or --package.")
 
-    repo_root = (Path(args.repo_root).resolve() if args.repo_root
-                 else find_repo_root(Path.cwd().resolve()))
-    if not repo_root or not repo_root.exists():
-        fail(EXIT_ENV, "Repository root not found (no pnpm-workspace.yaml or turbo.json). Use --repo-root.")
+    cwd = Path.cwd().resolve()
+    script_dir = Path(__file__).resolve().parent
+
+    if args.repo_root:
+        given = Path(args.repo_root)
+        repo_root = (given if given.is_absolute() else cwd / given).resolve()
+        if not repo_root.is_dir():
+            fail(EXIT_ENV, f"--repo-root does not exist: {repo_root}")
+        if not is_root(repo_root):
+            fail(EXIT_ENV, f"--repo-root has no {' or '.join(ROOT_MARKERS)}: {repo_root}")
+    else:
+        repo_root, tried = find_repo_root(cwd, script_dir)
+        if not repo_root:
+            fail(EXIT_ENV, "Repository root not found (no pnpm-workspace.yaml or turbo.json).\n"
+                           f"  cwd: {cwd}\n  tried:\n" + "\n".join(f"    {t}" for t in tried[:12])
+                           + "\n  → pass --repo-root <path>")
+
+    packages = discover_packages(repo_root)
+
+    if args.where:
+        print(f"repo root:  {repo_root}")
+        print(f"script:     {Path(__file__).resolve()}")
+        print(f"cwd:        {cwd}")
+        print("packages:")
+        for name, directory in sorted(packages.items()):
+            forwarded, config, _ = package_test_script(directory)
+            scan_dir, source = detect_scan_dir(directory, forwarded, config)
+            print(f"  {name:<24} dir={rel(directory, repo_root):<38} "
+                  f"scan={rel(scan_dir, repo_root)}  ({source})")
+        sys.exit(EXIT_OK)
+
     if not args.dry_run and not shutil.which("pnpm"):
         fail(EXIT_ENV, "pnpm is not available on PATH.")
 
@@ -795,8 +887,8 @@ def main() -> None:
     if not args.dry_run:
         out_dir.mkdir(parents=True, exist_ok=True)
 
-    packages = discover_packages(repo_root)
-    summary, exit_code = (suite if args.all else targeted)(args, repo_root, packages, out_dir)
+    engine = suite if args.all else targeted
+    summary, exit_code = engine(args, repo_root, cwd, packages, out_dir)
 
     summary.update({"timestamp": stamp, "output_dir": rel(out_dir, repo_root)})
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")

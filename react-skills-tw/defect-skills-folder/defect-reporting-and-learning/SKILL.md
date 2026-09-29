@@ -1,6 +1,6 @@
 ---
 name: defect-reporting-and-learning
-description: Use as Phase 6 of the FE Defect Fix workflow to update the parent CODE_GENERATION_SUMMARY.md in place — refreshing every state section the fix changed, reconciling drift from developer changes in the rows inspected, and appending a Change Log entry with edge-case and test-execution evidence — and to append to the Coding Agent Learnings only when the fault origin was an agent miss or a regression from a prior fix. Triggers include defect report, update code gen summary, update learnings, or close out defect fix.
+description: Use as Phase 6 of the FE Defect Fix workflow to update the parent CODE_GENERATION_SUMMARY.md in place — refreshing state sections, reconciling drift, appending a Change Log entry with edge-case and test-execution evidence — and to WRITE an entry into the Coding Agent Learnings file when the fault origin was an agent miss or a regression from a prior fix. Triggers include defect report, update code gen summary, update learnings, or close out defect fix.
 disable-model-invocation: true
 ---
 
@@ -8,266 +8,193 @@ disable-model-invocation: true
 
 ### Purpose
 
-This skill is **Phase 6** — the final phase of the FE Defect Fix Agent.
-
 ```text
 6a  Update CODE_GENERATION_SUMMARY.md     → always
-      · refresh state sections the fix changed
-      · reconcile drift in rows RCA inspected
-      · append a §13 Change Log entry
-6b  Append to CODING_AGENT_LEARNINGS.md   → ONLY for agent miss / regression from prior fix
+6b  Write CODING_AGENT_LEARNINGS.md       → ONLY for agent miss / regression
 ```
 
-⚠️ **There is no separate DEFECT_FIX_SUMMARY.md.** The parent summary is the single living record.
+⚠️ **Both are file writes, not recommendations.** This phase is not complete until the files on disk have changed.
 
 ---
 
-## ⚠️ WHY THE SUMMARY MUST BE UPDATED
-
-The summary is the **map** every future defect run starts from. Two things make it stale:
+## ⚠️ VARIABLES
 
 ```text
-1. THIS FIX       — lines move, defaults change, states render differently
-2. DEVELOPER EDITS — code changed after generation that the summary never recorded
+Summary:    .SS_WF/Agent/CODE/{{$var[parent_ticket_id]s}}_CODE_GENERATION_SUMMARY.md
+Learnings:  ./src/.project/learnings/CODING_AGENT_LEARNINGS.md
+Defect ID:  {{$var[ticket_id]s}}
 ```
 
-A stale map misleads the next run — and a stale §8 corrupts fault-origin classification: RCA sees code ≠ summary and mislabels the cause, writing a wrong learning.
-
-⚠️ Phase 3 already found the drift. Recording it here means the next defect run starts from an accurate map.
+Never `parent_story_id`.
 
 ---
 
-## ⚠️ STATE SECTIONS vs HISTORICAL SECTIONS
+## ⚠️ THE MOST COMMON FAILURE: IDENTIFYING A LEARNING WITHOUT WRITING IT
 
-| § | Section | Nature | On defect fix |
-| --- | --- | --- | --- |
-| 3 | File Inventory | State | ✅ Update — incl. files developers added |
-| 4 | UI Components | State | ✅ If a component changed |
-| 5 | Sitecore field → prop | State | ✅ If a mapping changed or drifted |
-| 6 | Logic & API | State | ✅ If a layer changed or drifted |
-| 7 | Data Flow Trace | State | ✅ Per affected or drifted field |
-| 8 | State → UI Matrix | State | ✅ Per affected or drifted state |
-| 9 | Design & NFR Notes | State | ✅ If tokens/exceptions changed |
-| 10 | Tests & Coverage | State | ✅ Add regression + guard tests |
-| 12.4 | Known Limitations | State | ✅ Mark Resolved if closed |
-| 11 | AC Evidence | Mixed | ⚠️ Status only, if an AC now passes |
-| 1 · 2 · 12.1 · 12.2 · 12.5 | Historical | — | ❌ Never change |
-| **13** | **Change Log** | **Append-only** | ✅ One entry per defect |
+```text
+❌ "This should be added to # UI LEARNINGS: RTL logical properties…"
+❌ Printing the proposed entry in the response and moving on
+❌ Listing it under "Notes for the developer"
+❌ Saying "the learnings file should be updated"
 
-**Rule:** state sections describe the code as it is **now**. Historical sections record the original build.
+✅ Read the learnings file
+✅ Merge the entry into the right namespace
+✅ Write the COMPLETE file back
+✅ Confirm the write succeeded
+```
+
+**Drafting is step one of four.** A learning that exists only in the response is lost the moment the run ends — the coding agent reads the *file*, not the transcript.
+
+⚠️ If you catch yourself describing what the file should contain, **stop and write it**.
 
 ---
 
-## ⚠️ MINIMAL-CHANGE CONTRACT — FOR THE SUMMARY TOO
+## PART 6a — UPDATE THE SUMMARY
+
+### State vs historical sections
+
+| § | Nature | On defect fix |
+| --- | --- | --- |
+| 3 · 4 · 5 · 6 · 7 · 8 · 9 · 10 · 12.4 | **State** — what the code IS | ✅ Update |
+| 11 AC Evidence | Mixed | ⚠️ Status only |
+| 1 · 2 · 12.1 · 12.2 · 12.5 | **Historical** | ❌ Never change |
+| **13 Change Log** | **Append-only** | ✅ One entry per defect |
+
+⚠️ A stale §7 or §8 misleads the next defect run and can cause a wrong fault-origin classification.
+
+### Minimal-change applies here too
 
 ```text
 Update ONLY:
   · rows the fix touched
   · rows RCA inspected and found drifted
 
-❌ Never regenerate the summary
-❌ Never re-survey the whole codebase to "resync" every section
-❌ Never reformat, reorder, or reword untouched rows
+❌ Never regenerate the summary · never resync the whole codebase
+❌ Never reformat or reword untouched rows
 ```
 
-Drift found **outside** the rows RCA inspected is not reconciled — record it in the §13 entry as *observed drift, not reconciled*.
+Drift found **outside** the rows RCA inspected → record in §13 as *observed, not reconciled*.
 
----
-
-# PART 6a — UPDATE CODE_GENERATION_SUMMARY.md
-
-**Path:** `.SS_WF/Agent/CODE/{{parent_story_id}}_CODE_GENERATION_SUMMARY.md`
-
-## Step 1 — Tag Every Changed Row
+### Tags
 
 | Tag | Meaning |
 | --- | --- |
-| `[DEF-123]` | Changed by this fix |
-| `[DEF-123 · drift]` | Reconciled to match a developer change found during this fix |
+| `[DEF-xxx]` | Changed by this fix |
+| `[DEF-xxx · drift]` | Reconciled to match a developer change found during this fix |
+
+Prefer **symbol + line** over a bare line number, so the location survives future edits.
+
+### §12.4 — mark, never delete
 
 ```markdown
-FIELD: policyNumber
-  BFF getPolicyList → response.items[].policyNumber (string, nullable)
-    → PolicyMapper.mapPolicyResponse()    Mappers/PolicyMapper.ts:52   [DEF-123]
-        null / undefined / "" → legacyNumber, else "—"                 [DEF-123 · drift]
-    → PolicyCard (prop: policyNumber)     Components/PolicyCard.tsx
+| LIM-001 | Expiry badge never renders | GAP-003 | … | Backend | ✅ Resolved [DEF-486] |
 ```
 
-⚠️ A row touched by several defects carries every tag: `[DEF-123] [DEF-456]`.
-
-⚠️ Where the summary cites a line number, prefer **symbol + current line** so the next run can find it even after further edits.
-
-## Step 2 — Update §10 Tests
+### §13 entry — the defect record
 
 ```markdown
-| Source File | Classification | Test File | Cases | Branch Coverage |
-| `PolicyMapper.ts` | Transactional | `PolicyMapper.test.ts` | 13 (+1 regression, +6 guards [DEF-123]) | 95% (measured) |
-```
+### DEF-486 — 2026-09-29 — Defect Fix
 
-⚠️ Say **measured** only if `run-test-cases` was run with `--coverage`; otherwise keep **targeted**.
-
-## Step 3 — Resolve Known Limitations
-
-Mark closed — **never delete the row**:
-
-```markdown
-| LIM-001 | Expiry badge never renders | GAP-003 | Users cannot see expiry | Backend | ✅ Resolved [DEF-123] |
-```
-
-## Step 4 — Append the §13 Change Log Entry
-
-```markdown
-### DEF-123 — {{YYYY-MM-DD}} — Defect Fix
-
-**Reported:** 3 issues · **Fixed:** 2 · **Blocked:** 1
-**Verification level:** EXECUTED | STATIC ONLY — [reason]
+**Reported:** 2 issues · **Fixed:** 2 · **Blocked:** 0
+**Verification:** EXECUTED   *(or: STATIC ONLY — reason)*
 
 #### Defect Dev Notes
-
 | DDN ID | Instruction | Applied To | Status |
-| ------ | ----------- | ---------- | ------ |
-| DDN-001 | Use the Sitecore message, not a hardcoded string | ISSUE-002 | Implemented |
-
-> Supersession: DDN-001 supersedes DN-004. *(or: None)*
+| DDN-001 | Use the Sitecore message | ISSUE-002 | Implemented |
+> Supersession: DDN-001 supersedes DN-004.   *(or: None)*
 
 #### Context Refetch
-
 | Artefact | Issue | Trigger | Diff Result |
-| -------- | ----- | ------- | ----------- |
-| Sitecore | ISSUE-002 | Field not rendering | `PolicyTitle` → `Title` (RENAMED) |
-
-> *(or: No artefacts refetched.)* Note stale `responsive_design_intent.json` if Figma was refetched.
+| Sitecore | ISSUE-002 | Field not rendering | `PolicyTitle` → `Title` RENAMED |
+> *(or: No artefacts refetched.)*
 
 #### Drift From Summary
-
-> Where the current code differed from what this summary recorded.
-
-| Location | Summary Said | Code Actually Did | Source | Reconciled? |
-| -------- | ------------ | ----------------- | ------ | ----------- |
-| `PolicyMapper.ts → mapPolicyResponse()` | null → "—" | null → `legacyNumber ?? ""` | Developer, commit a1b2c3 (2026-08-21) | ✅ §7 updated |
-| `PolicyCard.tsx → formatDate()` | not recorded | added by developer | Developer, commit d4e5f6 | ⛔ Observed only — outside RCA scope |
-
+| Location | Summary Said | Code Did | Source | Reconciled? |
+| `PolicyMapper.ts → mapPolicyResponse()` | null → "—" | null → `legacyNumber ?? ""` | Developer, a1b2c3 (2026-08-21) | ✅ §7 updated |
 > *(or: No drift found.)*
 
 #### Issues
-
 | Issue | Category | Status | Root Cause | Fault Origin | Fix |
-| ----- | -------- | ------ | ---------- | ------------ | --- |
-| ISSUE-001 | RTL | ✅ Fixed | `CarouselPager.tsx → Pager` used `ml-2` — no RTL flip | Agent miss | `ml-2` → `ms-2`; `rtl:rotate-180` on arrow |
-| ISSUE-002 | BFF | ✅ Fixed | Developer fallback returned `""` for null — blank render | Post-generation manual change | Empty fallback → `"—"`, legacy fallback preserved |
-| ISSUE-003 | BFF | ⛔ Blocked | `expiryDate` absent from contract | Contract gap | — |
+| ISSUE-001 | RTL | ✅ Fixed | `CarouselPager.tsx → Pager` used `ml-2` | Agent miss | `ml-2` → `ms-2` |
+| ISSUE-002 | BFF | ✅ Fixed | Developer fallback returned `""` | Post-generation manual change | `""` → `"—"`, legacy fallback kept |
 
 #### Edge Cases Verified
+| Issue | Case | Expected | Result |
+| ISSUE-002 | null *(reported)* | "—" | ✅ |
+| ISSUE-002 | undefined / "" / whitespace | "—" | ✅ |
+| ISSUE-002 | legacyNumber present *(developer behaviour)* | legacyNumber | ✅ |
+| ISSUE-001 | LTR still correct after RTL fix | left spacing | ✅ |
 
-| Issue | Case | Expected | Test | Result |
-| ----- | ---- | -------- | ---- | ------ |
-| ISSUE-002 | null policyNumber *(reported)* | "—" | `handles null policyNumber [DEF-123 / ISSUE-002]` | ✅ |
-| ISSUE-002 | undefined / "" / whitespace | "—" | 3 guard tests | ✅ |
-| ISSUE-002 | valid value (untouched path) | unchanged | guard | ✅ |
-| ISSUE-002 | legacyNumber present *(developer behaviour)* | legacyNumber | guard — preserve | ✅ |
-| ISSUE-002 | Arabic locale | inside `<bdi>` | guard | ✅ |
-| ISSUE-001 | LTR still correct after RTL fix | `ms-2` resolves left in LTR | guard | ✅ |
-
-#### Test Execution Evidence
-
-| Run | Scope | Verdict | Output |
-| --- | ----- | ------- | ------ |
-| ISSUE-002 failing-first | regression test | EXPECTED_FAIL | `.SS_WF/Agent/TEST_RUNS/DEF-123-ISSUE-002-failing-first-…/` |
-| ISSUE-002 after fix | regression test | PASS | `…/DEF-123-ISSUE-002-after-fix-…/` |
-| ISSUE-002 guards | 6 guard tests | PASS | `…/DEF-123-ISSUE-002-guards-…/` |
-| ISSUE-002 blast radius | 3 files + related sweep | PASS | `…/DEF-123-ISSUE-002-blast-radius-…/` |
-| Final consolidated | all touched + blast-radius files | PASS | `…/DEF-123-final-…/` |
-
-> Developer reproduction: `pnpm run test:sme` · `pnpm run test:foundation`
-> ⚠️ If STATIC ONLY: list the exact commands the developer must run before merging.
+#### Test Execution
+| Run | Verdict | Output |
+| ISSUE-002 failing-first | EXPECTED_FAIL | `.SS_WF/Agent/TEST_RUNS/DEF-486-ISSUE-002-failing-first-…/` |
+| ISSUE-002 after fix | PASS | `…/DEF-486-ISSUE-002-after-fix-…/` |
+| Guards (6) | PASS | `…/DEF-486-ISSUE-002-guards-…/` |
+| Blast radius (3 files) | PASS | `…/DEF-486-ISSUE-002-blast-radius-…/` |
+| Final consolidated | PASS | `…/DEF-486-final-…/` |
 
 #### Sections Updated
-
-| Section | Change |
-| ------- | ------ |
-| §3 | 4 rows updated [DEF-123] |
+| §3 | 4 rows [DEF-486] |
 | §7 | `policyNumber` trace — fix + drift reconciled |
 | §10 | +1 regression, +6 guard tests |
 
 #### Existing Tests Modified
-
-| Test | Change | Reason |
-| ---- | ------ | ------ |
 | `HeroBanner.test.tsx` | asserted `PolicyTitle` → now `Title` | Test encoded the old contract |
-
 > *(or: None.)*
 
 #### Observations — Not Fixed
-
-| Source | Observation | Why Not Fixed |
-| ------ | ----------- | ------------- |
 | `usePolicyList.ts` | `staleTime` hardcoded | Outside every root cause |
-
 > *(or: None.)*
 
-#### Untested Consumers
-
-| Consumer | Uses | Why no test |
-| -------- | ---- | ----------- |
-| `PolicyExport.tsx` | `mapPolicyResponse()` | No test file exists — recommend adding |
-
-> *(or: None.)*
-
-#### Learnings
-
-| Origin | Issues | Learning Written? |
-| ------ | ------ | ----------------- |
-| Agent miss | ISSUE-001 | ✅ `# UI LEARNINGS` — RTL logical properties (recurrence ×2) |
-| Post-generation manual change | ISSUE-002 | ❌ Developer-authored code — nothing for the coding agent to learn |
-| Contract gap | ISSUE-003 | ❌ Upstream |
-
+#### Learnings Written
+| Origin | Issues | Written? |
+| Agent miss | ISSUE-001 | ✅ `# UI LEARNINGS` — recurrence ×2 |
+| Post-generation manual change | ISSUE-002 | ❌ Developer-authored code |
 > ⚠️ SKILL GAP: [rule at recurrence ≥ 3, or: None]
 
 #### Notes for the Developer
-
 - ISSUE-002 lived in code changed after generation; your legacy fallback was preserved
-- ISSUE-003 needs a backend change
-- `PolicyExport.tsx` consumes the changed mapper and has no tests
 ```
 
-⚠️ Append below existing entries, newest last. **Never edit or remove a prior entry.** If the summary has no §13 (generated before the Change Log existed), create it with the standard header first.
+⚠️ Append below existing entries. **Never edit a prior entry.** If §13 is missing (summary predates it), create it with the standard header.
 
-## How to Write the Update
+### How to write
 
 ```text
-1. Read the complete CODE_GENERATION_SUMMARY.md
+1. Read the complete summary
 2. Merge targeted edits into the state sections
 3. Append the §13 entry
 4. Write the COMPLETE file back
+5. Confirm the write succeeded
 ```
 
-⚠️ Read → merge → write back. Do not assume an append mode exists. Preserve untouched content **byte for byte**.
+⚠️ Do not assume an append mode exists. Preserve untouched content byte for byte.
 
 ---
 
-# PART 6b — LEARNING UPDATE (GATED)
+## PART 6b — WRITE THE LEARNING (GATED)
 
-**Path:** `./src/.project/learnings/CODING_AGENT_LEARNINGS.md`
-
-## ⚠️ The Gate
+### The gate
 
 ```text
-FOR EACH issue:
-  Agent miss · Regression from prior fix                        → WRITE a learning
-  Upstream gap · Contract change · Design change ·
-  Post-generation manual change · Ambiguous requirement         → DO NOT write
-                                                                  record the origin in §13
+Agent miss · Regression from prior fix                      → WRITE
+Upstream gap · Contract change · Design change ·
+Post-generation manual change · Ambiguous requirement       → DO NOT WRITE
+                                                              record the origin in §13
 ```
-
-⚠️ **Post-generation manual change never produces a learning.** The coding agent did not write that code. Teaching it a rule would train it against a mistake it never made.
-
-⚠️ **Design and contract changes never produce learnings.** The code was correct when written.
 
 A learning must be something the coding agent **could have acted on at generation time**.
 
-## Namespace Routing
+```text
+✅ "Mappers must apply the null default recorded in plan §11.2"
+❌ "Sitecore renamed PolicyTitle to Title"        — external
+❌ "Design v2 changed the card gap"               — external
+❌ "The developer's fallback returned empty"      — not the agent's code
+```
 
-| Issue category | Namespace |
+### Namespace
+
+| Category | Namespace |
 | --- | --- |
 | UI · RTL · Responsive · A11y · Media | `# UI LEARNINGS` |
 | BFF · API · State · Sitecore · mapper | `# LOGIC LEARNINGS` |
@@ -276,18 +203,20 @@ A learning must be something the coding agent **could have acted on at generatio
 
 ⚠️ If a test should have caught it, write to **both** the behaviour namespace and `# TEST LEARNINGS`.
 
-⚠️ If the edge-case matrix found cases the original generated tests missed (e.g. no test for `undefined`), that is a `# TEST LEARNINGS` entry — **only** if the code was agent-generated.
-
-## ⚠️ Deduplication
+### The four steps — all four, every time
 
 ```text
-1. Search the namespace for a SEMANTICALLY equivalent rule
-2. FOUND     → increment recurrence, append this defect ID
-3. NOT FOUND → append a new entry
-4. Recurrence ≥ 3 → flag SKILL GAP
+STEP 1  READ    ./src/.project/learnings/CODING_AGENT_LEARNINGS.md
+STEP 2  DEDUPE  search the namespace for a SEMANTICALLY equivalent rule
+                  found     → increment recurrence, append this defect ID
+                  not found → compose a new entry
+STEP 3  WRITE   merge into the namespace, write the COMPLETE file back
+STEP 4  CONFIRM the write succeeded; report the namespace and new/recurrence
 ```
 
-### Entry Format
+⚠️ Steps 1–2 without 3–4 is the failure this section exists to prevent.
+
+### Entry format
 
 ```text
 # UI LEARNINGS
@@ -295,76 +224,62 @@ A learning must be something the coding agent **could have acted on at generatio
 - RTL: use logical properties (ms-/me-/ps-/pe-) — never physical (ml-/mr-/pl-/pr-).
   Mirror directional icons with rtl:rotate-180; never mirror neutral icons
   (eye, help, search, calendar), symmetric icons, or brand logos.
-  Refs: DEF-4380, DEF-123  (recurrence ×2)
-
-# TEST LEARNINGS
-
-- Mapper tests must cover null, undefined, empty string and whitespace for every
-  nullable field — not only null. Blank renders hide in the untested variants.
-  Refs: DEF-123
+  Refs: DEF-4380, DEF-486  (recurrence ×2)
 ```
 
 ```text
-✅ Generalisable rule · what to do AND not do · why it matters · 2–4 lines
-❌ War stories · component-specific trivia · restating a skill rule without recurrence proof
+✅ A generalisable rule · what to do and not do · why it matters · 2–4 lines
+❌ A war story ("In DEF-486 the arrows on the policy page…")
 ```
 
-## ⚠️ Skill-Gap Detection
+⚠️ Preserve every existing entry and all four namespace headings. Never delete or rewrite a learning except to increment recurrence.
+
+### Skill gap
 
 ```text
-Recurrence ≥ 3  →  the SKILL is under-specified, not the learnings file
+Recurrence ≥ 3 → the SKILL is under-specified, not the learnings file
 
 ⚠️ SKILL GAP DETECTED
-  Rule:       [rule] · Namespace: [ns] · Recurrence: 3 ([refs])
-  Skill:      [coding skill]
-  RECOMMENDATION: strengthen [section] of [skill]
+  Rule: [rule] · Namespace: [ns] · Recurrence: 3 ([refs])
+  Skill: [coding skill] — RECOMMENDATION: strengthen [section]
 ```
 
-Surface it in the §13 entry. **Do not edit the skill** — that is a human decision.
-
-## Writing the Learnings File
-
-Read → locate namespace → merge → write the complete file back. Preserve every entry and all four headings. Never delete or rewrite a learning except to increment recurrence and append a ref.
+Record it in §13. **Do not edit the skill** — that is a human decision.
 
 ---
 
-### Gate: Phase 6 Complete When
+### Gate — Phase 6 is NOT complete until
 
 ```text
 SUMMARY
-- [ ] Parent summary read in full before editing
-- [ ] Every state section the fix touched updated, tagged [DEF-xxx]
-- [ ] Drift in rows RCA inspected reconciled, tagged [DEF-xxx · drift]
-- [ ] Drift outside RCA scope recorded as observed, not reconciled
-- [ ] Historical sections untouched
-- [ ] §13 entry appended with: verification level · DDN · refetch · drift · issues ·
-      edge cases verified · test execution evidence · sections updated ·
-      tests modified · observations · untested consumers · learnings · developer notes
-- [ ] Every test claim backed by a run output folder, or the entry says STATIC ONLY
-- [ ] Prior §13 entries untouched; untouched content preserved byte for byte
-- [ ] NO separate DEFECT_FIX_SUMMARY.md
+- [ ] Summary read in full before editing
+- [ ] State sections the fix touched updated and tagged [DEF-xxx]
+- [ ] Drift in RCA-inspected rows reconciled, tagged [DEF-xxx · drift]
+- [ ] Historical sections untouched; prior §13 entries untouched
+- [ ] §13 entry appended with all blocks incl. test-execution output folders
+- [ ] FILE WRITTEN and the write confirmed
 
 LEARNINGS
-- [ ] Learning written ONLY for agent miss / regression from prior fix
-- [ ] NO learning for post-generation manual change, design, contract, upstream, ambiguity
-- [ ] Namespace routing correct; test gaps also in # TEST LEARNINGS
-- [ ] Semantic deduplication; recurrence incremented
+- [ ] Every issue's origin evaluated against the gate
+- [ ] For each qualifying issue: file READ → deduped → MERGED → WRITTEN → confirmed
+- [ ] No learning for developer changes, contract/design changes, upstream gaps, ambiguity
 - [ ] Skill gap flagged at recurrence ≥ 3
-- [ ] Written via read → merge → write back; all namespaces preserved
+- [ ] If NO issue qualified: file correctly untouched, and this is stated explicitly
 ```
 
-### Never Do
+⚠️ **"Identified but not written" fails this gate.**
 
-- Never produce a separate `DEFECT_FIX_SUMMARY.md`.
-- Never regenerate or fully resync the summary.
-- Never modify historical sections or prior §13 entries.
-- Never delete a resolved Known Limitation row.
-- Never leave a state section stale after changing or inspecting its code.
-- **Never record a test as passed without a run output folder.**
-- **Never write "measured" coverage without a `--coverage` run.**
-- **Never write a learning for a post-generation manual change.**
-- Never write a learning for upstream gaps, contract changes, design changes, or ambiguity.
-- Never write a learning as a war story; never append a duplicate rule.
-- Never edit a coding skill — flag the skill gap.
+### Never
+
+- **Never suggest a learning instead of writing it.**
+- **Never end the phase with an unwritten entry.**
+- Never write a learning for a post-generation manual change, contract change, design change, upstream gap, or ambiguity.
+- Never write a learning as a war story; never append a duplicate.
+- Never delete or rewrite an existing learning.
+- Never edit a coding skill — flag the gap.
+- Never produce a separate defect document — §13 is the record.
+- Never regenerate the summary; never modify historical sections.
+- Never record a test as passed without a run output folder.
+- Never write "measured" coverage without a `--coverage` run.
 - Never assume an append mode exists.
-- Never close, transition, or comment on the defect ticket.
+- Never close or comment on the ticket.
