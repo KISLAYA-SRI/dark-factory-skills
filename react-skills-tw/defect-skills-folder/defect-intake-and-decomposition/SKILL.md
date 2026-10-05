@@ -1,103 +1,68 @@
 ---
 name: defect-intake-and-decomposition
-description: Use as Phase 1 of the FE Defect Fix workflow to read the JIRA defect ticket, split it into independently-fixable issues, extract Defect Dev Notes, and capture for each issue a precise symptom contract — trigger, observed result, expected result — that root cause analysis must explain. Triggers include defect intake, parse defect, split defect issues, or decompose defect.
-disable-model-invocation: true
+description: Turn a triaged defect ticket into issues, each with a symptom contract and a contract-change classification. Use in Phase 1 of the defect workflow.
 ---
 
 ## Defect Intake and Decomposition
 
-Turn the defect ticket into issues, each with a **symptom contract** that Phase 3 must explain.
+Triage already happened. Do not question whether it is a defect.
 
-⚠️ Triage already happened. Do not re-litigate whether it is a defect.
+### Input: one file
 
----
+`.SS_WF/{{$var[ticket_id]s}}_JIRA_OUTPUT.json`
 
-## Input — one file
+Read it directly. If it is missing or unreadable, HALT.
+Read only this ticket. A prefix in the title (for example `ABC-123 ||`) is a label, not a ticket to look up.
 
-```text
-.SS_WF/{{$var[ticket_id]s}}_JIRA_OUTPUT.json
-```
+### 1. Symptom contract per issue
 
-Read it directly. If it is missing or unreadable → **HALT**.
+Extract from the ticket, verbatim where possible:
 
-⚠️ Read only this ticket. **Never** read the parent story ticket or any other `*_JIRA_OUTPUT.json` in `.SS_WF` — other defects' tickets may be present; they are not context.
+- **TRIGGER**: the user action or event that produces the bug
+- **OBSERVED**: the ticket's Actual Result
+- **EXPECTED**: the ticket's Expected Result, or the AC it cites
+- **SIGNALS**: concrete identifiers (error codes, API names, fields, screens, locale, viewport)
 
-⚠️ **Ticket titles may carry a prefix** such as `TAW-175 || …`. It is a label, not a ticket to look up. Do not search for it.
+If Actual or Expected is missing, record `Not provided`. Never invent one.
+The contract is fixed for the rest of the run.
 
----
+### 2. Contract classification (per ticket)
 
-## The Symptom Contract — the most important output
+For each of BFF, Sitecore and Figma:
 
-For every issue, extract these from the ticket **verbatim where possible**:
+- **DEVIATED** if the ticket supplies data for it (payload, field structure, new Figma link or node, changed copy)
+- **UNCHANGED** otherwise
 
-```text
-ISSUE-001
-  TRIGGER    the user action / event that produces the bug
-             e.g. "enter incorrect OTP 1111 → click Verify"
-  OBSERVED   what actually happens (ticket's Actual Result)
-             e.g. "API returns BE_OTP_INVALID; no error message shown on UI"
-  EXPECTED   what should happen (ticket's Expected Result, or the AC it cites)
-             e.g. "error message returned by the API is shown on Verify Account screen"
-  SIGNALS    concrete identifiers in the ticket: error codes, API names, field names,
-             screen names, locale, viewport
-             e.g. BE_OTP_INVALID · Verify OTP API · Verify Account screen
-```
+Mentioning a contract's name (for example an error code) is not supplying data.
 
-⚠️ **The contract is fixed for the rest of the run.** Phase 3 must find a mechanism that, when TRIGGER happens, produces OBSERVED. A cause that involves a different trigger is wrong by definition.
+### 3. Splitting
 
-⚠️ If the ticket gives no Actual or Expected Result, record `Not provided` — never invent one.
+Split issues when root cause, layer or expected behaviour clearly differ. One issue when one behaviour produces several symptoms. Number `ISSUE-001`, `ISSUE-002`; never renumber.
 
----
+### 4. Category (one per issue)
 
-## Splitting — semantic
+UI, RTL, Responsive, Accessibility, Media, Sitecore, BFF/API, State, Missing AC, Regression.
+The category only decides which coding standards load. It is not a diagnosis.
 
-Separate issues if root cause, file/layer, category, or fixability differ. One issue if one root cause produces several symptoms. When unsure, split. Assign `ISSUE-001…`; never renumber.
+### 5. Developer notes
 
-## Defect Dev Notes
+Copy any Dev Notes, Fix Notes or Implementation Notes verbatim as hints. They are optional input, not proof.
 
-Scan for `Dev Notes` · `Developer Notes` · `Fix Notes` · `How to Fix` · `Implementation Notes`. Extract verbatim as `DDN-001…` (never `DN-`). Top priority.
-
-## Category (one per issue)
-
-UI · RTL · Responsive · Accessibility · Media · Sitecore · BFF/API · State · Missing AC · Regression — drives which coding skills load and which artefact may be refetched.
+### Output: one block, no narration
 
 ```text
-"error/message not shown after <action>"   → BFF/API or State (error path)
-"blank / wrong value"                      → BFF/API
-"authored text missing"                    → Sitecore
-"looks wrong in Arabic"                    → RTL
-"used to work"                             → Regression
-```
-
-## Source-change signals
-
-Flag only if the ticket says so: design updated / new Figma URL (→ Figma); field renamed / API changed (→ Sitecore/BFF). Absence = no refetch.
-
----
-
-## Output — one block
-
-```text
-INTAKE — {{$var[ticket_id]s}} (parent {{$var[parent_ticket_id]s}})
-  DDN:      none
-  ISSUE-001 [BFF/API]
-    TRIGGER:  incorrect OTP → Verify
-    OBSERVED: BE_OTP_INVALID returned; no error message on UI
-    EXPECTED: API error message shown on Verify Account screen
-    SIGNALS:  BE_OTP_INVALID · Verify OTP API · Verify Account screen
-```
-
-### Gate
-```text
-- [ ] .SS_WF/{{$var[ticket_id]s}}_JIRA_OUTPUT.json read; no other ticket read
-- [ ] Every issue has TRIGGER · OBSERVED · EXPECTED · SIGNALS (or "Not provided")
-- [ ] DDN extracted verbatim; one category per issue
-- [ ] No files written
+INTAKE   {{$var[ticket_id]s}} (parent {{$var[parent_ticket_id]s}})
+  CONTRACTS: BFF <UNCHANGED|DEVIATED>, Sitecore <...>, Figma <...>
+  HINTS:     <verbatim dev notes> | none
+  ISSUE-001 [<category>]
+    TRIGGER:  ...
+    OBSERVED: ...
+    EXPECTED: ...
+    SIGNALS:  ...
 ```
 
 ### Never
-- Never search for the ticket file — read the path above.
-- Never read the parent story ticket or other defects' tickets.
-- Never look up a ticket ID found in the title prefix.
-- Never paraphrase OBSERVED/EXPECTED into something the ticket did not say.
-- Never begin RCA here.
+
+- Never read the parent story ticket or other `*_JIRA_OUTPUT.json` files.
+- Never paraphrase OBSERVED or EXPECTED into something the ticket did not say.
+- Never start investigating the code here. Write no files.
