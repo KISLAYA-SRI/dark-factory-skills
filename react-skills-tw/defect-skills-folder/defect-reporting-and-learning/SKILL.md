@@ -20,7 +20,7 @@ disable-model-invocation: true
 ## ⚠️ VARIABLES
 
 ```text
-Summary:    .SS_WF/Agent/CODE/{{$var[parent_ticket_id]s}}_CODE_GENERATION_SUMMARY.md
+Summary:    .SS_WF/Agent/CODE/{{$var[parent_ticket_id]s}}_CODE_GENERATION.md
 Learnings:  ./src/.project/learnings/CODING_AGENT_LEARNINGS.md
 Defect ID:  {{$var[ticket_id]s}}
 ```
@@ -43,7 +43,7 @@ Never `parent_story_id`.
 ✅ Confirm the write succeeded
 ```
 
-**Drafting is step one of four.** A learning that exists only in the response is lost the moment the run ends — the coding agent reads the *file*, not the transcript.
+**Drafting is step one of four.** A learning that exists only in the response is lost the moment the run ends — the coding agent reads the _file_, not the transcript.
 
 ⚠️ If you catch yourself describing what the file should contain, **stop and write it**.
 
@@ -53,12 +53,12 @@ Never `parent_story_id`.
 
 ### State vs historical sections
 
-| § | Nature | On defect fix |
-| --- | --- | --- |
-| 3 · 4 · 5 · 6 · 7 · 8 · 9 · 10 · 12.4 | **State** — what the code IS | ✅ Update |
-| 11 AC Evidence | Mixed | ⚠️ Status only |
-| 1 · 2 · 12.1 · 12.2 · 12.5 | **Historical** | ❌ Never change |
-| **13 Change Log** | **Append-only** | ✅ One entry per defect |
+| §                                     | Nature                       | On defect fix           |
+| ------------------------------------- | ---------------------------- | ----------------------- |
+| 3 · 4 · 5 · 6 · 7 · 8 · 9 · 10 · 12.4 | **State** — what the code IS | ✅ Update               |
+| 11 AC Evidence                        | Mixed                        | ⚠️ Status only          |
+| 1 · 2 · 12.1 · 12.2 · 12.5            | **Historical**               | ❌ Never change         |
+| **13 Change Log**                     | **Append-only**              | ✅ One entry per defect |
 
 ⚠️ A stale §7 or §8 misleads the next defect run and can cause a wrong fault-origin classification.
 
@@ -73,13 +73,13 @@ Update ONLY:
 ❌ Never reformat or reword untouched rows
 ```
 
-Drift found **outside** the rows RCA inspected → record in §13 as *observed, not reconciled*.
+Drift found **outside** the rows RCA inspected → record in §13 as _observed, not reconciled_.
 
 ### Tags
 
-| Tag | Meaning |
-| --- | --- |
-| `[DEF-xxx]` | Changed by this fix |
+| Tag                 | Meaning                                                      |
+| ------------------- | ------------------------------------------------------------ |
+| `[DEF-xxx]`         | Changed by this fix                                          |
 | `[DEF-xxx · drift]` | Reconciled to match a developer change found during this fix |
 
 Prefer **symbol + line** over a bare line number, so the location survives future edits.
@@ -96,36 +96,45 @@ Prefer **symbol + line** over a bare line number, so the location survives futur
 ### DEF-486 — 2026-09-29 — Defect Fix
 
 **Reported:** 2 issues · **Fixed:** 2 · **Blocked:** 0
-**Verification:** EXECUTED   *(or: STATIC ONLY — reason)*
+**Verification:** EXECUTED _(or: STATIC ONLY — reason)_
 
 #### Defect Dev Notes
+
 | DDN ID | Instruction | Applied To | Status |
 | DDN-001 | Use the Sitecore message | ISSUE-002 | Implemented |
-> Supersession: DDN-001 supersedes DN-004.   *(or: None)*
+
+> Supersession: DDN-001 supersedes DN-004. _(or: None)_
 
 #### Context Refetch
+
 | Artefact | Issue | Trigger | Diff Result |
 | Sitecore | ISSUE-002 | Field not rendering | `PolicyTitle` → `Title` RENAMED |
-> *(or: No artefacts refetched.)*
+
+> _(or: No artefacts refetched.)_
 
 #### Drift From Summary
+
 | Location | Summary Said | Code Did | Source | Reconciled? |
 | `PolicyMapper.ts → mapPolicyResponse()` | null → "—" | null → `legacyNumber ?? ""` | Developer, a1b2c3 (2026-08-21) | ✅ §7 updated |
-> *(or: No drift found.)*
+
+> _(or: No drift found.)_
 
 #### Issues
+
 | Issue | Category | Status | Root Cause | Fault Origin | Fix |
 | ISSUE-001 | RTL | ✅ Fixed | `CarouselPager.tsx → Pager` used `ml-2` | Agent miss | `ml-2` → `ms-2` |
 | ISSUE-002 | BFF | ✅ Fixed | Developer fallback returned `""` | Post-generation manual change | `""` → `"—"`, legacy fallback kept |
 
 #### Edge Cases Verified
+
 | Issue | Case | Expected | Result |
-| ISSUE-002 | null *(reported)* | "—" | ✅ |
+| ISSUE-002 | null _(reported)_ | "—" | ✅ |
 | ISSUE-002 | undefined / "" / whitespace | "—" | ✅ |
-| ISSUE-002 | legacyNumber present *(developer behaviour)* | legacyNumber | ✅ |
+| ISSUE-002 | legacyNumber present _(developer behaviour)_ | legacyNumber | ✅ |
 | ISSUE-001 | LTR still correct after RTL fix | left spacing | ✅ |
 
 #### Test Execution
+
 | Run | Verdict | Output |
 | ISSUE-002 failing-first | EXPECTED_FAIL | `.SS_WF/Agent/TEST_RUNS/DEF-486-ISSUE-002-failing-first-…/` |
 | ISSUE-002 after fix | PASS | `…/DEF-486-ISSUE-002-after-fix-…/` |
@@ -134,25 +143,33 @@ Prefer **symbol + line** over a bare line number, so the location survives futur
 | Final consolidated | PASS | `…/DEF-486-final-…/` |
 
 #### Sections Updated
+
 | §3 | 4 rows [DEF-486] |
 | §7 | `policyNumber` trace — fix + drift reconciled |
 | §10 | +1 regression, +6 guard tests |
 
 #### Existing Tests Modified
+
 | `HeroBanner.test.tsx` | asserted `PolicyTitle` → now `Title` | Test encoded the old contract |
-> *(or: None.)*
+
+> _(or: None.)_
 
 #### Observations — Not Fixed
+
 | `usePolicyList.ts` | `staleTime` hardcoded | Outside every root cause |
-> *(or: None.)*
+
+> _(or: None.)_
 
 #### Learnings Written
+
 | Origin | Issues | Written? |
 | Agent miss | ISSUE-001 | ✅ `# UI LEARNINGS` — recurrence ×2 |
 | Post-generation manual change | ISSUE-002 | ❌ Developer-authored code |
+
 > ⚠️ SKILL GAP: [rule at recurrence ≥ 3, or: None]
 
 #### Notes for the Developer
+
 - ISSUE-002 lived in code changed after generation; your legacy fallback was preserved
 ```
 
@@ -194,12 +211,12 @@ A learning must be something the coding agent **could have acted on at generatio
 
 ### Namespace
 
-| Category | Namespace |
-| --- | --- |
-| UI · RTL · Responsive · A11y · Media | `# UI LEARNINGS` |
-| BFF · API · State · Sitecore · mapper | `# LOGIC LEARNINGS` |
-| A test should have caught it | `# TEST LEARNINGS` |
-| Storybook · catalogue | `# STORYBOOK LEARNINGS` |
+| Category                              | Namespace               |
+| ------------------------------------- | ----------------------- |
+| UI · RTL · Responsive · A11y · Media  | `# UI LEARNINGS`        |
+| BFF · API · State · Sitecore · mapper | `# LOGIC LEARNINGS`     |
+| A test should have caught it          | `# TEST LEARNINGS`      |
+| Storybook · catalogue                 | `# STORYBOOK LEARNINGS` |
 
 ⚠️ If a test should have caught it, write to **both** the behaviour namespace and `# TEST LEARNINGS`.
 
