@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 Generate **ONE** consolidated summary of everything the Coding Agent produced. This replaces the legacy `CODE_GENERATION.md` + `TEST_GENERATION.md` + Storybook handoff with a single file.
 
-**File path:** `.SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION_SUMMARY.md`
+**File path:** `.SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION.md`
 
 ⚠️ This is the **only** document the Coding Agent produces. Source files, stories and tests are implementation artefacts, not reports.
 
@@ -34,20 +34,20 @@ That is why this skill **seeds §13 on the first run**. Without it, a summary th
 
 ### State vs Historical Sections
 
-| Nature | Sections | Later behaviour |
-| --- | --- | --- |
-| **State** — what the code IS | §3 §4 §5 §6 §7 §8 §9 §10 §12.4 | Updated in place by every defect fix |
-| **Historical** — what happened at build | §1 §2 §11 §12.1 §12.2 §12.5 | Never changed after generation (§11 status only) |
-| **Append-only** | §13 | One entry per defect fix or enhancement |
+| Nature                                  | Sections                       | Later behaviour                                  |
+| --------------------------------------- | ------------------------------ | ------------------------------------------------ |
+| **State** — what the code IS            | §3 §4 §5 §6 §7 §8 §9 §10 §12.4 | Updated in place by every defect fix             |
+| **Historical** — what happened at build | §1 §2 §11 §12.1 §12.2 §12.5    | Never changed after generation (§11 status only) |
+| **Append-only**                         | §13                            | One entry per defect fix or enhancement          |
 
 ---
 
 ## ⚠️ THE TWO CONSUMERS — WRITE FOR BOTH
 
-| Consumer | What they need | The question they ask |
-| --- | --- | --- |
-| **Reviewing Developer** | What was built and **why** a decision was made | *"Why was it done this way?"* |
-| **Defect Fix Workflow** | The file, layer and symbol responsible for a behaviour | *"Where do I look when X breaks?"* |
+| Consumer                | What they need                                         | The question they ask              |
+| ----------------------- | ------------------------------------------------------ | ---------------------------------- |
+| **Reviewing Developer** | What was built and **why** a decision was made         | _"Why was it done this way?"_      |
+| **Defect Fix Workflow** | The file, layer and symbol responsible for a behaviour | _"Where do I look when X breaks?"_ |
 
 ### The Governing Principle
 
@@ -108,14 +108,14 @@ Write the summary **completely, in a single write operation**.
 
 ### Non-negotiable outcomes
 
-| Outcome | Requirement |
-| --- | --- |
-| **Single file** | Exactly one document |
-| **Completeness** | All 13 sections present, story-specific |
-| **Order** | Ascending, 1 → 13 |
-| **Integrity** | No duplicated, truncated or orphaned sections; no partial tables |
-| **No loss** | Rewriting preserves prior content verbatim |
-| **§13 seeded** | Change Log present, even on the first run |
+| Outcome          | Requirement                                                      |
+| ---------------- | ---------------------------------------------------------------- |
+| **Single file**  | Exactly one document                                             |
+| **Completeness** | All 13 sections present, story-specific                          |
+| **Order**        | Ascending, 1 → 13                                                |
+| **Integrity**    | No duplicated, truncated or orphaned sections; no partial tables |
+| **No loss**      | Rewriting preserves prior content verbatim                       |
+| **§13 seeded**   | Change Log present, even on the first run                        |
 
 ### Efficiency rules
 
@@ -129,7 +129,7 @@ Write the summary **completely, in a single write operation**.
 
 ## Consolidated Summary Template (13 Sections)
 
-```markdown
+````markdown
 # Code Generation Summary — {{ticket_id}}
 
 **Story:** {{story title}}
@@ -176,11 +176,11 @@ Write the summary **completely, in a single write operation**.
 > ⚠️ **Complete, flat, greppable list of every file touched.** Defect work starts here.
 > Every file created or modified in this run appears exactly once, with exact on-disk casing.
 
-| #   | File Path | Type | Action | Purpose |
-| --- | --------- | ---- | ------ | ------- |
-| 1   | Packages/DesignSystem/Foundation/Src/Organisms/HeroCarousel/HeroCarousel.tsx | Component | Created | Carousel organism — slides, autoplay |
-| 2   | Portals/Sme/features/Motor/PolicyList/Hooks/usePolicyList.ts | Hook | Created | TanStack infinite query for policy list |
-| 3   | src/component-catalogue.json | Catalogue | Modified | Added HeroCarousel entry |
+| #   | File Path                                                                    | Type      | Action   | Purpose                                 |
+| --- | ---------------------------------------------------------------------------- | --------- | -------- | --------------------------------------- |
+| 1   | Packages/DesignSystem/Foundation/Src/Organisms/HeroCarousel/HeroCarousel.tsx | Component | Created  | Carousel organism — slides, autoplay    |
+| 2   | Portals/Sme/features/Motor/PolicyList/Hooks/usePolicyList.ts                 | Hook      | Created  | TanStack infinite query for policy list |
+| 3   | src/component-catalogue.json                                                 | Catalogue | Modified | Added HeroCarousel entry                |
 
 **Type values:** Component · Container · Hook · Service · Mapper · Types · Constants · Store · Validator · CMS Entry · Story · Test · Barrel · Catalogue · Config
 
@@ -194,9 +194,9 @@ Write the summary **completely, in a single write operation**.
 
 ## 4. UI Components Generated
 
-| Component | Owner | Reuse Decision | Exported Symbol | File Path |
-| --------- | ----- | -------------- | --------------- | --------- |
-|           | DS / CMS / Feature / Shared | reuse / enhance / new | `HeroCarousel` | |
+| Component | Owner                       | Reuse Decision        | Exported Symbol | File Path |
+| --------- | --------------------------- | --------------------- | --------------- | --------- |
+|           | DS / CMS / Feature / Shared | reuse / enhance / new | `HeroCarousel`  |           |
 
 > `Exported Symbol` lets a defect triager grep the codebase for consumers.
 
@@ -210,6 +210,7 @@ HeroBanner (CMS entry)
     ├── CarouselSlide [design-system]
     └── CarouselPager [design-system]
 ```
+````
 
 ---
 
@@ -224,10 +225,10 @@ HeroBanner (CMS entry)
 
 ### Sitecore Field → Prop Mapping
 
-| Sitecore Field | Type | Helper Used | Maps To Prop | Fallback if Missing |
-| -------------- | ---- | ----------- | ------------ | ------------------- |
-| `Title` | Single-Line Text | — | `title` | empty string |
-| `CtaLink` | General Link | `extractCTA` | `ctaHref`, `ctaLabel` | CTA hidden |
+| Sitecore Field | Type             | Helper Used  | Maps To Prop          | Fallback if Missing |
+| -------------- | ---------------- | ------------ | --------------------- | ------------------- |
+| `Title`        | Single-Line Text | —            | `title`               | empty string        |
+| `CtaLink`      | General Link     | `extractCTA` | `ctaHref`, `ctaLabel` | CTA hidden          |
 
 > **Defect workflow:** if authored content is not appearing, check this table first —
 > field name mismatch and missing helper are the two most common causes.
@@ -238,27 +239,27 @@ HeroBanner (CMS entry)
 
 > If not applicable: "Not Applicable — Presentational component."
 
-| Layer | File | Responsibility |
-| ----- | ---- | -------------- |
-| Types | `PolicyTypes.ts` | API contract + ViewModel |
-| Constants | `POLICY_CONSTANTS.ts` | Query keys + endpoints |
-| Mapper | `PolicyMapper.ts` | Response → ViewModel |
-| Service | `PolicyListService.ts` | fetch to BFF |
-| Hook | `usePolicyList.ts` | useInfiniteQuery |
-| Container | `PolicyListContainer.tsx` | State orchestration |
+| Layer     | File                      | Responsibility           |
+| --------- | ------------------------- | ------------------------ |
+| Types     | `PolicyTypes.ts`          | API contract + ViewModel |
+| Constants | `POLICY_CONSTANTS.ts`     | Query keys + endpoints   |
+| Mapper    | `PolicyMapper.ts`         | Response → ViewModel     |
+| Service   | `PolicyListService.ts`    | fetch to BFF             |
+| Hook      | `usePolicyList.ts`        | useInfiniteQuery         |
+| Container | `PolicyListContainer.tsx` | State orchestration      |
 
 ### Endpoint Configuration
 
-| Endpoint | Method | Query Key | Hook | staleTime | gcTime | retry |
-| -------- | ------ | --------- | ---- | --------- | ------ | ----- |
-| `/api/policies` | GET | `POLICY_QUERY_KEYS.list(params)` | `usePolicyList` | 0 | 5min | 1 |
+| Endpoint        | Method | Query Key                        | Hook            | staleTime | gcTime | retry |
+| --------------- | ------ | -------------------------------- | --------------- | --------- | ------ | ----- |
+| `/api/policies` | GET    | `POLICY_QUERY_KEYS.list(params)` | `usePolicyList` | 0         | 5min   | 1     |
 
 ### Error Code → UI Mapping
 
-| Error Code | UI State | Message Source | Component |
-| ---------- | -------- | -------------- | --------- |
-| 404 | Empty state | Sitecore `NoPoliciesFound` | PolicyListContainer |
-| 5xx (all) | Error banner | Sitecore `GenericError` | PolicyListContainer |
+| Error Code | UI State     | Message Source             | Component           |
+| ---------- | ------------ | -------------------------- | ------------------- |
+| 404        | Empty state  | Sitecore `NoPoliciesFound` | PolicyListContainer |
+| 5xx (all)  | Error banner | Sitecore `GenericError`    | PolicyListContainer |
 
 ---
 
@@ -267,7 +268,7 @@ HeroBanner (CMS entry)
 > ⚠️ **Transactional / Hybrid only.** Presentational: "Not Applicable — all data is CMS-authored, see §5."
 >
 > **One trace per rendered data field** — the defect workflow's primary lookup for
-> *"where does this value come from and where could it break?"*
+> _"where does this value come from and where could it break?"_
 
 ```text
 FIELD: policyNumber
@@ -292,18 +293,18 @@ FIELD: expiryDate
 
 ## 8. State → UI Behaviour Matrix
 
-> ⚠️ **Every state from plan §10.** When a defect reports *"wrong thing shows when X"*,
+> ⚠️ **Every state from plan §10.** When a defect reports _"wrong thing shows when X"_,
 > this names the owning file immediately.
 
-| State | Trigger Condition | What Renders | Owning File |
-| ----- | ----------------- | ------------ | ----------- |
-| default | data loaded, length > 0 | `PolicyCard` list | `PolicyListContainer.tsx` |
-| loading | `isLoading === true` | `PolicyCardSkeleton` ×3 | `PolicyListContainer.tsx` |
-| error | `isError === true` | `ErrorBanner` + retry CTA | `PolicyListContainer.tsx` |
-| empty | `data.length === 0` | `EmptyState` | `PolicyListContainer.tsx` |
-| partial | some fields null | card renders, section hidden | `PolicyCard.tsx` |
-| hover | pointer over card | elevation token applied | `PolicyCard.tsx` |
-| disabled | `isDisabled` prop | reduced opacity, `aria-disabled` | `PolicyCard.tsx` |
+| State    | Trigger Condition       | What Renders                     | Owning File               |
+| -------- | ----------------------- | -------------------------------- | ------------------------- |
+| default  | data loaded, length > 0 | `PolicyCard` list                | `PolicyListContainer.tsx` |
+| loading  | `isLoading === true`    | `PolicyCardSkeleton` ×3          | `PolicyListContainer.tsx` |
+| error    | `isError === true`      | `ErrorBanner` + retry CTA        | `PolicyListContainer.tsx` |
+| empty    | `data.length === 0`     | `EmptyState`                     | `PolicyListContainer.tsx` |
+| partial  | some fields null        | card renders, section hidden     | `PolicyCard.tsx`          |
+| hover    | pointer over card       | elevation token applied          | `PolicyCard.tsx`          |
+| disabled | `isDisabled` prop       | reduced opacity, `aria-disabled` | `PolicyCard.tsx`          |
 
 > Presentational components list UI interaction states only (default, active/selected,
 > hover/focus, transitioning/paused, disabled, hidden).
@@ -325,31 +326,31 @@ FIELD: expiryDate
 
 ### Token / Design Discrepancies
 
-| Component | Figma Value | Token Used | Delta | Reason |
-| --------- | ----------- | ---------- | ----- | ------ |
-| ClaimCard | 18px gap | `gap-m` (16px) | −2px | No 18px token exists |
+| Component | Figma Value | Token Used     | Delta | Reason               |
+| --------- | ----------- | -------------- | ----- | -------------------- |
+| ClaimCard | 18px gap    | `gap-m` (16px) | −2px  | No 18px token exists |
 
 ### NFR Exceptions Applied
 
 > From plan §13.2 — story-specific exceptions only.
 
-| Category | Exception | Implementation |
-| -------- | --------- | -------------- |
-| RTL | Carousel pager arrows mirrored | `rtl:rotate-180` on `CarouselPager` |
+| Category | Exception                      | Implementation                      |
+| -------- | ------------------------------ | ----------------------------------- |
+| RTL      | Carousel pager arrows mirrored | `rtl:rotate-180` on `CarouselPager` |
 
 ### Media Handling
 
 > If none: "Not Applicable — no media in this story."
 
-| Asset | Source | Optimisation | Loading |
-| ----- | ------ | ------------ | ------- |
+| Asset      | Source                       | Optimisation                     | Loading     |
+| ---------- | ---------------------------- | -------------------------------- | ----------- |
 | Hero image | Sitecore Media Library → CDN | `next/image`, responsive `sizes` | eager (LCP) |
 
 ### Storybook & Catalogue
 
-| Component | Story File | JSDoc | Catalogue |
-| --------- | ---------- | ----- | --------- |
-| HeroCarousel | `HeroCarousel.stories.tsx` | ✅ 14 tags | Added |
+| Component    | Story File                 | JSDoc      | Catalogue |
+| ------------ | -------------------------- | ---------- | --------- |
+| HeroCarousel | `HeroCarousel.stories.tsx` | ✅ 14 tags | Added     |
 
 > Catalogue path: `./src/component-catalogue.json`
 
@@ -357,10 +358,10 @@ FIELD: expiryDate
 
 ## 10. Tests & Coverage
 
-| Source File | Classification | Test File | Cases | Branch Coverage |
-| ----------- | -------------- | --------- | ----- | --------------- |
-| `PolicyCard.tsx` | Presentational | `PolicyCard.test.tsx` | 12 | 94% (targeted) |
-| `PolicyListContainer.tsx` | Transactional | `PolicyListContainer.test.tsx` | 9 | 91% (targeted) |
+| Source File               | Classification | Test File                      | Cases | Branch Coverage |
+| ------------------------- | -------------- | ------------------------------ | ----- | --------------- |
+| `PolicyCard.tsx`          | Presentational | `PolicyCard.test.tsx`          | 12    | 94% (targeted)  |
+| `PolicyListContainer.tsx` | Transactional  | `PolicyListContainer.test.tsx` | 9     | 91% (targeted)  |
 
 - **Overall coverage:** NN% — **targeted** | **measured**
 - ⚠️ "measured" **only** if a coverage run was actually executed (`run-test-cases --coverage`). Otherwise "targeted".
@@ -371,9 +372,9 @@ FIELD: expiryDate
 
 > **Defect workflow:** names the test that should have caught a defect mapped to an AC.
 
-| AC ID | Covering Test(s) |
-| ----- | ---------------- |
-| AC-001 | `PolicyCard.test.tsx` → "renders policy number from props" |
+| AC ID  | Covering Test(s)                                                      |
+| ------ | --------------------------------------------------------------------- |
+| AC-001 | `PolicyCard.test.tsx` → "renders policy number from props"            |
 | AC-003 | `PolicyListContainer.test.tsx` → "shows empty state when no policies" |
 
 ### Untested Behaviours
@@ -391,11 +392,11 @@ FIELD: expiryDate
 > ⚠️ **Every AC needs ✅ with a specific file path AND code reference.**
 > **Vague or assumed coverage is NOT acceptable.** Any ❌ must also appear in §12.
 
-| AC ID | Status | Implemented In (file + symbol/line) | Verified By (test) |
-| ----- | ------ | ----------------------------------- | ------------------ |
-| AC-001 | ✅ | `PolicyCard.tsx` → `policyNumber` prop render | `PolicyCard.test.tsx:24` |
-| AC-002 | ✅ | `PolicyListContainer.tsx` → error branch :41 | `PolicyListContainer.test.tsx:56` |
-| AC-003 | ❌ | Not implemented — see LIM-001 | — |
+| AC ID  | Status | Implemented In (file + symbol/line)           | Verified By (test)                |
+| ------ | ------ | --------------------------------------------- | --------------------------------- |
+| AC-001 | ✅     | `PolicyCard.tsx` → `policyNumber` prop render | `PolicyCard.test.tsx:24`          |
+| AC-002 | ✅     | `PolicyListContainer.tsx` → error branch :41  | `PolicyListContainer.test.tsx:56` |
+| AC-003 | ❌     | Not implemented — see LIM-001                 | —                                 |
 
 **Coverage:** N of M acceptance criteria fully implemented.
 
@@ -403,22 +404,22 @@ FIELD: expiryDate
 
 ## 12. Deviations, Gaps & Limitations
 
-> ⚠️ **The most valuable section for both consumers** — the ONLY place recording *why*.
+> ⚠️ **The most valuable section for both consumers** — the ONLY place recording _why_.
 > Never condense or omit.
 
 ### 12.1 Decisions & Conflict Resolutions
 
-| ID | Area | Conflict | Decision | Priority Rule Applied |
-| -- | ---- | -------- | -------- | --------------------- |
-| DEC-001 | Layout | Figma 3-col vs plan 2-col | Implemented Figma | Figma = visual source of truth |
-| DEC-002 | Placement | Plan path `Features/` vs disk `features/` | Used `features/` | On-disk casing wins |
+| ID      | Area      | Conflict                                  | Decision          | Priority Rule Applied          |
+| ------- | --------- | ----------------------------------------- | ----------------- | ------------------------------ |
+| DEC-001 | Layout    | Figma 3-col vs plan 2-col                 | Implemented Figma | Figma = visual source of truth |
+| DEC-002 | Placement | Plan path `Features/` vs disk `features/` | Used `features/`  | On-disk casing wins            |
 
 > Record every **casing deviation** — a path written to match the on-disk casing rather than the plan.
 
 ### 12.2 Assumptions Made
 
-| ID | Assumption | Because | Impact if Wrong |
-| -- | ---------- | ------- | --------------- |
+| ID      | Assumption                   | Because                          | Impact if Wrong      |
+| ------- | ---------------------------- | -------------------------------- | -------------------- |
 | ASS-001 | Empty list shows CMS message | Plan did not specify copy source | Wrong copy displayed |
 
 ### 12.3 Upstream Contract Gaps Encountered
@@ -426,8 +427,8 @@ FIELD: expiryDate
 > Gaps from the Analysis Plan (`Unknown — source contract not provided`). These props
 > remain **prop-driven** — never hardcoded.
 
-| Gap ID | What Was Missing | How Implementation Handled It |
-| ------ | ---------------- | ----------------------------- |
+| Gap ID  | What Was Missing                | How Implementation Handled It          |
+| ------- | ------------------------------- | -------------------------------------- |
 | GAP-003 | No `expiryDate` in BFF response | Prop modelled as Unknown; badge hidden |
 
 ### 12.4 Known Limitations
@@ -435,9 +436,9 @@ FIELD: expiryDate
 > ⚠️ **Defect workflow: check this table BEFORE raising a defect.**
 > A known limitation is a tracked gap awaiting an upstream fix, not a defect.
 
-| ID | Limitation | Root Cause | User-Visible Impact | Resolution Owner | Status |
-| -- | ---------- | ---------- | ------------------- | ---------------- | ------ |
-| LIM-001 | Expiry badge never renders | GAP-003 — field absent from contract | Users cannot see expiry | Backend team | Open |
+| ID      | Limitation                 | Root Cause                           | User-Visible Impact     | Resolution Owner | Status |
+| ------- | -------------------------- | ------------------------------------ | ----------------------- | ---------------- | ------ |
+| LIM-001 | Expiry badge never renders | GAP-003 — field absent from contract | Users cannot see expiry | Backend team     | Open   |
 
 > A later defect fix that closes a limitation marks it `✅ Resolved [DEF-xxx]` — the row is never deleted.
 
@@ -446,10 +447,10 @@ FIELD: expiryDate
 > ONLY items marked Not Applicable, or checks that initially failed and were fixed.
 > Do NOT list passing checks.
 
-| Check | Status | Reason / Fix Applied |
-| ----- | ------ | -------------------- |
-| API-001 | Not Applicable | Presentational component — no API integration |
-| FILE-002 | Failed → Fixed | Barrel export missing; added named re-export |
+| Check    | Status         | Reason / Fix Applied                          |
+| -------- | -------------- | --------------------------------------------- |
+| API-001  | Not Applicable | Presentational component — no API integration |
+| FILE-002 | Failed → Fixed | Barrel export missing; added named re-export  |
 
 > If everything passed: "All validation checks passed. No exceptions."
 
@@ -465,7 +466,8 @@ FIELD: expiryDate
 > with the defect ID and appends an entry here.
 
 _No changes since original generation._
-```
+
+````
 
 ---
 
@@ -515,7 +517,7 @@ _No changes since original generation._
 ### Gate: Complete When
 
 ```text
-- [ ] Exactly one summary at .SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION_SUMMARY.md
+- [ ] Exactly one summary at .SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION.md
 - [ ] All 13 sections present, ascending, no duplication or truncation
 - [ ] Header note: "Sections 1–12 describe the CURRENT state… §13 records changes"
 - [ ] Every path uses exact on-disk casing; every location gives symbol + line
@@ -531,7 +533,7 @@ _No changes since original generation._
 - [ ] Validation exceptions only
 - [ ] Coverage labelled "targeted" or "measured" (measured only after an executed run)
 - [ ] Presentational: §6 and §7 Not Applicable; §8 and §13 populated
-```
+````
 
 ### Never Do
 

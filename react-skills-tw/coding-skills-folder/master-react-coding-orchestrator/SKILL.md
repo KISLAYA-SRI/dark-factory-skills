@@ -415,7 +415,7 @@ Produce a **single** consolidated summary written for **two consumers**:
 | **Reviewing Developer**    | What was built and **why** a decision was made | §1, §2, §4, §6, §11, §12     |
 | **Defect Triage Workflow** | **Where to look** when a behaviour breaks      | **§3, §5, §7, §8, §10, §12** |
 
-**File path:** `.SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION_SUMMARY.md`
+**File path:** `.SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION.md`
 
 #### The 12 Sections
 
@@ -574,6 +574,6 @@ PHASE 9   Tests            [frontend-test-generation] → actual source + §9/§
 PHASE 10  Self-Validation  [generated-code-self-validation] → structural + §8 NOT-list + checklist
            ↳ CAPTURE: exceptions and fixes ONLY (not passing checks)
 PHASE 11  Summary          [code-generation-reporting] → ONE file, 12 sections
-           ↳ .SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION_SUMMARY.md
+           ↳ .SS_WF/Agent/CODE/{{ticket_id}}_CODE_GENERATION.md
            ↳ Serves BOTH reviewing developer AND defect triage workflow
 ```

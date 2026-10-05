@@ -15,7 +15,7 @@ Chunk 1 (write) : Sections 1–3
 Chunk 2 (append): Sections 4–6
 Chunk 3 (append): Sections 7–9
 Chunk 4 (append): Sections 10–13
-  → Save to .SS_WF/Agent/Coding/{{ticket_id}}_CODE_GENERATION_SUMMARY.md
+  → Save to .SS_WF/Agent/Coding/{{ticket_id}}_CODE_GENERATION.md
 ```
 
 ## Key Rules
