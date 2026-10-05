@@ -134,11 +134,11 @@ Run phases strictly in order, **continuously**. Load ONE sub-skill's context per
 
 ### Inputs Available to the Analysis Agent
 
-| Input                       | Source                                          | Required?                         |
-| --------------------------- | ----------------------------------------------- | --------------------------------- |
-| JIRA User Story             | `.SS_WF/{{$var[ticket_id]s}}_JIRA_OUTPUT_.json` | **Mandatory**                     |
-| Developer Notes / Dev Notes | Section inside the JIRA story                   | If present — SACRED LAW           |
-| Component Catalogue         | `component-catalogue.json` at repo root         | **Mandatory** for reuse decisions |
+| Input                       | Source                                         | Required?                         |
+| --------------------------- | ---------------------------------------------- | --------------------------------- |
+| JIRA User Story             | `.SS_WF/{{$var[ticket_id]s}}_JIRA_OUTPUT.json` | **Mandatory**                     |
+| Developer Notes / Dev Notes | Section inside the JIRA story                  | If present — SACRED LAW           |
+| Component Catalogue         | `component-catalogue.json` at repo root        | **Mandatory** for reuse decisions |
 
 All other context is **already produced**, not supplied externally.
 
