@@ -1,302 +1,192 @@
 ---
 name: defect-reporting-and-learning
-description: Use as Phase 6 of the FE Defect Fix workflow to update the parent CODE_GENERATION_SUMMARY.md in place — refreshing state sections, reconciling drift, appending a Change Log entry with edge-case and test-execution evidence — and to WRITE an entry into the Coding Agent Learnings file when the fault origin was an agent miss or a regression from a prior fix. Triggers include defect report, update code gen summary, update learnings, or close out defect fix.
-disable-model-invocation: true
+description: Phase 3 of the FE defect workflow. Updates the parent code-generation document in place with the defect fix and appends a Defect Change Log entry, then writes a Coding Agent Learning when the fault origin is an agent miss or a regression from a prior fix. Runs after defect-investigate-and-fix, even if every issue is BLOCKED.
 ---
 
 ## Defect Reporting and Learning
 
 ### Purpose
 
-```text
-6a  Update CODE_GENERATION_SUMMARY.md     → always
-6b  Write CODING_AGENT_LEARNINGS.md       → ONLY for agent miss / regression
-```
+- **A. Update the code-generation document**: always
+- **B. Write a coding-agent learning**: only for agent miss or regression from a prior fix
 
-⚠️ **Both are file writes, not recommendations.** This phase is not complete until the files on disk have changed.
+Both are **file writes**. This phase is not done until the files on disk have changed and the write is confirmed.
+A learning or update that exists only in your response is lost when the run ends.
 
----
+### Inputs
 
-## ⚠️ VARIABLES
+| Item      | Value                                                                           |
+| --------- | ------------------------------------------------------------------------------- |
+| Document  | `.SS_WF/Agent/CODE/{{$var[parent_ticket_id]s}}_CODE_GENERATION.md`              |
+| Learnings | `.project/learnings/CODING_AGENT_LEARNINGS.md` (from the repo root)             |
+| Defect ID | `{{$var[ticket_id]s}}` (never the parent ID)                                    |
+| Facts     | The `INTAKE` block, the `ISSUE-<n>` blocks from this run, and `git diff --stat` |
 
-```text
-Summary:    .SS_WF/Agent/CODE/{{$var[parent_ticket_id]s}}_CODE_GENERATION.md
-Learnings:  ./src/.project/learnings/CODING_AGENT_LEARNINGS.md
-Defect ID:  {{$var[ticket_id]s}}
-```
-
-Never `parent_story_id`.
+Use only facts from those blocks and the diff. Never describe a change the diff does not show.
 
 ---
 
-## ⚠️ THE MOST COMMON FAILURE: IDENTIFYING A LEARNING WITHOUT WRITING IT
+## PART A: Update the code-generation document
 
-```text
-❌ "This should be added to # UI LEARNINGS: RTL logical properties…"
-❌ Printing the proposed entry in the response and moving on
-❌ Listing it under "Notes for the developer"
-❌ Saying "the learnings file should be updated"
+### Find sections by role, not by number
 
-✅ Read the learnings file
-✅ Merge the entry into the right namespace
-✅ Write the COMPLETE file back
-✅ Confirm the write succeeded
-```
+Layouts differ between stories. Identify sections by heading and content:
 
-**Drafting is step one of four.** A learning that exists only in the response is lost the moment the run ends — the coding agent reads the _file_, not the transcript.
+| Role                             | Typical headings                                                                                                                                                                   | On a defect fix                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **State** (what the code is now) | Files created/updated, components, props, integration files, API/BFF integration, mappers, containers, state, routing, timers, error handling, design tokens, responsive/RTL notes | Update only rows the fix touched                          |
+| **AC coverage**                  | AC coverage, AC evidence                                                                                                                                                           | Update status and evidence for affected ACs               |
+| **Gaps / limitations**           | Gaps, blockers, limitations                                                                                                                                                        | Mark resolved `Resolved [<defect id>]`; never delete rows |
+| **Historical**                   | Developer notes applied, reuse decisions, generation summary                                                                                                                       | Never change                                              |
+| **Defect Change Log**            | `## Defect Change Log`                                                                                                                                                             | Append one entry per defect                               |
 
-⚠️ If you catch yourself describing what the file should contain, **stop and write it**.
+- If `## Defect Change Log` does not exist, create it at the end of the document.
+- If the fix created files, add them to the files section, tagged `[<defect id>]`.
 
----
+### Minimal change
 
-## PART 6a — UPDATE THE SUMMARY
+- Update only rows the fix touched, or rows the investigation found had drifted from the code.
+- Tag changed rows `[<defect id>]`; tag drift reconciliations `[<defect id> · drift]`.
+- Prefer `file → symbol` over line numbers.
+- Never regenerate the document, reformat untouched rows, or edit a prior change-log entry.
+- Drift noticed but not inspected goes in the entry as _observed, not reconciled_.
 
-### State vs historical sections
-
-| §                                     | Nature                       | On defect fix           |
-| ------------------------------------- | ---------------------------- | ----------------------- |
-| 3 · 4 · 5 · 6 · 7 · 8 · 9 · 10 · 12.4 | **State** — what the code IS | ✅ Update               |
-| 11 AC Evidence                        | Mixed                        | ⚠️ Status only          |
-| 1 · 2 · 12.1 · 12.2 · 12.5            | **Historical**               | ❌ Never change         |
-| **13 Change Log**                     | **Append-only**              | ✅ One entry per defect |
-
-⚠️ A stale §7 or §8 misleads the next defect run and can cause a wrong fault-origin classification.
-
-### Minimal-change applies here too
-
-```text
-Update ONLY:
-  · rows the fix touched
-  · rows RCA inspected and found drifted
-
-❌ Never regenerate the summary · never resync the whole codebase
-❌ Never reformat or reword untouched rows
-```
-
-Drift found **outside** the rows RCA inspected → record in §13 as _observed, not reconciled_.
-
-### Tags
-
-| Tag                 | Meaning                                                      |
-| ------------------- | ------------------------------------------------------------ |
-| `[DEF-xxx]`         | Changed by this fix                                          |
-| `[DEF-xxx · drift]` | Reconciled to match a developer change found during this fix |
-
-Prefer **symbol + line** over a bare line number, so the location survives future edits.
-
-### §12.4 — mark, never delete
+### Change-log entry
 
 ```markdown
-| LIM-001 | Expiry badge never renders | GAP-003 | … | Backend | ✅ Resolved [DEF-486] |
-```
+### <defect id> — <YYYY-MM-DD> — Defect Fix
 
-### §13 entry — the defect record
+**Issues:** <n> · **Fixed:** <n> · **Blocked:** <n>
+**Contracts:** BFF <UNCHANGED|DEVIATED> · Sitecore <…> · Figma <…>
 
-```markdown
-### DEF-486 — 2026-09-29 — Defect Fix
+#### Developer Notes
 
-**Reported:** 2 issues · **Fixed:** 2 · **Blocked:** 0
-**Verification:** EXECUTED _(or: STATIC ONLY — reason)_
+| Note | Applied to | How applied |
+| ---- | ---------- | ----------- |
 
-#### Defect Dev Notes
-
-| DDN ID | Instruction | Applied To | Status |
-| DDN-001 | Use the Sitecore message | ISSUE-002 | Implemented |
-
-> Supersession: DDN-001 supersedes DN-004. _(or: None)_
-
-#### Context Refetch
-
-| Artefact | Issue | Trigger | Diff Result |
-| Sitecore | ISSUE-002 | Field not rendering | `PolicyTitle` → `Title` RENAMED |
-
-> _(or: No artefacts refetched.)_
-
-#### Drift From Summary
-
-| Location | Summary Said | Code Did | Source | Reconciled? |
-| `PolicyMapper.ts → mapPolicyResponse()` | null → "—" | null → `legacyNumber ?? ""` | Developer, a1b2c3 (2026-08-21) | ✅ §7 updated |
-
-> _(or: No drift found.)_
+> or: None
 
 #### Issues
 
-| Issue | Category | Status | Root Cause | Fault Origin | Fix |
-| ISSUE-001 | RTL | ✅ Fixed | `CarouselPager.tsx → Pager` used `ml-2` | Agent miss | `ml-2` → `ms-2` |
-| ISSUE-002 | BFF | ✅ Fixed | Developer fallback returned `""` | Post-generation manual change | `""` → `"—"`, legacy fallback kept |
+| Issue | Category | Status | Root cause (file → mechanism) | Fault origin | Fix |
+| ----- | -------- | ------ | ----------------------------- | ------------ | --- |
 
-#### Edge Cases Verified
+#### Contract deviations
 
-| Issue | Case | Expected | Result |
-| ISSUE-002 | null _(reported)_ | "—" | ✅ |
-| ISSUE-002 | undefined / "" / whitespace | "—" | ✅ |
-| ISSUE-002 | legacyNumber present _(developer behaviour)_ | legacyNumber | ✅ |
-| ISSUE-001 | LTR still correct after RTL fix | left spacing | ✅ |
+| Contract | Baseline | Ticket | Handled by |
+| -------- | -------- | ------ | ---------- |
 
-#### Test Execution
+> or: None (all contracts unchanged)
 
-| Run | Verdict | Output |
-| ISSUE-002 failing-first | EXPECTED_FAIL | `.SS_WF/Agent/TEST_RUNS/DEF-486-ISSUE-002-failing-first-…/` |
-| ISSUE-002 after fix | PASS | `…/DEF-486-ISSUE-002-after-fix-…/` |
-| Guards (6) | PASS | `…/DEF-486-ISSUE-002-guards-…/` |
-| Blast radius (3 files) | PASS | `…/DEF-486-ISSUE-002-blast-radius-…/` |
-| Final consolidated | PASS | `…/DEF-486-final-…/` |
+#### Scenarios verified
 
-#### Sections Updated
+| Issue     | Scenario                                | Evidence                              |
+| --------- | --------------------------------------- | ------------------------------------- |
+| ISSUE-001 | <reported scenario>                     | reproduction: before FAIL, after PASS |
+| ISSUE-001 | <sibling / AC / state / consumer / new> | new test · existing test · gap fixed  |
 
-| §3 | 4 rows [DEF-486] |
-| §7 | `policyNumber` trace — fix + drift reconciled |
-| §10 | +1 regression, +6 guard tests |
+#### Test runs
 
-#### Existing Tests Modified
+| Run | Verdict | Output folder |
+| --- | ------- | ------------- |
 
-| `HeroBanner.test.tsx` | asserted `PolicyTitle` → now `Title` | Test encoded the old contract |
+#### Diff
 
-> _(or: None.)_
+<pasted git diff --stat>
 
-#### Observations — Not Fixed
+#### Sections updated
 
-| `usePolicyList.ts` | `staleTime` hardcoded | Outside every root cause |
+| Section | Change |
+| ------- | ------ |
 
-> _(or: None.)_
+#### Existing tests modified
 
-#### Learnings Written
+| Test | Was asserting | Why changed |
+| ---- | ------------- | ----------- |
+
+> or: None
+
+#### Observations, not fixed
+
+> or: None
+
+#### Learnings written
 
 | Origin | Issues | Written? |
-| Agent miss | ISSUE-001 | ✅ `# UI LEARNINGS` — recurrence ×2 |
-| Post-generation manual change | ISSUE-002 | ❌ Developer-authored code |
-
-> ⚠️ SKILL GAP: [rule at recurrence ≥ 3, or: None]
-
-#### Notes for the Developer
-
-- ISSUE-002 lived in code changed after generation; your legacy fallback was preserved
+| ------ | ------ | -------- |
 ```
-
-⚠️ Append below existing entries. **Never edit a prior entry.** If §13 is missing (summary predates it), create it with the standard header.
 
 ### How to write
 
-```text
-1. Read the complete summary
-2. Merge targeted edits into the state sections
-3. Append the §13 entry
-4. Write the COMPLETE file back
-5. Confirm the write succeeded
-```
-
-⚠️ Do not assume an append mode exists. Preserve untouched content byte for byte.
+1. Read the sections you will edit (search with `grep -n`; read the whole file only if it is small).
+2. Make the targeted edits to state, AC coverage and gap sections.
+3. Append the change-log entry.
+4. Write the file back without an append mode; preserve untouched content exactly.
+5. Re-read and confirm the entry is present.
 
 ---
 
-## PART 6b — WRITE THE LEARNING (GATED)
+## PART B: Write the learning (gated)
 
-### The gate
+### Gate (origin from the ISSUE block)
 
-```text
-Agent miss · Regression from prior fix                      → WRITE
-Upstream gap · Contract change · Design change ·
-Post-generation manual change · Ambiguous requirement       → DO NOT WRITE
-                                                              record the origin in §13
-```
+| Origin                                                                                                      | Action                                            |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Agent miss                                                                                                  | Write                                             |
+| Regression from prior fix                                                                                   | Write                                             |
+| Post-generation manual change, contract change, design change, upstream gap, ambiguous requirement, unknown | Do not write; record the origin in the change log |
 
-A learning must be something the coding agent **could have acted on at generation time**.
+A learning must be something the coding agent could have acted on at generation time.
 
-```text
-✅ "Mappers must apply the null default recorded in plan §11.2"
-❌ "Sitecore renamed PolicyTitle to Title"        — external
-❌ "Design v2 changed the card gap"               — external
-❌ "The developer's fallback returned empty"      — not the agent's code
-```
+- Yes: "A lockout or block state must start only at the AC's failure threshold, never on the first failure."
+- No: "Sitecore renamed a field" (external); "the developer's fallback returned empty" (not agent code).
 
 ### Namespace
 
-| Category                              | Namespace               |
-| ------------------------------------- | ----------------------- |
-| UI · RTL · Responsive · A11y · Media  | `# UI LEARNINGS`        |
-| BFF · API · State · Sitecore · mapper | `# LOGIC LEARNINGS`     |
-| A test should have caught it          | `# TEST LEARNINGS`      |
-| Storybook · catalogue                 | `# STORYBOOK LEARNINGS` |
+| Category                                      | Namespace                                                  |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| UI · RTL · Responsive · Accessibility · Media | `# UI LEARNINGS`                                           |
+| BFF/API · State · Sitecore · mappers          | `# LOGIC LEARNINGS`                                        |
+| A test should have caught it                  | `# TEST LEARNINGS` (also write to the behaviour namespace) |
+| Storybook · catalogue                         | `# STORYBOOK LEARNINGS`                                    |
 
-⚠️ If a test should have caught it, write to **both** the behaviour namespace and `# TEST LEARNINGS`.
+### Steps (all four, every time)
 
-### The four steps — all four, every time
-
-```text
-STEP 1  READ    ./src/.project/learnings/CODING_AGENT_LEARNINGS.md
-STEP 2  DEDUPE  search the namespace for a SEMANTICALLY equivalent rule
-                  found     → increment recurrence, append this defect ID
-                  not found → compose a new entry
-STEP 3  WRITE   merge into the namespace, write the COMPLETE file back
-STEP 4  CONFIRM the write succeeded; report the namespace and new/recurrence
-```
-
-⚠️ Steps 1–2 without 3–4 is the failure this section exists to prevent.
+1. **Read** the learnings file. If it does not exist, create it with the four headings.
+2. **Dedupe**: look for a semantically equivalent rule. Found → increment recurrence, add this defect ID. Not found → compose a new entry.
+3. **Write** the complete file back with the entry merged into its namespace.
+4. **Confirm** the write; report namespace and new/recurrence.
 
 ### Entry format
 
-```text
-# UI LEARNINGS
-
-- RTL: use logical properties (ms-/me-/ps-/pe-) — never physical (ml-/mr-/pl-/pr-).
-  Mirror directional icons with rtl:rotate-180; never mirror neutral icons
-  (eye, help, search, calendar), symmetric icons, or brand logos.
-  Refs: DEF-4380, DEF-486  (recurrence ×2)
+```markdown
+- <Area>: <rule — what to do and not do>. <why it matters, one line>.
+  Refs: <defect ids> (recurrence ×<n>)
 ```
 
-```text
-✅ A generalisable rule · what to do and not do · why it matters · 2–4 lines
-❌ A war story ("In DEF-486 the arrows on the policy page…")
-```
-
-⚠️ Preserve every existing entry and all four namespace headings. Never delete or rewrite a learning except to increment recurrence.
+Two to four lines. A general rule, never a story about this defect.
+Preserve every existing entry and all four headings.
 
 ### Skill gap
 
-```text
-Recurrence ≥ 3 → the SKILL is under-specified, not the learnings file
-
-⚠️ SKILL GAP DETECTED
-  Rule: [rule] · Namespace: [ns] · Recurrence: 3 ([refs])
-  Skill: [coding skill] — RECOMMENDATION: strengthen [section]
-```
-
-Record it in §13. **Do not edit the skill** — that is a human decision.
+At recurrence ≥ 3 the coding skill is under-specified. Record in the change log:
+`SKILL GAP: <rule> · <namespace> · recurrence <n> (<refs>) · skill: <coding skill> — strengthen <section>`.
+Do not edit the skill; that is a human decision.
 
 ---
 
-### Gate — Phase 6 is NOT complete until
+### Done when
 
-```text
-SUMMARY
-- [ ] Summary read in full before editing
-- [ ] State sections the fix touched updated and tagged [DEF-xxx]
-- [ ] Drift in RCA-inspected rows reconciled, tagged [DEF-xxx · drift]
-- [ ] Historical sections untouched; prior §13 entries untouched
-- [ ] §13 entry appended with all blocks incl. test-execution output folders
-- [ ] FILE WRITTEN and the write confirmed
-
-LEARNINGS
-- [ ] Every issue's origin evaluated against the gate
-- [ ] For each qualifying issue: file READ → deduped → MERGED → WRITTEN → confirmed
-- [ ] No learning for developer changes, contract/design changes, upstream gaps, ambiguity
-- [ ] Skill gap flagged at recurrence ≥ 3
-- [ ] If NO issue qualified: file correctly untouched, and this is stated explicitly
-```
-
-⚠️ **"Identified but not written" fails this gate.**
+- [ ] Targeted sections updated and tagged; historical sections and prior entries untouched
+- [ ] Change-log entry appended; file written and confirmed
+- [ ] Every issue's origin checked against the gate
+- [ ] Each qualifying learning read, deduped, written and confirmed — or "no issue qualified" stated explicitly
 
 ### Never
 
-- **Never suggest a learning instead of writing it.**
-- **Never end the phase with an unwritten entry.**
-- Never write a learning for a post-generation manual change, contract change, design change, upstream gap, or ambiguity.
-- Never write a learning as a war story; never append a duplicate.
-- Never delete or rewrite an existing learning.
-- Never edit a coding skill — flag the gap.
-- Never produce a separate defect document — §13 is the record.
-- Never regenerate the summary; never modify historical sections.
-- Never record a test as passed without a run output folder.
-- Never write "measured" coverage without a `--coverage` run.
-- Never assume an append mode exists.
-- Never close or comment on the ticket.
+- Never describe a learning or update instead of writing it.
+- Never write a learning for a non-qualifying origin.
+- Never delete or rewrite an existing learning except to increment recurrence.
+- Never record a test as passed without its run output folder.
+- Never create a separate defect document; the change log is the record.
+- Never close, comment on or transition the ticket.
