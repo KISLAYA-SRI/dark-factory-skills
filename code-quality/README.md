@@ -29,16 +29,19 @@ These two skills are intentionally decoupled: `execute-sonar-analysis` never ins
 Both skills use a `references/` folder split by project family so that only the relevant patterns/commands are loaded into context:
 
 ```text
+execute-sonar-analysis/scripts/
+  execute-sonar.sh — deterministic runner: detects Maven vs Node/React and resolves the scanner tool
+
 execute-sonar-analysis/references/
-  maven.md   — Maven analysis command and flags
-  node.md    — Node/React (SonarScanner CLI) analysis command and flags
+  maven.md   — documents the Maven command/flags the script runs
+  node.md    — documents the Node/React scanner resolution order and command/flags the script runs
 
 fix-sonar-issues/references/
   maven/     — Java/Maven fix patterns, one file per quality dimension
   node/      — Node.js/React fix patterns, one file per quality dimension
 ```
 
-Each skill first detects the project family (presence of `pom.xml` vs `package.json`, or both for Mixed repositories) and then loads only the matching reference file(s).
+`execute-sonar-analysis` prefers running `scripts/execute-sonar.sh` over hand-assembling a command: the script detects the project family (presence of `pom.xml` vs `package.json`), and for Node/React resolves a `sonar-scanner` binary deterministically (`PATH` -> `node_modules/.bin` -> `npx` as a last resort) instead of always shelling out to `npx`, which would otherwise re-download the package on every run. The `references/` files document that logic and serve as a manual fallback. `fix-sonar-issues` detects the project family the same way and loads only the matching reference file(s) for the failing dimensions.
 
 ## When Not To Use
 
