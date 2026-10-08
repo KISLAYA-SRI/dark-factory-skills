@@ -3,14 +3,16 @@ name: defect-fix
 description: End-to-end FE defect fix for a triaged Jira defect. One fixed path - understand, trace, reproduce, map impact, fix, prove, gate, report. Covers the reported scenario, scenarios the ticket did not mention, and scenarios the fix itself could break. Use for every defect run.
 ---
 
-# Defect Fix
+## Defect Fix
 
 ## Inputs (from your task prompt, never from this file)
+
 `ticket_id`, `parent_ticket_id`, workspace root (contains `.agents/` and `src/`). The repo is `src/`.
 Defect ticket: `src/.SS_WF/<ticket_id>_JIRA_OUTPUT.json`. Missing or unreadable → stop, verdict BLOCKED.
 A ticket number inside the title (e.g. `ABC-123 ||`) is a label, not the parent.
 
 ## Rules (override every other skill)
+
 1. **The defect is real.** Outcomes: FIXED (gate passed) or BLOCKED (with evidence). Never "not a defect" / "already fixed".
 2. **Context in layers.** Ticket → parent code-gen file map → source → analysis plan / figma-output only for a specific question. Search large docs with `grep -n`.
 3. **Trace every hop** from user action to what the user sees, including where data enters the code. A root cause with "if/may/possibly" is unfinished.
@@ -26,7 +28,9 @@ A ticket number inside the title (e.g. `ABC-123 ||`) is a label, not the parent.
 ---
 
 ## Stage 1 — Understand
+
 Per issue record **TRIGGER**, **OBSERVED**, **EXPECTED**, **SIGNALS**, **dev notes** (verbatim).
+
 - Expected missing/vague → use the AC the ticket cites, else the matching plan AC. None → BLOCKED: expected behaviour undefined. Never invent.
 - Attachments only (screenshots) → record "attachment not reviewed"; no steps in text → BLOCKED: needs steps.
 - Per contract (BFF, Sitecore, Figma): does the ticket bring **new data, a reference, or a described change in words**?
@@ -38,17 +42,18 @@ Per issue record **TRIGGER**, **OBSERVED**, **EXPECTED**, **SIGNALS**, **dev not
 - Split issues only when root cause, layer or expected behaviour differ.
 
 ## Stage 2 — Locate and trace
+
 1. `grep -n` the parent code-gen document for the file map. Read its **Defect Change Log** for the same files — earlier fixes and their regression tests must keep passing; do not repeat a rejected approach (also check ticket comments for earlier attempts).
 2. Open each hop on the TRIGGER path. Note input shape, branch taken, state set, what later clears or overrides it, render condition.
 3. Open more only when a hop needs it:
 
-| You need | Read |
-| --- | --- |
-| Real API response/error shape | repo mock files; else plan (`grep -n` endpoint/code) |
-| Sitecore field / message entry | plan Sitecore section |
-| AC wording not quoted in code-gen doc | plan AC section |
-| Design detail | `src/figma-output/` for the viewport |
-| Shared util/hook behaviour | open it; never assume |
+| You need                              | Read                                                 |
+| ------------------------------------- | ---------------------------------------------------- |
+| Real API response/error shape         | repo mock files; else plan (`grep -n` endpoint/code) |
+| Sitecore field / message entry        | plan Sitecore section                                |
+| AC wording not quoted in code-gen doc | plan AC section                                      |
+| Design detail                         | `src/figma-output/` for the viewport                 |
+| Shared util/hook behaviour            | open it; never assume                                |
 
 - No parent or no code-gen doc → search the repo for the ticket signals (screen, label, code).
 - Code differs from the code-gen doc → the code is the truth; record the drift.
@@ -57,10 +62,13 @@ Per issue record **TRIGGER**, **OBSERVED**, **EXPECTED**, **SIGNALS**, **dev not
 Exit: mechanism in 1–2 sentences, no "if/may".
 
 ## Stage 3 — Reproduce
+
 Test at the level the user observes, next to the source (`<Source>.test.tsx` or a `describe('<ticket_id> …')` block in the existing file).
+
 ```bash
 python3 ./.agents/skills/run-test-cases/scripts/run-tests.py --files <test-file> --label <ticket_id>-<ISSUE-n>-reproduction --expect fail
 ```
+
 - `EXPECTED_FAIL`/`FAIL` for the OBSERVED reason → continue.
 - `PASSED_UNEXPECTEDLY` → make it realistic (real payload, real CMS data, real sequence, fake timers, controlled promise resolution, repeated/concurrent actions); re-run.
 - `FAILED_FOR_WRONG_REASON`/`NOT_COLLECTED` → fix setup, never the assertion.
@@ -72,11 +80,15 @@ python3 ./.agents/skills/run-test-cases/scripts/run-tests.py --files <test-file>
 - 3 realistic attempts without a valid failure → BLOCKED with every hypothesis and run folder. No source change.
 
 ## Stage 4 — Impact map (before changing code)
+
 Run the related tests once, before any change, to record the baseline:
+
 ```bash
 python3 ./.agents/skills/run-test-cases/scripts/run-tests.py --related <root-cause-file> --label <ticket_id>-<ISSUE-n>-baseline
 ```
+
 Write `src/.SS_WF/Agent/TEST_RUNS/<ticket_id>-<ISSUE-n>-impact.md` using `references/impact-map.md`. It must list:
+
 - **A. Reported scenario** — from the ticket.
 - **B. Same behaviour, not in the ticket** — every input that reaches the changed code (other codes/branches, success, empty/null/partial data, missing CMS entry, boundary values), every state and transition (initial, loading, error → retry → success, repeated failures, timers start/end/reset, unmount, navigate away/back), locale/RTL and viewport if UI.
 - **C. Related ACs** — every AC that reads or writes the same state/behaviour (thresholds, counters, expiry, disabled states).
@@ -87,19 +99,21 @@ Each row: scenario · expected (source: ticket / AC / plan / existing behaviour)
 Open the code for every `unknown` until it is `correct` or `broken-found`.
 
 ## Stage 5 — Fix
+
 Design one change that makes **every** row in the impact map correct. Load coding skills for the area you touch (rule 6 wins):
 
-| Change touches | Load |
-| --- | --- |
-| hooks, services, containers, mappers, API errors/toasts | `frontend-logic-integration` |
-| state, forms, validation, timers, counters | `frontend-state-and-form-management` |
-| markup, styles, layout, RTL, responsive, a11y | `presentational-ui-generation` |
-| Sitecore mapping, rendering, CMS messages | `sitecore-rendering-integration` |
-| images, icons, media | `frontend-media-integration` |
-| creating/moving/renaming files | `repository-structure-governance` |
-| test conventions | `frontend-test-generation` |
+| Change touches                                          | Load                                 |
+| ------------------------------------------------------- | ------------------------------------ |
+| hooks, services, containers, mappers, API errors/toasts | `frontend-logic-integration`         |
+| state, forms, validation, timers, counters              | `frontend-state-and-form-management` |
+| markup, styles, layout, RTL, responsive, a11y           | `presentational-ui-generation`       |
+| Sitecore mapping, rendering, CMS messages               | `sitecore-rendering-integration`     |
+| images, icons, media                                    | `frontend-media-integration`         |
+| creating/moving/renaming files                          | `repository-structure-governance`    |
+| test conventions                                        | `frontend-test-generation`           |
 
 Fix rules:
+
 - **Root layer.** Fix where the behaviour is wrong; no downstream patch to hide it.
 - **Ticket vs AC (22).** If meeting the ticket would break a C-row AC, find a change that meets both. If they truly conflict, meet the ticket and record the AC conflict.
 - **Shared code (17/26).** Fixing a shared component, util, type or mapper means every D-row consumer stays correct; changing a public API means updating every caller. No local override that hides a shared bug.
@@ -111,36 +125,46 @@ Fix rules:
 - Remove temporary logging.
 
 Run the reproduction again:
+
 ```bash
 python3 ./.agents/skills/run-test-cases/scripts/run-tests.py --files <same-test-file> --label <ticket_id>-<ISSUE-n>-after-fix
 ```
+
 Must be `PASS`.
 
 ## Stage 6 — Prove
+
 Update every impact-map row with its evidence:
+
 - `new assertion` — named `it(...)` that fails on the old code (required for every changed behaviour, every broken-found row you fixed, and every E-row your change touched).
 - `existing test` — file + `it(...)` you actually opened.
 - `found, not fixed` / `outside FE` / `AC conflict` — with evidence.
-No row may stay `unknown` or `unverified`.
+  No row may stay `unknown` or `unverified`.
 
 Run related tests on **every** changed source file:
+
 ```bash
 python3 ./.agents/skills/run-test-cases/scripts/run-tests.py --related <changed-source-file> --label <ticket_id>-<ISSUE-n>-related
 ```
+
 Failures already present in the baseline are not yours; any **new** failure is a regression your fix introduced → back to Stage 5.
 
 ## Stage 7 — Evidence gate (per issue)
+
 ```bash
 python3 ./.agents/skills/defect-fix/scripts/verify-evidence.py --ticket <ticket_id> --issue <ISSUE-n>
 ```
+
 `GATE=PASS` → FIXED. `GATE=FAIL` → go to the stage owning the listed reason. Same reason twice → BLOCKED with the gate output. Never edit, skip or delete a test to pass.
 
 Before reporting, **revert any change made only for a BLOCKED issue** (`git -C src checkout -- <file>` / remove its new files).
 
 ## Stage 8 — Report
+
 Follow `./.agents/skills/defect-fix/references/reporting.md`. Runs even if every issue is BLOCKED.
 
 ## Stage 9 — Final output (exact shape)
+
 ```text
 DEFECT_VERDICT=<FIXED|PARTIAL|BLOCKED>
 <ticket_id>  <n> issues  <n> fixed  <n> blocked   skill=v7
